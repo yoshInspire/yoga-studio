@@ -104,6 +104,65 @@ if (dirModal) {
   });
 }
 
+// ===== Вкладки дней расписания =====
+const schedDays = document.getElementById('schedDays');
+if (schedDays) {
+  const tabs = schedDays.querySelectorAll('.sched__day');
+  const panels = document.querySelectorAll('.sched__panel');
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      tabs.forEach((t) => {
+        const on = t === tab;
+        t.classList.toggle('is-active', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      panels.forEach((p) => p.classList.toggle('is-hidden', p.dataset.panel !== tab.dataset.day));
+    });
+  });
+}
+
+// ===== Аккордеон FAQ =====
+const faqList = document.getElementById('faqList');
+if (faqList) {
+  faqList.querySelectorAll('.faq__q').forEach((q) => {
+    q.addEventListener('click', () => {
+      const item = q.closest('.faq__item');
+      const answer = item.querySelector('.faq__a');
+      const isOpen = item.classList.toggle('is-open');
+      answer.style.maxHeight = isOpen ? answer.scrollHeight + 'px' : null;
+    });
+  });
+}
+
+// ===== Вкладки входа / регистрации =====
+const authTabs = document.querySelectorAll('.auth__tab');
+if (authTabs.length) {
+  const forms = document.querySelectorAll('.auth__form');
+  const switchAuth = (name) => {
+    authTabs.forEach((t) => {
+      const on = t.dataset.tab === name;
+      t.classList.toggle('is-active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    forms.forEach((f) => f.classList.toggle('is-hidden', f.dataset.form !== name));
+  };
+  authTabs.forEach((t) => t.addEventListener('click', () => switchAuth(t.dataset.tab)));
+  document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => switchAuth(b.dataset.goto)));
+}
+
+// ===== Разделы личного кабинета =====
+const lkNav = document.getElementById('lkNav');
+if (lkNav) {
+  const links = lkNav.querySelectorAll('.lk__navlink[data-sec]');
+  const panels = document.querySelectorAll('.lk__panel');
+  links.forEach((link) => {
+    link.addEventListener('click', () => {
+      links.forEach((l) => l.classList.toggle('is-active', l === link));
+      panels.forEach((p) => p.classList.toggle('is-hidden', p.dataset.panel !== link.dataset.sec));
+    });
+  });
+}
+
 const heroBg = document.querySelector('.hero__bg');
 if (heroBg && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
   window.addEventListener(
