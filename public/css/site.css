@@ -415,10 +415,10 @@ a { color: inherit; text-decoration: none; }
 
 /* ============ Фоны-обои по секциям (чередование) ============ */
 .directions, .teachers, .reviews {
-  background: var(--bg) url('/images/decor/wallpaper-sage.jpg') center / cover no-repeat fixed;
+  background: var(--bg) url('/images/decor/wallpaper-sage.webp') center / cover no-repeat fixed;
 }
 .about, .services, .contacts {
-  background: var(--bg) url('/images/decor/wallpaper-shadow.jpg') center / cover no-repeat fixed;
+  background: var(--bg) url('/images/decor/wallpaper-shadow.webp') center / cover no-repeat fixed;
 }
 @media (max-width: 880px) {
   .directions, .teachers, .reviews, .about, .services, .contacts { background-attachment: scroll; }
