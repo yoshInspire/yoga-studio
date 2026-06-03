@@ -1,22 +1,25 @@
 /* ============ Base & tokens ============ */
 :root {
-  --bg: #f6f3ee;
-  --bg-soft: #efe9e0;
-  --paper: #fffdf9;
-  --ink: #21201c;
-  --ink-soft: #5b574e;
-  --muted: #908a7e;
-  --line: #e2dbd0;
-  --sage: #7c8b6b;
-  --sage-deep: #5f6e51;
-  --clay: #b08763;
-  --accent: #2f352b;
+  /* Палитра по брифу клиента:
+     фон — кремовый/слоновая кость, доп. фон — светлая мята,
+     текст — тёмно-оливковый, акцент — приглушённый терракот/«глина» */
+  --bg: #f4f1e6;          /* кремовый / слоновая кость */
+  --bg-soft: #e4ede2;     /* светлая мята */
+  --paper: #fffdf8;       /* тёплый «бумажный» для карточек */
+  --ink: #2f331f;         /* тёмно-оливковый — основной текст */
+  --ink-soft: #595c43;    /* приглушённый оливковый */
+  --muted: #8c8d77;       /* серо-оливковый */
+  --line: #dcdecb;        /* мягкая мятно-кремовая линия */
+  --sage: #7c8b6b;        /* шалфей — дополнительный зелёный акцент */
+  --sage-deep: #56633f;   /* глубокий оливково-зелёный */
+  --clay: #b86a48;        /* приглушённый терракот — основной акцент */
+  --accent: #2a2e1b;      /* тёмная оливковая подложка (топбар, футер, CTA) */
   --radius: 18px;
   --radius-sm: 12px;
   --max: 1240px;
   --ease: cubic-bezier(.22,.61,.36,1);
   --serif: "Cormorant Garamond", Georgia, serif;
-  --sans: "Manrope", system-ui, -apple-system, sans-serif;
+  --sans: "Nunito", system-ui, -apple-system, sans-serif;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
