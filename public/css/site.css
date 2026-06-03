@@ -161,35 +161,27 @@ a { color: inherit; text-decoration: none; }
   position: relative; min-height: calc(100vh - 114px);
   display: flex; flex-direction: column; justify-content: center;
   padding: 60px 28px 120px; overflow: hidden;
-}
-.hero__bg {
-  position: absolute; inset: 0;
-  background-image: url('https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&w=1920&q=80');
-  background-size: cover; background-position: center;
-  transform: scale(1.08); will-change: transform;
-}
-.hero__overlay {
-  position: absolute; inset: 0;
-  background: linear-gradient(100deg, rgba(28,29,24,.72) 0%, rgba(28,29,24,.38) 45%, rgba(28,29,24,.15) 100%);
+  background:
+    linear-gradient(rgba(244, 241, 230, 0.93), rgba(244, 241, 230, 0.93)),
+    url('/images/decor/wallpaper-sage.webp') center / cover no-repeat fixed,
+    var(--bg);
 }
 .hero__content { position: relative; max-width: var(--max); margin: 0 auto; width: 100%; }
 .hero__eyebrow {
-  color: rgba(236, 231, 218, 0.88); font-size: 13px; letter-spacing: .22em; text-transform: uppercase;
-  font-weight: 500; margin-bottom: 22px;
+  color: var(--sage-deep); font-size: 13px; letter-spacing: .22em; text-transform: uppercase;
+  font-weight: 700; margin-bottom: 22px;
 }
 .hero__title {
-  font-family: var(--serif); color: var(--paper); font-weight: 500;
+  font-family: var(--serif); color: var(--ink); font-weight: 500;
   font-size: clamp(48px, 8.5vw, 116px); line-height: .98; letter-spacing: -.01em;
 }
 .hero__title span { display: block; }
-.hero__title--italic { font-style: italic; color: #e9e3d4; font-weight: 400; }
+.hero__title--italic { font-style: italic; color: var(--sage-deep); font-weight: 400; }
 .hero__lead {
-  color: #ece7da; max-width: 540px; font-size: 18px; margin-top: 28px; line-height: 1.7;
-  font-weight: 300;
+  color: var(--ink-soft); max-width: 540px; font-size: 18px; margin-top: 28px; line-height: 1.7;
+  font-weight: 400;
 }
 .hero__cta { display: flex; gap: 14px; margin-top: 38px; flex-wrap: wrap; }
-.hero .btn--line { color: var(--paper); border-color: rgba(255,255,255,.55); }
-.hero .btn--line:hover { background: var(--paper); color: var(--ink); border-color: var(--paper); }
 
 .hero__stats {
   position: relative; max-width: var(--max); margin: 70px auto 0; width: 100%;
@@ -201,10 +193,10 @@ a { color: inherit; text-decoration: none; }
 
 .hero__scroll {
   position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
-  width: 26px; height: 42px; border: 1.5px solid rgba(255,255,255,.5); border-radius: 20px;
+  width: 26px; height: 42px; border: 1.5px solid var(--line); border-radius: 20px;
   display: flex; justify-content: center; padding-top: 8px;
 }
-.hero__scroll span { width: 3px; height: 8px; background: var(--paper); border-radius: 2px; animation: scrolldot 1.8s infinite; }
+.hero__scroll span { width: 3px; height: 8px; background: var(--sage); border-radius: 2px; animation: scrolldot 1.8s infinite; }
 @keyframes scrolldot { 0%{ opacity:0; transform: translateY(-4px);} 40%{opacity:1;} 80%{opacity:0; transform: translateY(12px);} 100%{opacity:0;} }
 
 /* ============ Marquee ============ */
@@ -428,7 +420,7 @@ a { color: inherit; text-decoration: none; }
     var(--bg-soft);
 }
 @media (max-width: 880px) {
-  .directions, .teachers, .reviews, .about, .services, .contacts { background-attachment: scroll; }
+  .hero, .directions, .teachers, .reviews, .about, .services, .contacts { background-attachment: scroll; }
 }
 
 /* ============ Кнопка «Подробнее» на карточке ============ */

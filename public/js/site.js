@@ -162,17 +162,3 @@ if (lkNav) {
     });
   });
 }
-
-const heroBg = document.querySelector('.hero__bg');
-if (heroBg && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-  window.addEventListener(
-    'scroll',
-    () => {
-      const y = window.scrollY;
-      if (y < window.innerHeight) {
-        heroBg.style.transform = `scale(1.08) translateY(${y * 0.18}px)`;
-      }
-    },
-    { passive: true }
-  );
-}
