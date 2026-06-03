@@ -43,7 +43,6 @@ reveals.forEach((el) => io.observe(el));
 const dirModal = document.getElementById('dirModal');
 if (dirModal) {
   const details = dirModal.querySelectorAll('.dir-detail');
-  const scrollArea = dirModal.querySelector('.dir-modal__scroll');
   let lastFocused = null;
 
   const resetSlides = (el) => {
@@ -66,7 +65,7 @@ if (dirModal) {
     dirModal.classList.add('is-open');
     dirModal.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
-    if (scrollArea) scrollArea.scrollTop = 0;
+    dirModal.scrollTop = 0;
     dirModal.querySelector('.dir-modal__close')?.focus();
   };
 

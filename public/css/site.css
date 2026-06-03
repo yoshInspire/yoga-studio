@@ -443,27 +443,25 @@ a { color: inherit; text-decoration: none; }
   background: var(--clay); color: #fffdf9;
   transition: background .3s var(--ease), transform .3s var(--ease), box-shadow .3s var(--ease);
 }
-.card__more span { transition: transform .3s var(--ease); }
 .card__more:hover { background: #9d5a3f; transform: translateY(-2px); box-shadow: 0 12px 30px -12px rgba(181, 106, 74, .45); }
-.card__more:hover span { transform: translateX(3px); }
 
 .directions-page { padding-top: 150px; }
 
 /* ============ Модальное окно направления ============ */
 .dir-modal {
   position: fixed; inset: 0; z-index: 200;
-  display: flex; align-items: center; justify-content: center;
-  padding: 28px; opacity: 0; visibility: hidden;
+  overflow-y: auto; overflow-x: hidden;
+  padding: 48px 28px; opacity: 0; visibility: hidden;
   transition: opacity .35s var(--ease), visibility .35s var(--ease);
 }
 .dir-modal.is-open { opacity: 1; visibility: visible; }
 .dir-modal__backdrop {
-  position: absolute; inset: 0;
+  position: fixed; inset: 0;
   background: rgba(28, 29, 24, .55); backdrop-filter: blur(3px);
 }
 .dir-modal__dialog {
   position: relative; z-index: 1;
-  width: 100%; max-width: 760px; max-height: 90vh;
+  width: 100%; max-width: 760px; margin: 0 auto;
   background: var(--paper); border-radius: var(--radius);
   border: 1px solid var(--line); overflow: hidden;
   box-shadow: 0 40px 90px -30px rgba(28, 29, 24, .5);
@@ -480,7 +478,6 @@ a { color: inherit; text-decoration: none; }
   transition: background .3s, transform .3s;
 }
 .dir-modal__close:hover { background: var(--bg-soft); transform: rotate(90deg); }
-.dir-modal__scroll { max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
 /* hero-галерея со стрелками */
 .dir-detail__hero { position: relative; height: 380px; overflow: hidden; background: var(--bg-soft); }
@@ -533,7 +530,7 @@ a { color: inherit; text-decoration: none; }
 .dir-detail__benefits li::before {
   content: "✦"; position: absolute; left: 0; top: 0; color: var(--sage-deep); font-size: 13px;
 }
-.dir-detail__cta { display: flex; gap: 12px; flex-wrap: wrap; padding: 32px 44px 44px; }
+.dir-detail__content { padding-bottom: 44px; }
 
 /* ============ Responsive ============ */
 @media (max-width: 1024px) {
@@ -565,8 +562,7 @@ a { color: inherit; text-decoration: none; }
 
 @media (max-width: 640px) {
   .dir-modal { padding: 0; }
-  .dir-modal__dialog { max-width: 100%; max-height: 100%; height: 100%; border-radius: 0; border: none; }
-  .dir-modal__scroll { max-height: 100vh; }
+  .dir-modal__dialog { max-width: 100%; min-height: 100%; border-radius: 0; border: none; }
   .dir-detail__hero { height: 260px; }
   .dir-detail__brand { left: 22px; bottom: 18px; font-size: 22px; }
   .dir-detail__nav { width: 40px; height: 40px; font-size: 24px; }
@@ -577,6 +573,5 @@ a { color: inherit; text-decoration: none; }
   .dir-detail__body { padding: 20px 22px 0; }
   .dir-detail__benefits { padding: 6px 22px 0; }
   .dir-detail__benefits ul { grid-template-columns: 1fr; }
-  .dir-detail__cta { padding: 26px 22px 34px; }
-  .dir-detail__cta .btn { width: 100%; }
+  .dir-detail__content { padding-bottom: 34px; }
 }

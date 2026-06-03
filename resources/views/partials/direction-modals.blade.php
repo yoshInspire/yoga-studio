@@ -47,11 +47,6 @@
                 </ul>
               </div>
             @endif
-
-            <div class="dir-detail__cta">
-              <a href="{{ route('schedule') }}" class="btn btn--solid btn--lg">Записаться на занятие</a>
-              <a href="{{ route('login') }}" class="btn btn--line btn--lg">Личный кабинет</a>
-            </div>
           </div>
         </article>
       @endforeach

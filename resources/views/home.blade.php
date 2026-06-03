@@ -54,9 +54,7 @@
               <span class="card__num">{{ $card['num'] }}</span>
               <h3 class="card__title">{{ $card['title'] }}</h3>
               <p class="card__text">{{ $card['short'] }}</p>
-              <button type="button" class="card__more" data-dir="{{ $card['slug'] }}">
-                Подробнее <span aria-hidden="true">→</span>
-              </button>
+              <button type="button" class="card__more" data-dir="{{ $card['slug'] }}">Подробнее</button>
             </div>
           </article>
         @endforeach
