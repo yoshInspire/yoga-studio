@@ -24,11 +24,7 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html {
-  scroll-behavior: smooth; -webkit-text-size-adjust: 100%;
-  /* сквозной фон-обои на всю страницу */
-  background: var(--bg) url('/images/decor/wallpaper-sage.jpg') center top / cover no-repeat fixed;
-}
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; background: var(--bg); }
 
 body {
   font-family: var(--sans);
@@ -415,6 +411,17 @@ a { color: inherit; text-decoration: none; }
   .reveal { opacity: 1; transform: none; }
   .marquee__track, .hero__scroll span { animation: none; }
   html { scroll-behavior: auto; }
+}
+
+/* ============ Фоны-обои по секциям (чередование) ============ */
+.directions, .teachers, .reviews {
+  background: var(--bg) url('/images/decor/wallpaper-sage.jpg') center / cover no-repeat fixed;
+}
+.about, .services, .contacts {
+  background: var(--bg) url('/images/decor/wallpaper-shadow.jpg') center / cover no-repeat fixed;
+}
+@media (max-width: 880px) {
+  .directions, .teachers, .reviews, .about, .services, .contacts { background-attachment: scroll; }
 }
 
 /* ============ Responsive ============ */
