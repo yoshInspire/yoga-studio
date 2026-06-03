@@ -19,7 +19,7 @@
               Расписание доступно всем гостям. Войдите или зарегистрируйтесь, чтобы
               записываться на занятия, видеть остаток по абонементам и историю посещений.
             </p>
-            <a href="{{ route('schedule') }}" class="auth__aside-link">Смотреть расписание →</a>
+            <a href="{{ route('schedule') }}" class="auth__aside-link">Смотреть расписание</a>
           </div>
         </aside>
 
@@ -96,8 +96,6 @@
             <button type="submit" class="btn btn--solid btn--full btn--lg">Зарегистрироваться</button>
             <p class="auth__switch">Уже есть аккаунт? <button type="button" class="auth__link" data-goto="login">Войти</button></p>
           </form>
-
-          <p class="auth__demo">Демо-версия интерфейса: вход и регистрация пока без проверки данных — кнопки открывают предпросмотр личного кабинета.</p>
         </div>
       </div>
     </div>

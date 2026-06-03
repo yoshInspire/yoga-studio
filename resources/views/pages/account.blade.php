@@ -42,7 +42,7 @@
             <button type="button" class="lk__navlink" data-sec="history">История посещений</button>
             <button type="button" class="lk__navlink" data-sec="cancelled">Отменённые занятия</button>
             <button type="button" class="lk__navlink" data-sec="oferta">Договор-оферта</button>
-            <a href="{{ route('schedule') }}" class="lk__navlink lk__navlink--out">Расписание и запись →</a>
+            <a href="{{ route('schedule') }}" class="lk__navlink lk__navlink--out">Расписание и запись</a>
             <a href="{{ route('home') }}" class="lk__navlink lk__navlink--exit">Выйти</a>
           </nav>
         </aside>
