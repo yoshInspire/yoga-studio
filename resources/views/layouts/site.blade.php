@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=9" />
+  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=10" />
   @stack('head')
 </head>
 <body>
@@ -103,7 +103,7 @@
     </div>
   </footer>
 
-  <script src="{{ asset('js/site.js') }}?v=1"></script>
+  <script src="{{ asset('js/site.js') }}?v=2"></script>
   @stack('scripts')
 </body>
 </html>

@@ -39,6 +39,50 @@ const io = new IntersectionObserver(
 );
 reveals.forEach((el) => io.observe(el));
 
+// ===== Подробные окна направлений =====
+const dirModal = document.getElementById('dirModal');
+if (dirModal) {
+  const details = dirModal.querySelectorAll('.dir-detail');
+  const scrollArea = dirModal.querySelector('.dir-modal__scroll');
+  let lastFocused = null;
+
+  const openDir = (slug) => {
+    let found = false;
+    details.forEach((el) => {
+      const match = el.dataset.dir === slug;
+      el.hidden = !match;
+      if (match) found = true;
+    });
+    if (!found) return;
+    lastFocused = document.activeElement;
+    dirModal.classList.add('is-open');
+    dirModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    if (scrollArea) scrollArea.scrollTop = 0;
+    dirModal.querySelector('.dir-modal__close')?.focus();
+  };
+
+  const closeDir = () => {
+    dirModal.classList.remove('is-open');
+    dirModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    if (lastFocused) lastFocused.focus();
+  };
+
+  document.querySelectorAll('[data-dir]').forEach((btn) => {
+    if (btn.closest('.dir-modal')) return;
+    btn.addEventListener('click', () => openDir(btn.dataset.dir));
+  });
+
+  dirModal.querySelectorAll('[data-close]').forEach((el) => {
+    el.addEventListener('click', closeDir);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && dirModal.classList.contains('is-open')) closeDir();
+  });
+}
+
 const heroBg = document.querySelector('.hero__bg');
 if (heroBg && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
   window.addEventListener(

@@ -431,6 +431,80 @@ a { color: inherit; text-decoration: none; }
   .directions, .teachers, .reviews, .about, .services, .contacts { background-attachment: scroll; }
 }
 
+/* ============ Кнопка «Подробнее» на карточке ============ */
+.card__body { display: flex; flex-direction: column; }
+.card__more {
+  align-self: flex-start; margin-top: 16px; padding: 0;
+  background: none; border: none; cursor: pointer;
+  font-family: var(--sans); font-weight: 700; font-size: 14px;
+  color: var(--sage-deep); display: inline-flex; align-items: center; gap: 7px;
+  transition: gap .3s var(--ease), color .3s var(--ease);
+}
+.card__more span { transition: transform .3s var(--ease); }
+.card__more:hover { color: var(--clay); gap: 11px; }
+.card__more:hover span { transform: translateX(2px); }
+
+.directions-page { padding-top: 150px; }
+
+/* ============ Модальное окно направления ============ */
+.dir-modal {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  padding: 28px; opacity: 0; visibility: hidden;
+  transition: opacity .35s var(--ease), visibility .35s var(--ease);
+}
+.dir-modal.is-open { opacity: 1; visibility: visible; }
+.dir-modal__backdrop {
+  position: absolute; inset: 0;
+  background: rgba(28, 29, 24, .55); backdrop-filter: blur(3px);
+}
+.dir-modal__dialog {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 760px; max-height: 90vh;
+  background: var(--paper); border-radius: var(--radius);
+  border: 1px solid var(--line); overflow: hidden;
+  box-shadow: 0 40px 90px -30px rgba(28, 29, 24, .5);
+  transform: translateY(18px) scale(.98);
+  transition: transform .4s var(--ease);
+}
+.dir-modal.is-open .dir-modal__dialog { transform: translateY(0) scale(1); }
+.dir-modal__close {
+  position: absolute; top: 14px; right: 16px; z-index: 3;
+  width: 42px; height: 42px; border-radius: 50%;
+  border: none; cursor: pointer; background: rgba(255, 253, 248, .85);
+  color: var(--ink); font-size: 26px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .3s, transform .3s;
+}
+.dir-modal__close:hover { background: var(--bg-soft); transform: rotate(90deg); }
+.dir-modal__scroll { max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+.dir-detail__head { padding: 40px 44px 0; }
+.dir-detail__tag {
+  display: inline-block; font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+  font-weight: 700; color: var(--sage-deep); background: var(--bg-soft);
+  padding: 6px 12px; border-radius: 100px;
+}
+.dir-detail__title { font-family: var(--serif); font-size: 36px; font-weight: 600; margin: 16px 0 12px; line-height: 1.1; }
+.dir-detail__lead { font-size: 17px; color: var(--ink-soft); line-height: 1.6; }
+.dir-detail__gallery {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  padding: 28px 44px 0;
+}
+.dir-detail__photo { height: 200px; border-radius: var(--radius-sm); background-size: cover; background-position: center; }
+.dir-detail__body { padding: 24px 44px 0; }
+.dir-detail__body p { color: var(--ink-soft); font-size: 15.5px; line-height: 1.75; margin-bottom: 14px; }
+.dir-detail__benefits { padding: 8px 44px 0; }
+.dir-detail__benefits h3 { font-family: var(--serif); font-size: 22px; font-weight: 600; margin-bottom: 14px; }
+.dir-detail__benefits ul { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; }
+.dir-detail__benefits li {
+  position: relative; padding-left: 24px; font-size: 14.5px; color: var(--ink-soft); line-height: 1.5;
+}
+.dir-detail__benefits li::before {
+  content: "✦"; position: absolute; left: 0; top: 0; color: var(--sage-deep); font-size: 13px;
+}
+.dir-detail__cta { display: flex; gap: 12px; flex-wrap: wrap; padding: 32px 44px 44px; }
+
 /* ============ Responsive ============ */
 @media (max-width: 1024px) {
   .cards, .teachers__grid, .reviews__grid { grid-template-columns: repeat(2, 1fr); }
@@ -457,4 +531,19 @@ a { color: inherit; text-decoration: none; }
   .event { gap: 16px; }
   .footer__cols { grid-template-columns: 1fr; }
   .footer__bottom-inner { flex-direction: column; }
+}
+
+@media (max-width: 640px) {
+  .dir-modal { padding: 0; }
+  .dir-modal__dialog { max-width: 100%; max-height: 100%; height: 100%; border-radius: 0; border: none; }
+  .dir-modal__scroll { max-height: 100vh; }
+  .dir-detail__head { padding: 64px 22px 0; }
+  .dir-detail__title { font-size: 28px; }
+  .dir-detail__gallery { grid-template-columns: 1fr; padding: 22px 22px 0; }
+  .dir-detail__photo { height: 220px; }
+  .dir-detail__body { padding: 20px 22px 0; }
+  .dir-detail__benefits { padding: 6px 22px 0; }
+  .dir-detail__benefits ul { grid-template-columns: 1fr; }
+  .dir-detail__cta { padding: 26px 22px 34px; }
+  .dir-detail__cta .btn { width: 100%; }
 }

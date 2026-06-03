@@ -47,18 +47,16 @@
       </p>
 
       <div class="cards">
-        @foreach([
-          ['num' => '01', 'title' => 'Хатха-йога', 'text' => 'Сбалансированная работа с телом: асаны, дыхание и внимание.', 'img' => 'photo-1544367567-0f2fcb009e0b'],
-          ['num' => '02', 'title' => 'Инь-йога', 'text' => 'Мягкая практика с длительным удержанием поз — глубокое расслабление.', 'img' => 'photo-1506126613408-eca07ce68773'],
-          ['num' => '03', 'title' => 'Здоровая спина', 'text' => 'Бережная работа со спиной и суставами.', 'img' => 'photo-1518611012118-696072aa579a'],
-          ['num' => '04', 'title' => 'Йога-нидра', 'text' => 'Глубокое расслабление и восстановление.', 'img' => 'photo-1599447421416-3414500d18a5'],
-        ] as $i => $card)
-          <article class="card reveal" style="--d:{{ $i * 0.1 + 0.05 }}s">
+        @foreach(array_slice(config('directions.items'), 0, 8) as $i => $card)
+          <article class="card reveal" style="--d:{{ $i * 0.08 + 0.05 }}s">
             <div class="card__img" style="background-image:url('https://images.unsplash.com/{{ $card['img'] }}?auto=format&fit=crop&w=900&q=80')"></div>
             <div class="card__body">
               <span class="card__num">{{ $card['num'] }}</span>
               <h3 class="card__title">{{ $card['title'] }}</h3>
-              <p class="card__text">{{ $card['text'] }}</p>
+              <p class="card__text">{{ $card['short'] }}</p>
+              <button type="button" class="card__more" data-dir="{{ $card['slug'] }}">
+                Подробнее <span aria-hidden="true">→</span>
+              </button>
             </div>
           </article>
         @endforeach
@@ -244,4 +242,6 @@
       </form>
     </div>
   </section>
+
+  @include('partials.direction-modals')
 @endsection

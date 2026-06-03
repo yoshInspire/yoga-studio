@@ -3,15 +3,41 @@
 @section('title', 'Направления студии — Студия йоги Ирины Коленцевой')
 
 @section('content')
-  <section class="section page-placeholder">
+  <section class="section directions directions-page" id="directions">
     <div class="container">
-      <p class="eyebrow">Направления</p>
-      <h1 class="section__title">Направления студии</h1>
-      <p class="section__desc" style="max-width: 560px">
-        В студии представлены более 10 направлений йоги для гостей разного уровня подготовки.
-        Полный каталог направлений будет опубликован здесь.
+      <div class="section__head">
+        <div>
+          <p class="eyebrow reveal">Что мы практикуем</p>
+          <h1 class="section__title reveal">Направления студии</h1>
+        </div>
+      </div>
+
+      <p class="directions__intro reveal">
+        В студии представлено более 10 направлений йоги для гостей разного уровня подготовки.
+        Нажмите «Подробнее», чтобы узнать о практике и понять, что подойдёт именно вам.
       </p>
-      <a href="{{ route('home') }}#directions" class="btn btn--line" style="margin-top: 32px">Вернуться на главную</a>
+
+      <div class="cards">
+        @foreach(config('directions.items') as $i => $card)
+          <article class="card reveal" style="--d:{{ ($i % 4) * 0.08 + 0.05 }}s">
+            <div class="card__img" style="background-image:url('https://images.unsplash.com/{{ $card['img'] }}?auto=format&fit=crop&w=900&q=80')"></div>
+            <div class="card__body">
+              <span class="card__num">{{ $card['num'] }}</span>
+              <h3 class="card__title">{{ $card['title'] }}</h3>
+              <p class="card__text">{{ $card['short'] }}</p>
+              <button type="button" class="card__more" data-dir="{{ $card['slug'] }}">
+                Подробнее <span aria-hidden="true">&rarr;</span>
+              </button>
+            </div>
+          </article>
+        @endforeach
+      </div>
+
+      <div class="directions__more reveal">
+        <a href="{{ route('home') }}#contacts" class="btn btn--line btn--lg">Остались вопросы? Напишите нам</a>
+      </div>
     </div>
   </section>
+
+  @include('partials.direction-modals')
 @endsection
