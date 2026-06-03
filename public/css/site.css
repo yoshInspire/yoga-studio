@@ -426,41 +426,47 @@ a { color: inherit; text-decoration: none; }
 .contacts::before, .contacts::after {
   content: ""; position: absolute; z-index: 0; pointer-events: none;
   background-repeat: no-repeat; background-size: contain;
-  filter: saturate(.55) brightness(1.05);
+  /* multiply убирает белый фон картинки: остаются только листья */
+  mix-blend-mode: multiply;
+  filter: saturate(.7) brightness(1.04);
 }
 
 /* верхние мотивы */
 .directions::before { top: -70px; right: -90px; width: min(40vw, 460px); height: 690px;
-  background-image: url('/images/decor/leaf-frond.webp'); background-position: top right; opacity: .12; transform: rotate(4deg); }
+  background-image: url('/images/decor/leaf-frond.webp'); background-position: top right; opacity: .2; transform: rotate(4deg); }
 .about::before { top: -60px; right: -80px; width: min(28vw, 330px); height: 236px;
-  background-image: url('/images/decor/leaf-stem.webp'); background-position: top right; opacity: .14; transform: scaleX(-1); }
+  background-image: url('/images/decor/leaf-stem.webp'); background-position: top right; opacity: .22; transform: scaleX(-1); }
 .teachers::before { top: -60px; left: -90px; width: min(36vw, 420px); height: 560px;
-  background-image: url('/images/decor/leaf-corner.webp'); background-position: top left; opacity: .12; transform: scaleX(-1) scaleY(-1); }
+  background-image: url('/images/decor/leaf-corner.webp'); background-position: top left; opacity: .2; transform: scaleX(-1) scaleY(-1); }
 .services::before { top: -50px; right: -80px; width: min(30vw, 350px); height: 250px;
-  background-image: url('/images/decor/leaf-stem.webp'); background-position: top right; opacity: .14; }
+  background-image: url('/images/decor/leaf-stem.webp'); background-position: top right; opacity: .22; }
 .reviews::before { top: -70px; left: -90px; width: min(38vw, 440px); height: 660px;
-  background-image: url('/images/decor/leaf-frond.webp'); background-position: top left; opacity: .1; transform: scaleX(-1) rotate(-4deg); }
+  background-image: url('/images/decor/leaf-frond.webp'); background-position: top left; opacity: .18; transform: scaleX(-1) rotate(-4deg); }
 .contacts::before { top: -20px; right: -70px; width: min(30vw, 360px); height: 257px;
-  background-image: url('/images/decor/leaf-stem.webp'); background-position: top right; opacity: .1; }
+  background-image: url('/images/decor/leaf-stem.webp'); background-position: top right; opacity: .18; }
 
 /* нижние мотивы */
 .directions::after { bottom: -60px; left: -80px; width: min(32vw, 370px); height: 494px;
-  background-image: url('/images/decor/leaf-corner.webp'); background-position: bottom left; opacity: .1; transform: rotate(2deg); }
+  background-image: url('/images/decor/leaf-corner.webp'); background-position: bottom left; opacity: .16; transform: rotate(2deg); }
 .about::after { bottom: -60px; left: -80px; width: min(40vw, 440px); height: 590px;
-  background-image: url('/images/decor/leaf-corner.webp'); background-position: bottom left; opacity: .16; transform: scaleX(-1) rotate(-3deg); }
+  background-image: url('/images/decor/leaf-corner.webp'); background-position: bottom left; opacity: .24; transform: scaleX(-1) rotate(-3deg); }
 .teachers::after { bottom: -70px; right: -90px; width: min(36vw, 420px); height: 630px;
-  background-image: url('/images/decor/leaf-frond.webp'); background-position: bottom right; opacity: .1; transform: rotate(6deg); }
+  background-image: url('/images/decor/leaf-frond.webp'); background-position: bottom right; opacity: .16; transform: rotate(6deg); }
 .services::after { bottom: -60px; left: -90px; width: min(34vw, 400px); height: 533px;
-  background-image: url('/images/decor/leaf-corner.webp'); background-position: bottom left; opacity: .14; }
+  background-image: url('/images/decor/leaf-corner.webp'); background-position: bottom left; opacity: .22; }
 .reviews::after { bottom: -50px; right: -80px; width: min(28vw, 330px); height: 236px;
-  background-image: url('/images/decor/leaf-stem.webp'); background-position: bottom right; opacity: .1; transform: scaleY(-1); }
+  background-image: url('/images/decor/leaf-stem.webp'); background-position: bottom right; opacity: .16; transform: scaleY(-1); }
 .contacts::after { bottom: -50px; left: -80px; width: min(32vw, 370px); height: 494px;
-  background-image: url('/images/decor/leaf-corner.webp'); background-position: bottom left; opacity: .12; }
+  background-image: url('/images/decor/leaf-corner.webp'); background-position: bottom left; opacity: .18; }
 
+/* на мобильном — по одному мотиву на секцию, гарантированно в кадре */
 @media (max-width: 880px) {
-  .directions::before, .directions::after, .about::before, .about::after,
-  .teachers::before, .teachers::after, .services::before, .services::after,
-  .reviews::before, .reviews::after, .contacts::before, .contacts::after { opacity: .06; }
+  .directions::after, .about::after, .teachers::after,
+  .services::after, .reviews::after, .contacts::after { display: none; }
+  .directions::before, .about::before, .teachers::before,
+  .services::before, .reviews::before, .contacts::before { opacity: .22; top: -10px; height: 320px; }
+  .directions::before, .about::before, .services::before, .contacts::before { right: -25px; width: min(52vw, 230px); }
+  .teachers::before, .reviews::before { left: -25px; width: min(52vw, 230px); }
 }
 
 /* ============ Responsive ============ */
