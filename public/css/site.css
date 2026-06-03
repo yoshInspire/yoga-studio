@@ -413,6 +413,40 @@ a { color: inherit; text-decoration: none; }
   html { scroll-behavior: auto; }
 }
 
+/* ============ Декор: полупрозрачные листья ============ */
+.directions, .about, .contacts { position: relative; overflow: hidden; }
+.directions > .container, .about > .container, .contacts > .container { position: relative; z-index: 1; }
+
+.directions::before,
+.about::before,
+.contacts::after {
+  content: ""; position: absolute; z-index: 0; pointer-events: none;
+  background-repeat: no-repeat; background-size: contain;
+}
+.directions::before {
+  top: -70px; right: -90px; width: min(44vw, 500px); height: 750px;
+  background-image: url('/images/decor/leaf-frond.webp');
+  background-position: top right;
+  opacity: .12; filter: saturate(.6) brightness(1.05);
+  transform: rotate(4deg);
+}
+.about::before {
+  left: -80px; bottom: -60px; width: min(40vw, 440px); height: 590px;
+  background-image: url('/images/decor/leaf-corner.webp');
+  background-position: bottom left;
+  opacity: .16; filter: saturate(.55) brightness(1.06);
+  transform: scaleX(-1) rotate(-3deg);
+}
+.contacts::after {
+  right: -70px; top: -20px; width: min(30vw, 360px); height: 257px;
+  background-image: url('/images/decor/leaf-stem.webp');
+  background-position: top right;
+  opacity: .1; filter: saturate(.5) brightness(1.06);
+}
+@media (max-width: 880px) {
+  .directions::before, .about::before, .contacts::after { opacity: .07; }
+}
+
 /* ============ Responsive ============ */
 @media (max-width: 1024px) {
   .cards, .teachers__grid, .reviews__grid { grid-template-columns: repeat(2, 1fr); }
