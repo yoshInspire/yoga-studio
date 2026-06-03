@@ -46,12 +46,20 @@ if (dirModal) {
   const scrollArea = dirModal.querySelector('.dir-modal__scroll');
   let lastFocused = null;
 
+  const resetSlides = (el) => {
+    const slides = el.querySelectorAll('.dir-detail__slide');
+    slides.forEach((s, idx) => s.classList.toggle('is-active', idx === 0));
+  };
+
   const openDir = (slug) => {
     let found = false;
     details.forEach((el) => {
       const match = el.dataset.dir === slug;
       el.hidden = !match;
-      if (match) found = true;
+      if (match) {
+        found = true;
+        resetSlides(el);
+      }
     });
     if (!found) return;
     lastFocused = document.activeElement;
@@ -76,6 +84,20 @@ if (dirModal) {
 
   dirModal.querySelectorAll('[data-close]').forEach((el) => {
     el.addEventListener('click', closeDir);
+  });
+
+  dirModal.querySelectorAll('.dir-detail__nav').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const hero = btn.closest('.dir-detail__hero');
+      if (!hero) return;
+      const slides = [...hero.querySelectorAll('.dir-detail__slide')];
+      if (slides.length < 2) return;
+      let i = slides.findIndex((s) => s.classList.contains('is-active'));
+      if (i < 0) i = 0;
+      slides[i].classList.remove('is-active');
+      i = btn.dataset.nav === 'next' ? (i + 1) % slides.length : (i - 1 + slides.length) % slides.length;
+      slides[i].classList.add('is-active');
+    });
   });
 
   document.addEventListener('keydown', (e) => {

@@ -7,41 +7,51 @@
 
     <div class="dir-modal__scroll">
       @foreach(config('directions.items') as $dir)
+        @php($slides = array_merge([$dir['img']], $dir['gallery'] ?? []))
         <article class="dir-detail" data-dir="{{ $dir['slug'] }}" hidden>
-          <header class="dir-detail__head">
-            <span class="dir-detail__tag">{{ $dir['tag'] }}</span>
-            <h2 class="dir-detail__title" @if($loop->first) id="dirModalTitle" @endif>{{ $dir['title'] }}</h2>
-            <p class="dir-detail__lead">{{ $dir['lead'] }}</p>
-          </header>
-
-          @if(!empty($dir['gallery']))
-            <div class="dir-detail__gallery">
-              @foreach($dir['gallery'] as $photo)
-                <div class="dir-detail__photo" style="background-image:url('https://images.unsplash.com/{{ $photo }}?auto=format&fit=crop&w=900&q=80')"></div>
+          <div class="dir-detail__hero">
+            <div class="dir-detail__slides">
+              @foreach($slides as $k => $photo)
+                <div class="dir-detail__slide @if($k === 0) is-active @endif"
+                     style="background-image:url('https://images.unsplash.com/{{ $photo }}?auto=format&fit=crop&w=1200&q=80')"></div>
               @endforeach
             </div>
-          @endif
-
-          <div class="dir-detail__body">
-            @foreach($dir['body'] as $para)
-              <p>{{ $para }}</p>
-            @endforeach
+            <div class="dir-detail__hero-overlay"></div>
+            <span class="dir-detail__brand">ЙОГА<small>студия Ирины Коленцевой</small></span>
+            @if(count($slides) > 1)
+              <button type="button" class="dir-detail__nav dir-detail__nav--prev" data-nav="prev" aria-label="Предыдущее фото">&lsaquo;</button>
+              <button type="button" class="dir-detail__nav dir-detail__nav--next" data-nav="next" aria-label="Следующее фото">&rsaquo;</button>
+            @endif
           </div>
 
-          @if(!empty($dir['benefits']))
-            <div class="dir-detail__benefits">
-              <h3>Что это даёт</h3>
-              <ul>
-                @foreach($dir['benefits'] as $benefit)
-                  <li>{{ $benefit }}</li>
-                @endforeach
-              </ul>
-            </div>
-          @endif
+          <div class="dir-detail__content">
+            <header class="dir-detail__head">
+              <span class="dir-detail__tag">{{ $dir['tag'] }}</span>
+              <h2 class="dir-detail__title" @if($loop->first) id="dirModalTitle" @endif>{{ $dir['title'] }}</h2>
+              <p class="dir-detail__lead">{{ $dir['lead'] }}</p>
+            </header>
 
-          <div class="dir-detail__cta">
-            <a href="{{ route('schedule') }}" class="btn btn--solid btn--lg">Записаться на занятие</a>
-            <a href="{{ route('login') }}" class="btn btn--line btn--lg">Личный кабинет</a>
+            <div class="dir-detail__body">
+              @foreach($dir['body'] as $para)
+                <p>{{ $para }}</p>
+              @endforeach
+            </div>
+
+            @if(!empty($dir['benefits']))
+              <div class="dir-detail__benefits">
+                <h3>Что это даёт</h3>
+                <ul>
+                  @foreach($dir['benefits'] as $benefit)
+                    <li>{{ $benefit }}</li>
+                  @endforeach
+                </ul>
+              </div>
+            @endif
+
+            <div class="dir-detail__cta">
+              <a href="{{ route('schedule') }}" class="btn btn--solid btn--lg">Записаться на занятие</a>
+              <a href="{{ route('login') }}" class="btn btn--line btn--lg">Личный кабинет</a>
+            </div>
           </div>
         </article>
       @endforeach
