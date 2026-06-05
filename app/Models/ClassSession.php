@@ -1,0 +1,136 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\BookingStatus;
+use App\Enums\ClassSessionStatus;
+use App\Enums\SubscriptionType;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
+
+#[Fillable([
+    'title',
+    'description',
+    'starts_at',
+    'type',
+    'capacity',
+    'trainer_id',
+    'status',
+    'cancellation_reason',
+    'cancelled_at',
+])]
+class ClassSession extends Model
+{
+    protected function casts(): array
+    {
+        return [
+            'starts_at' => 'datetime',
+            'type' => SubscriptionType::class,
+            'capacity' => 'integer',
+            'status' => ClassSessionStatus::class,
+            'cancelled_at' => 'datetime',
+        ];
+    }
+
+    public function trainer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'trainer_id');
+    }
+
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    public function confirmedBookings(): HasMany
+    {
+        return $this->bookings()->where('status', BookingStatus::Confirmed);
+    }
+
+    public function confirmedCount(): int
+    {
+        return $this->confirmedBookings()->count();
+    }
+
+    public function freeSeats(): int
+    {
+        return max(0, $this->capacity - $this->confirmedCount());
+    }
+
+    public function isFull(): bool
+    {
+        return $this->freeSeats() === 0;
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === ClassSessionStatus::Cancelled;
+    }
+
+    public function isWithinBookingWindow(?Carbon $now = null): bool
+    {
+        $now ??= now();
+
+        return $this->starts_at->gt($now)
+            && $this->starts_at->lte($now->copy()->addDays((int) config('studio.booking_days_ahead')));
+    }
+
+    public function isBookable(?Carbon $now = null): bool
+    {
+        $now ??= now();
+
+        return $this->status === ClassSessionStatus::Scheduled
+            && ! $this->isFull()
+            && $this->isWithinBookingWindow($now);
+    }
+
+    public function slotStatus(): string
+    {
+        if ($this->isCancelled()) {
+            return 'cancelled';
+        }
+
+        if ($this->isFull()) {
+            return 'full';
+        }
+
+        return 'open';
+    }
+
+    public function formattedTime(): string
+    {
+        return $this->starts_at->format('H:i');
+    }
+
+    public function trainerName(): string
+    {
+        return $this->trainer?->shortName() ?? '—';
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    public function scopeInWeek(Builder $query, Carbon $weekStart): Builder
+    {
+        $start = $weekStart->copy()->startOfDay();
+        $end = $weekStart->copy()->addDays(6)->endOfDay();
+
+        return $query->whereBetween('starts_at', [$start, $end]);
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    public function scopeVisibleInSchedule(Builder $query, ?Carbon $now = null): Builder
+    {
+        $now ??= now();
+        $from = $now->copy()->startOfDay();
+        $to = $now->copy()->addDays((int) config('studio.booking_days_ahead'))->endOfDay();
+
+        return $query->whereBetween('starts_at', [$from, $to]);
+    }
+}

@@ -125,6 +125,16 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Subscription::class);
     }
 
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    public function trainedSessions(): HasMany
+    {
+        return $this->hasMany(ClassSession::class, 'trainer_id');
+    }
+
     public static function findByLogin(string $login): ?self
     {
         $login = trim($login);

@@ -2,45 +2,6 @@
 
 @section('title', 'Расписание занятий — Студия йоги Ирины Коленцевой')
 
-@php
-  // Демо-данные недели. В рабочей версии расписание формирует администратор,
-  // запись открывается на неделю вперёд, лимит мест задаётся для каждого занятия.
-  $week = [
-    ['key' => 'mon', 'name' => 'Пн', 'date' => '3 июня', 'slots' => [
-      ['time' => '08:00', 'title' => 'Хатха-йога', 'trainer' => 'Ирина Коленцева', 'type' => 'group', 'taken' => 3, 'total' => 6, 'status' => 'open'],
-      ['time' => '10:30', 'title' => 'Здоровая спина', 'trainer' => 'Ирина Коленцева', 'type' => 'group', 'taken' => 5, 'total' => 6, 'status' => 'open'],
-      ['time' => '19:00', 'title' => 'Инь-йога', 'trainer' => 'Ирина Коленцева', 'type' => 'group', 'taken' => 6, 'total' => 6, 'status' => 'full'],
-    ]],
-    ['key' => 'tue', 'name' => 'Вт', 'date' => '4 июня', 'slots' => [
-      ['time' => '09:00', 'title' => 'Мобилити-йога', 'trainer' => 'Александр', 'type' => 'group', 'taken' => 2, 'total' => 6, 'status' => 'open'],
-      ['time' => '12:00', 'title' => 'Индивидуальное занятие', 'trainer' => 'Ирина Коленцева', 'type' => 'indiv', 'taken' => 0, 'total' => 1, 'status' => 'open'],
-      ['time' => '18:30', 'title' => 'Функциональный тренинг', 'trainer' => 'Александр', 'type' => 'group', 'taken' => 4, 'total' => 6, 'status' => 'open'],
-    ]],
-    ['key' => 'wed', 'name' => 'Ср', 'date' => '5 июня', 'slots' => [
-      ['time' => '08:00', 'title' => 'Хатха-йога', 'trainer' => 'Ирина Коленцева', 'type' => 'group', 'taken' => 1, 'total' => 6, 'status' => 'open'],
-      ['time' => '11:00', 'title' => 'Йога для беременных', 'trainer' => 'Ирина Коленцева', 'type' => 'group', 'taken' => 3, 'total' => 6, 'status' => 'open'],
-      ['time' => '20:00', 'title' => 'Страус-йога на хедстендере', 'trainer' => 'Александр', 'type' => 'group', 'taken' => 2, 'total' => 5, 'status' => 'open'],
-    ]],
-    ['key' => 'thu', 'name' => 'Чт', 'date' => '6 июня', 'slots' => [
-      ['time' => '10:00', 'title' => 'Женское здоровье', 'trainer' => 'Ирина Коленцева', 'type' => 'group', 'taken' => 6, 'total' => 6, 'status' => 'full'],
-      ['time' => '19:00', 'title' => 'Аштанга-йога', 'trainer' => 'Александр', 'type' => 'group', 'taken' => 3, 'total' => 6, 'status' => 'open'],
-    ]],
-    ['key' => 'fri', 'name' => 'Пт', 'date' => '7 июня', 'slots' => [
-      ['time' => '09:00', 'title' => 'Пилатес', 'trainer' => 'Александр', 'type' => 'group', 'taken' => 2, 'total' => 6, 'status' => 'open'],
-      ['time' => '18:00', 'title' => 'Инь-йога', 'trainer' => 'Ирина Коленцева', 'type' => 'group', 'taken' => 1, 'total' => 6, 'status' => 'cancelled', 'reason' => 'Недостаточное количество участников в группе'],
-    ]],
-    ['key' => 'sat', 'name' => 'Сб', 'date' => '8 июня', 'slots' => [
-      ['time' => '11:00', 'title' => 'Йога-нидра (мероприятие)', 'trainer' => 'Ирина Коленцева', 'type' => 'event', 'taken' => 8, 'total' => 12, 'status' => 'open'],
-      ['time' => '16:00', 'title' => 'Медитация', 'trainer' => 'Ирина Коленцева', 'type' => 'group', 'taken' => 4, 'total' => 8, 'status' => 'open'],
-    ]],
-    ['key' => 'sun', 'name' => 'Вс', 'date' => '9 июня', 'slots' => [
-      ['time' => '11:00', 'title' => 'Хатха-йога', 'trainer' => 'Ирина Коленцева', 'type' => 'group', 'taken' => 2, 'total' => 6, 'status' => 'open'],
-    ]],
-  ];
-
-  $typeLabels = ['group' => 'Групповое', 'indiv' => 'Индивидуальное', 'event' => 'Мероприятие'];
-@endphp
-
 @section('content')
   <section class="section sched">
     <div class="container">
@@ -54,11 +15,18 @@
           </p>
         </div>
         <div class="sched__week" aria-label="Выбор недели">
-          <button type="button" class="sched__weeknav" aria-label="Предыдущая неделя">‹</button>
-          <span class="sched__weeklabel">3&nbsp;–&nbsp;9&nbsp;июня</span>
-          <button type="button" class="sched__weeknav" aria-label="Следующая неделя">›</button>
+          <a href="{{ route('schedule', ['week' => $prevWeek]) }}" class="sched__weeknav" aria-label="Предыдущая неделя">‹</a>
+          <span class="sched__weeklabel">{{ $weekLabel }}</span>
+          <a href="{{ route('schedule', ['week' => $nextWeek]) }}" class="sched__weeknav" aria-label="Следующая неделя">›</a>
         </div>
       </div>
+
+      @if (session('status'))
+        <div class="auth__alert auth__alert--ok reveal" style="margin-bottom: 20px">{{ session('status') }}</div>
+      @endif
+      @if ($errors->has('booking'))
+        <div class="auth__alert auth__alert--error reveal" style="margin-bottom: 20px">{{ $errors->first('booking') }}</div>
+      @endif
 
       <div class="sched__days reveal" role="tablist" id="schedDays">
         @foreach($week as $i => $day)
@@ -83,7 +51,7 @@
                 <div class="slot__main">
                   <h3 class="slot__title">{{ $slot['title'] }}</h3>
                   <p class="slot__meta">
-                    <span class="badge badge--{{ $slot['type'] }}">{{ $typeLabels[$slot['type']] }}</span>
+                    <span class="badge badge--{{ $slot['type'] }}">{{ $typeLabels[$slot['type']] ?? $slot['type'] }}</span>
                     <span class="slot__trainer">{{ $slot['trainer'] }}</span>
                   </p>
                 </div>
@@ -100,7 +68,15 @@
                   @endif
                 </div>
                 <div class="slot__action">
-                  @if($slot['status'] === 'open')
+                  @if($slot['user_booked'] ?? false)
+                    <span class="btn btn--ghost" style="pointer-events:none">Вы записаны</span>
+                  @elseif($slot['status'] === 'open' && ($slot['bookable'] ?? false) && auth()->check() && auth()->user()->isClient())
+                    <form action="{{ route('bookings.store') }}" method="post">
+                      @csrf
+                      <input type="hidden" name="class_session_id" value="{{ $slot['id'] }}" />
+                      <button type="submit" class="btn btn--solid">Записаться</button>
+                    </form>
+                  @elseif($slot['status'] === 'open' && ($slot['bookable'] ?? false))
                     <a href="{{ route('login') }}" class="btn btn--solid">Записаться</a>
                   @elseif($slot['status'] === 'full')
                     <button type="button" class="btn btn--ghost" disabled>Мест нет</button>

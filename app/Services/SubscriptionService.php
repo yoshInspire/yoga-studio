@@ -89,4 +89,15 @@ class SubscriptionService
     {
         return $subscriptionType->isCompatibleWith($classType);
     }
+
+    public function refundUsage(SubscriptionUsage $usage): void
+    {
+        $subscription = $usage->subscription;
+
+        if ($subscription->sessions_used > 0) {
+            $subscription->decrement('sessions_used');
+        }
+
+        $usage->delete();
+    }
 }

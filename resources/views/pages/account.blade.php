@@ -89,21 +89,35 @@
           <div class="lk__panel is-hidden" data-panel="bookings">
             <h1 class="lk__title">Мои записи</h1>
             <p class="lk__lead">Записи на ближайшую неделю. Отменить без списания занятия можно не позднее чем за 4 часа до начала.</p>
+            @if ($errors->has('booking'))
+              <div class="auth__alert auth__alert--error" style="margin-bottom: 16px">{{ $errors->first('booking') }}</div>
+            @endif
             <div class="lk-list">
-              @forelse($bookings as $b)
+              @forelse($bookings as $booking)
+                @php $session = $booking->classSession; @endphp
                 <div class="lk-row">
                   <div class="lk-row__when">
-                    <strong>{{ $b['time'] }}</strong>
-                    <span>{{ $b['date'] }}</span>
+                    <strong>{{ $session->formattedTime() }}</strong>
+                    <span>{{ $session->starts_at->translatedFormat('D, j F') }}</span>
                   </div>
                   <div class="lk-row__main">
-                    <h3>{{ $b['title'] }}</h3>
-                    <p><span class="badge badge--{{ $b['type'] === 'Индивидуальное' ? 'indiv' : 'group' }}">{{ $b['type'] }}</span> {{ $b['trainer'] }}</p>
+                    <h3>{{ $session->title }}</h3>
+                    <p>
+                      <span class="badge badge--{{ $session->type->badgeClass() }}">{{ $session->type->shortLabel() }}</span>
+                      {{ $session->trainerName() }}
+                    </p>
                   </div>
-                  <button type="button" class="btn btn--ghost">Отменить</button>
+                  @if($booking->canBeCancelledByClient())
+                    <form action="{{ route('bookings.cancel', $booking) }}" method="post">
+                      @csrf
+                      <button type="submit" class="btn btn--ghost">Отменить</button>
+                    </form>
+                  @else
+                    <button type="button" class="btn btn--ghost" disabled title="Отмена менее чем за 4 часа недоступна">Отменить</button>
+                  @endif
                 </div>
               @empty
-                <p class="lk__empty">Пока нет активных записей.</p>
+                <p class="lk__empty">Пока нет активных записей. <a href="{{ route('schedule') }}">Посмотреть расписание</a></p>
               @endforelse
             </div>
             <a href="{{ route('schedule') }}" class="btn btn--solid" style="margin-top: 6px">Записаться на занятие</a>

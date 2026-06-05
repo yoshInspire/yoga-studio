@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\BookingStatus;
 use App\Services\SubscriptionService;
 use Illuminate\View\View;
 
@@ -11,16 +12,17 @@ class AccountController extends Controller
     {
         $user = auth()->user();
 
-        $activeSubscriptions = $subscriptions->activeForUser($user);
         $allSubscriptions = $user->subscriptions()
             ->orderByDesc('ends_at')
             ->get();
 
-        // Записи, история и отмены — демо до блока 5.
-        $bookings = [
-            ['date' => 'Ср, 5 июня', 'time' => '08:00', 'title' => 'Хатха-йога', 'trainer' => 'Ирина Коленцева', 'type' => 'Групповое'],
-            ['date' => 'Пт, 7 июня', 'time' => '12:00', 'title' => 'Индивидуальное занятие', 'trainer' => 'Ирина Коленцева', 'type' => 'Индивидуальное'],
-        ];
+        $upcomingBookings = $user->bookings()
+            ->upcoming()
+            ->with(['classSession.trainer', 'subscription'])
+            ->get()
+            ->sortBy(fn ($b) => $b->classSession->starts_at)
+            ->values();
+
         $history = $user->subscriptions()
             ->with(['usages' => fn ($q) => $q->orderByDesc('used_at')])
             ->get()
@@ -34,15 +36,26 @@ class AccountController extends Controller
             ->values()
             ->map(fn (array $row) => collect($row)->except('sort')->all())
             ->all();
-        $cancelled = [
-            ['date' => 'Пт, 7 июня · 18:00', 'title' => 'Инь-йога', 'reason' => 'Недостаточное количество участников в группе'],
-        ];
+
+        $cancelled = $user->bookings()
+            ->whereIn('status', [
+                BookingStatus::ClassCancelled,
+                BookingStatus::CancelledByAdmin,
+            ])
+            ->with('classSession')
+            ->orderByDesc('cancelled_at')
+            ->get()
+            ->map(fn ($booking) => [
+                'date' => $booking->classSession->starts_at->translatedFormat('D, j F').' · '.$booking->classSession->formattedTime(),
+                'title' => $booking->classSession->title,
+                'reason' => $booking->cancellation_reason ?? $booking->classSession->cancellation_reason ?? 'Занятие отменено',
+            ])
+            ->all();
 
         return view('pages.account', [
             'user' => $user,
             'subscriptions' => $allSubscriptions,
-            'activeSubscriptions' => $activeSubscriptions,
-            'bookings' => $bookings,
+            'bookings' => $upcomingBookings,
             'history' => $history,
             'cancelled' => $cancelled,
         ]);
