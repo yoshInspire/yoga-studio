@@ -1,0 +1,175 @@
+<?php
+
+namespace App\Filament\Resources\Users;
+
+use App\Enums\UserRole;
+use App\Filament\Resources\Users\Pages\CreateUser;
+use App\Filament\Resources\Users\Pages\EditUser;
+use App\Filament\Resources\Users\Pages\ListUsers;
+use App\Models\User;
+use App\Support\PhoneNormalizer;
+use BackedEnum;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
+class UserResource extends Resource
+{
+    protected static ?string $model = User::class;
+
+    protected static ?string $navigationLabel = 'Пользователи';
+
+    protected static ?string $modelLabel = 'пользователь';
+
+    protected static ?string $pluralModelLabel = 'пользователи';
+
+    protected static ?string $recordTitleAttribute = 'last_name';
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Section::make('Личные данные')
+                    ->schema([
+                        Grid::make(2)->schema([
+                            TextInput::make('last_name')
+                                ->label('Фамилия')
+                                ->required()
+                                ->maxLength(100),
+                            TextInput::make('first_name')
+                                ->label('Имя')
+                                ->required()
+                                ->maxLength(100),
+                        ]),
+                        TextInput::make('patronymic')
+                            ->label('Отчество')
+                            ->maxLength(100),
+                        Grid::make(3)->schema([
+                            TextInput::make('birth_day')
+                                ->label('День')
+                                ->numeric()
+                                ->minValue(1)
+                                ->maxValue(31),
+                            TextInput::make('birth_month')
+                                ->label('Месяц')
+                                ->numeric()
+                                ->minValue(1)
+                                ->maxValue(12),
+                            TextInput::make('birth_year')
+                                ->label('Год')
+                                ->numeric()
+                                ->minValue(1920)
+                                ->maxValue(2026),
+                        ]),
+                    ]),
+                Section::make('Контакты и доступ')
+                    ->schema([
+                        TextInput::make('phone')
+                            ->label('Телефон')
+                            ->tel()
+                            ->required()
+                            ->maxLength(20)
+                            ->dehydrateStateUsing(fn (?string $state) => PhoneNormalizer::normalize($state))
+                            ->formatStateUsing(fn (?string $state) => PhoneNormalizer::format($state) ?? $state),
+                        TextInput::make('email')
+                            ->label('Email')
+                            ->email()
+                            ->maxLength(255)
+                            ->unique(ignoreRecord: true),
+                        Select::make('role')
+                            ->label('Роль')
+                            ->options(collect(UserRole::cases())->mapWithKeys(
+                                fn (UserRole $role) => [$role->value => $role->label()]
+                            )->all())
+                            ->required()
+                            ->default(UserRole::Client->value),
+                        TextInput::make('password')
+                            ->label('Пароль')
+                            ->password()
+                            ->revealable()
+                            ->required(fn (string $operation): bool => $operation === 'create')
+                            ->dehydrated(fn (?string $state): bool => filled($state))
+                            ->minLength(8)
+                            ->helperText('Оставьте пустым при редактировании, если менять пароль не нужно.'),
+                    ]),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('last_name')
+                    ->label('Фамилия')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('first_name')
+                    ->label('Имя')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('phone')
+                    ->label('Телефон')
+                    ->formatStateUsing(fn (?string $state) => PhoneNormalizer::format($state) ?? '—')
+                    ->searchable(),
+                TextColumn::make('email')
+                    ->label('Email')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('role')
+                    ->label('Роль')
+                    ->badge()
+                    ->formatStateUsing(fn (UserRole $state) => $state->label()),
+                TextColumn::make('created_at')
+                    ->label('Регистрация')
+                    ->dateTime('d.m.Y')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->defaultSort('last_name')
+            ->filters([
+                SelectFilter::make('role')
+                    ->label('Роль')
+                    ->options(collect(UserRole::cases())->mapWithKeys(
+                        fn (UserRole $role) => [$role->value => $role->label()]
+                    )->all()),
+            ])
+            ->recordActions([
+                EditAction::make(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => ListUsers::route('/'),
+            'create' => CreateUser::route('/create'),
+            'edit' => EditUser::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['last_name', 'first_name', 'phone', 'email'];
+    }
+}

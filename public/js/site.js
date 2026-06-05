@@ -148,6 +148,20 @@ if (authTabs.length) {
   };
   authTabs.forEach((t) => t.addEventListener('click', () => switchAuth(t.dataset.tab)));
   document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => switchAuth(b.dataset.goto)));
+
+  const patronymicToggle = document.getElementById('patronymic-toggle');
+  const patronymicField = document.getElementById('patronymic-field');
+  if (patronymicToggle && patronymicField) {
+    const syncPatronymic = () => {
+      patronymicField.classList.toggle('is-hidden', !patronymicToggle.checked);
+      if (!patronymicToggle.checked) {
+        const input = patronymicField.querySelector('input');
+        if (input) input.value = '';
+      }
+    };
+    patronymicToggle.addEventListener('change', syncPatronymic);
+    syncPatronymic();
+  }
 }
 
 // ===== Разделы личного кабинета =====

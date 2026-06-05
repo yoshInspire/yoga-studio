@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=14" />
+  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=15" />
   @stack('head')
 </head>
 <body>
@@ -39,7 +39,11 @@
 
       <div class="header__actions">
         <a href="{{ route('schedule') }}" class="btn btn--ghost">Расписание</a>
-        <a href="{{ route('login') }}" class="btn btn--solid">Личный кабинет</a>
+        @auth
+          <a href="{{ route('account') }}" class="btn btn--solid">Личный кабинет</a>
+        @else
+          <a href="{{ route('login') }}" class="btn btn--solid">Личный кабинет</a>
+        @endauth
         <button class="burger" id="burger" type="button" aria-label="Меню" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
@@ -56,7 +60,11 @@
     <a href="{{ route('home') }}#contacts" class="mobile-menu__link">Контакты</a>
     <div class="mobile-menu__actions">
       <a href="{{ route('schedule') }}" class="btn btn--ghost">Расписание</a>
-      <a href="{{ route('login') }}" class="btn btn--solid">Личный кабинет</a>
+      @auth
+        <a href="{{ route('account') }}" class="btn btn--solid">Личный кабинет</a>
+      @else
+        <a href="{{ route('login') }}" class="btn btn--solid">Личный кабинет</a>
+      @endauth
     </div>
   </div>
 
@@ -103,7 +111,7 @@
     </div>
   </footer>
 
-  <script src="{{ asset('js/site.js') }}?v=6"></script>
+  <script src="{{ asset('js/site.js') }}?v=7"></script>
   @stack('scripts')
 </body>
 </html>

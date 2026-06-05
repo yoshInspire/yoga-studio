@@ -4,6 +4,7 @@
 
 @php
   $months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  $activeTab = $activeTab ?? session('auth_tab', 'login');
 @endphp
 
 @section('content')
@@ -24,24 +25,38 @@
         </aside>
 
         <div class="auth__panel">
+          @if (session('status'))
+            <div class="auth__alert auth__alert--ok">{{ session('status') }}</div>
+          @endif
+
           <div class="auth__tabs" role="tablist">
-            <button type="button" class="auth__tab is-active" data-tab="login" role="tab" aria-selected="true">Вход</button>
-            <button type="button" class="auth__tab" data-tab="register" role="tab" aria-selected="false">Регистрация</button>
+            <button type="button" class="auth__tab {{ $activeTab === 'login' ? 'is-active' : '' }}" data-tab="login" role="tab" aria-selected="{{ $activeTab === 'login' ? 'true' : 'false' }}">Вход</button>
+            <button type="button" class="auth__tab {{ $activeTab === 'register' ? 'is-active' : '' }}" data-tab="register" role="tab" aria-selected="{{ $activeTab === 'register' ? 'true' : 'false' }}">Регистрация</button>
           </div>
 
           {{-- Вход --}}
-          <form class="auth__form" data-form="login" action="{{ route('account') }}" method="get">
-            <p class="form__sub">Введите телефон и пароль, чтобы войти.</p>
+          <form class="auth__form {{ $activeTab === 'register' ? 'is-hidden' : '' }}" data-form="login" action="{{ route('login.store') }}" method="post">
+            @csrf
+            <p class="form__sub">Введите email или телефон и пароль.</p>
+
+            @if ($errors->getBag('login')->any())
+              <div class="auth__alert auth__alert--error">
+                @foreach ($errors->getBag('login')->all() as $error)
+                  <p>{{ $error }}</p>
+                @endforeach
+              </div>
+            @endif
+
             <div class="form__row">
-              <label class="auth__label" for="login-phone">Телефон</label>
-              <input type="tel" id="login-phone" name="phone" placeholder="+7 (___) ___-__-__" autocomplete="tel" />
+              <label class="auth__label" for="login-id">Email или телефон</label>
+              <input type="text" id="login-id" name="login" value="{{ old('login') }}" placeholder="email@example.com или +7 (___) ___-__-__" autocomplete="username" required />
             </div>
             <div class="form__row">
               <label class="auth__label" for="login-pass">Пароль</label>
-              <input type="password" id="login-pass" name="password" placeholder="Ваш пароль" autocomplete="current-password" />
+              <input type="password" id="login-pass" name="password" placeholder="Ваш пароль" autocomplete="current-password" required />
             </div>
             <div class="auth__row-between">
-              <label class="auth__check"><input type="checkbox" /> Запомнить меня</label>
+              <label class="auth__check"><input type="checkbox" name="remember" value="1" @checked(old('remember')) /> Запомнить меня</label>
               <a href="#" class="auth__minor">Забыли пароль?</a>
             </div>
             <button type="submit" class="btn btn--solid btn--full btn--lg">Войти</button>
@@ -49,49 +64,79 @@
           </form>
 
           {{-- Регистрация --}}
-          <form class="auth__form is-hidden" data-form="register" action="{{ route('account') }}" method="get">
+          <form class="auth__form {{ $activeTab === 'register' ? '' : 'is-hidden' }}" data-form="register" action="{{ route('register') }}" method="post">
+            @csrf
             <p class="form__sub">Заполните данные — первое занятие пробное.</p>
+
+            @if ($errors->getBag('register')->any())
+              <div class="auth__alert auth__alert--error">
+                @foreach ($errors->getBag('register')->all() as $error)
+                  <p>{{ $error }}</p>
+                @endforeach
+              </div>
+            @endif
+
             <div class="auth__row2">
               <div class="form__row">
                 <label class="auth__label" for="reg-name">Имя</label>
-                <input type="text" id="reg-name" name="first_name" placeholder="Имя" autocomplete="given-name" />
+                <input type="text" id="reg-name" name="first_name" value="{{ old('first_name') }}" placeholder="Имя" autocomplete="given-name" required />
               </div>
               <div class="form__row">
                 <label class="auth__label" for="reg-surname">Фамилия</label>
-                <input type="text" id="reg-surname" name="last_name" placeholder="Фамилия" autocomplete="family-name" />
+                <input type="text" id="reg-surname" name="last_name" value="{{ old('last_name') }}" placeholder="Фамилия" autocomplete="family-name" required />
               </div>
+            </div>
+
+            <label class="auth__check auth__check--block" style="margin-bottom: 10px">
+              <input type="checkbox" id="patronymic-toggle" @checked(old('patronymic')) /> Указать отчество
+            </label>
+            <div class="form__row auth__patronymic {{ old('patronymic') ? '' : 'is-hidden' }}" id="patronymic-field">
+              <label class="auth__label" for="reg-patronymic">Отчество</label>
+              <input type="text" id="reg-patronymic" name="patronymic" value="{{ old('patronymic') }}" placeholder="Отчество" autocomplete="additional-name" />
             </div>
 
             <label class="auth__label">Дата рождения</label>
             <div class="auth__row3">
               <div class="form__row">
-                <select name="bday" aria-label="День">
+                <select name="birth_day" aria-label="День" required>
                   <option value="">День</option>
-                  @for($d = 1; $d <= 31; $d++)<option>{{ $d }}</option>@endfor
+                  @for($d = 1; $d <= 31; $d++)
+                    <option value="{{ $d }}" @selected((int) old('birth_day') === $d)>{{ $d }}</option>
+                  @endfor
                 </select>
               </div>
               <div class="form__row">
-                <select name="bmonth" aria-label="Месяц">
+                <select name="birth_month" aria-label="Месяц" required>
                   <option value="">Месяц</option>
-                  @foreach($months as $idx => $m)<option value="{{ $idx + 1 }}">{{ $m }}</option>@endforeach
+                  @foreach($months as $idx => $m)
+                    <option value="{{ $idx + 1 }}" @selected((int) old('birth_month') === $idx + 1)>{{ $m }}</option>
+                  @endforeach
                 </select>
               </div>
               <div class="form__row">
-                <input type="number" name="byear" placeholder="Год" min="1920" max="2020" />
+                <input type="number" name="birth_year" value="{{ old('birth_year') }}" placeholder="Год" min="1920" max="2026" />
               </div>
             </div>
             <p class="auth__hint">Год рождения указывать не обязательно — достаточно дня и месяца.</p>
 
             <div class="form__row">
               <label class="auth__label" for="reg-phone">Телефон</label>
-              <input type="tel" id="reg-phone" name="phone" placeholder="+7 (___) ___-__-__" autocomplete="tel" />
+              <input type="tel" id="reg-phone" name="phone" value="{{ old('phone') }}" placeholder="+7 (___) ___-__-__" autocomplete="tel" required />
+            </div>
+            <div class="form__row">
+              <label class="auth__label" for="reg-email">Email <span class="auth__optional">(необязательно)</span></label>
+              <input type="email" id="reg-email" name="email" value="{{ old('email') }}" placeholder="email@example.com" autocomplete="email" />
             </div>
             <div class="form__row">
               <label class="auth__label" for="reg-pass">Пароль</label>
-              <input type="password" id="reg-pass" name="password" placeholder="Придумайте пароль" autocomplete="new-password" />
+              <input type="password" id="reg-pass" name="password" placeholder="Не менее 8 символов" autocomplete="new-password" required />
+            </div>
+            <div class="form__row">
+              <label class="auth__label" for="reg-pass-confirm">Повторите пароль</label>
+              <input type="password" id="reg-pass-confirm" name="password_confirmation" placeholder="Повторите пароль" autocomplete="new-password" required />
             </div>
             <label class="auth__check auth__check--block">
-              <input type="checkbox" /> Соглашаюсь с условиями <a href="#" class="auth__minor">договора-оферты</a>
+              <input type="checkbox" name="offer_accepted" value="1" @checked(old('offer_accepted')) required /> Соглашаюсь с условиями <a href="#" class="auth__minor">договора-оферты</a>
             </label>
             <button type="submit" class="btn btn--solid btn--full btn--lg">Зарегистрироваться</button>
             <p class="auth__switch">Уже есть аккаунт? <button type="button" class="auth__link" data-goto="login">Войти</button></p>

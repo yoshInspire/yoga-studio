@@ -3,7 +3,7 @@
 @section('title', 'Личный кабинет — Студия йоги Ирины Коленцевой')
 
 @php
-  // Демо-данные кабинета (пока без бэкенда: блок «Регистрация, вход, роли» в разработке).
+  // Абонементы, записи и история — демо до блоков 4–5.
   $subs = [
     ['name' => 'Групповые занятия', 'type' => 'group', 'left' => 6, 'total' => 8, 'start' => '20 мая 2026', 'end' => '20 июля 2026'],
     ['name' => 'Индивидуальные занятия', 'type' => 'indiv', 'left' => 2, 'total' => 4, 'start' => '01 июня 2026', 'end' => '01 августа 2026'],
@@ -29,9 +29,9 @@
         {{-- Боковая навигация --}}
         <aside class="lk__aside">
           <div class="lk__user">
-            <span class="lk__avatar">АК</span>
+            <span class="lk__avatar">{{ $user->initials() }}</span>
             <div>
-              <strong class="lk__user-name">Анна Кузнецова</strong>
+              <strong class="lk__user-name">{{ $user->shortName() }}</strong>
               <span class="lk__user-role">Клиент студии</span>
             </div>
           </div>
@@ -43,7 +43,10 @@
             <button type="button" class="lk__navlink" data-sec="cancelled">Отменённые занятия</button>
             <button type="button" class="lk__navlink" data-sec="oferta">Договор-оферта</button>
             <a href="{{ route('schedule') }}" class="lk__navlink lk__navlink--out">Расписание и запись</a>
-            <a href="{{ route('home') }}" class="lk__navlink lk__navlink--exit">Выйти</a>
+            <form action="{{ route('logout') }}" method="post" class="lk__logout">
+              @csrf
+              <button type="submit" class="lk__navlink lk__navlink--exit">Выйти</button>
+            </form>
           </nav>
         </aside>
 
@@ -53,11 +56,20 @@
           <div class="lk__panel" data-panel="profile">
             <h1 class="lk__title">Профиль</h1>
             <p class="lk__lead">Данные из регистрации. Их можно изменить — или попросить администратора.</p>
+            @if (session('status'))
+              <div class="auth__alert auth__alert--ok" style="margin-bottom: 18px">{{ session('status') }}</div>
+            @endif
             <dl class="lk__fields">
-              <div class="lk__field"><dt>Имя</dt><dd>Анна</dd></div>
-              <div class="lk__field"><dt>Фамилия</dt><dd>Кузнецова</dd></div>
-              <div class="lk__field"><dt>Дата рождения</dt><dd>14 марта</dd></div>
-              <div class="lk__field"><dt>Телефон</dt><dd>+7 (964) 783-43-53</dd></div>
+              <div class="lk__field"><dt>Имя</dt><dd>{{ $user->first_name }}</dd></div>
+              <div class="lk__field"><dt>Фамилия</dt><dd>{{ $user->last_name }}</dd></div>
+              @if ($user->patronymic)
+                <div class="lk__field"><dt>Отчество</dt><dd>{{ $user->patronymic }}</dd></div>
+              @endif
+              <div class="lk__field"><dt>Дата рождения</dt><dd>{{ $user->formattedBirthDate() ?? '—' }}</dd></div>
+              <div class="lk__field"><dt>Телефон</dt><dd>{{ $user->formattedPhone() ?? '—' }}</dd></div>
+              @if ($user->email)
+                <div class="lk__field"><dt>Email</dt><dd>{{ $user->email }}</dd></div>
+              @endif
             </dl>
             <button type="button" class="btn btn--line">Редактировать профиль</button>
           </div>
