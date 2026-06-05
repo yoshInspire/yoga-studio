@@ -49,7 +49,7 @@
 
             <div class="form__row">
               <label class="auth__label" for="login-id">Email или телефон</label>
-              <input type="text" id="login-id" name="login" value="{{ old('login') }}" placeholder="email@example.com или +7 (___) ___-__-__" autocomplete="username" required />
+              <input type="text" id="login-id" name="login" value="{{ old('login') }}" placeholder="email@example.com или +7 (___) ___-__-__" autocomplete="username" inputmode="text" data-phone-mask="optional" required />
             </div>
             <div class="form__row">
               <label class="auth__label" for="login-pass">Пароль</label>
@@ -66,7 +66,6 @@
           {{-- Регистрация --}}
           <form class="auth__form {{ $activeTab === 'register' ? '' : 'is-hidden' }}" data-form="register" action="{{ route('register') }}" method="post">
             @csrf
-            <p class="form__sub">Заполните данные — первое занятие пробное.</p>
 
             @if ($errors->getBag('register')->any())
               <div class="auth__alert auth__alert--error">
@@ -117,11 +116,10 @@
                 <input type="number" name="birth_year" value="{{ old('birth_year') }}" placeholder="Год" min="1920" max="2026" />
               </div>
             </div>
-            <p class="auth__hint">Год рождения указывать не обязательно — достаточно дня и месяца.</p>
 
             <div class="form__row">
               <label class="auth__label" for="reg-phone">Телефон</label>
-              <input type="tel" id="reg-phone" name="phone" value="{{ old('phone') }}" placeholder="+7 (___) ___-__-__" autocomplete="tel" required />
+              <input type="tel" id="reg-phone" name="phone" value="{{ old('phone') }}" placeholder="+7 (___) ___-__-__" autocomplete="tel" inputmode="tel" data-phone-mask required />
             </div>
             <div class="form__row">
               <label class="auth__label" for="reg-email">Email <span class="auth__optional">(необязательно)</span></label>

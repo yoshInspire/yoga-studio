@@ -134,6 +134,45 @@ if (faqList) {
   });
 }
 
+// ===== Маска телефона +7 (___) ___-__-__ =====
+const formatRuPhone = (raw) => {
+  let digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('8')) digits = `7${digits.slice(1)}`;
+  if (digits.startsWith('7')) digits = digits.slice(1);
+  digits = digits.slice(0, 10);
+  if (!digits) return '';
+
+  let out = '+7 (';
+  out += digits.slice(0, 3);
+  if (digits.length <= 3) return out;
+
+  out += `) ${digits.slice(3, 6)}`;
+  if (digits.length <= 6) return out;
+
+  out += `-${digits.slice(6, 8)}`;
+  if (digits.length <= 8) return out;
+
+  return `${out}-${digits.slice(8, 10)}`;
+};
+
+const looksLikePhone = (value) => /^[\d+\s()-]/.test(value.trim()) && !value.includes('@');
+
+const attachPhoneMask = (input, allowEmail = false) => {
+  const apply = () => {
+    if (allowEmail && input.value.includes('@')) return;
+    if (allowEmail && input.value.trim() && !looksLikePhone(input.value)) return;
+
+    const formatted = formatRuPhone(input.value);
+    if (input.value !== formatted) input.value = formatted;
+  };
+
+  input.addEventListener('input', apply);
+  input.addEventListener('blur', apply);
+  if (input.value && (!allowEmail || looksLikePhone(input.value))) {
+    input.value = formatRuPhone(input.value);
+  }
+};
+
 // ===== Вкладки входа / регистрации =====
 const authTabs = document.querySelectorAll('.auth__tab');
 if (authTabs.length) {
@@ -162,6 +201,10 @@ if (authTabs.length) {
     patronymicToggle.addEventListener('change', syncPatronymic);
     syncPatronymic();
   }
+
+  document.querySelectorAll('[data-phone-mask]').forEach((input) => {
+    attachPhoneMask(input, input.dataset.phoneMask === 'optional');
+  });
 }
 
 // ===== Разделы личного кабинета =====
