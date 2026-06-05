@@ -17,10 +17,10 @@ cd {APP_DIR}
 git config --global --add safe.directory {APP_DIR}
 git pull origin main
 
-if ! dpkg -l php8.3-intl 2>/dev/null | grep -q '^ii'; then
+if ! dpkg -l php8.3-intl 2>/dev/null | grep -q '^ii' || ! dpkg -l php8.3-gd 2>/dev/null | grep -q '^ii'; then
   export DEBIAN_FRONTEND=noninteractive
   apt-get update -y
-  apt-get install -y php8.3-intl
+  apt-get install -y php8.3-intl php8.3-gd php8.3-zip
 fi
 
 export COMPOSER_ALLOW_SUPERUSER=1
