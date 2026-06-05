@@ -53,7 +53,13 @@
             </div>
             <div class="form__row">
               <label class="auth__label" for="login-pass">Пароль</label>
-              <input type="password" id="login-pass" name="password" placeholder="Ваш пароль" autocomplete="current-password" required />
+              @include('partials.password-field', [
+                'id' => 'login-pass',
+                'name' => 'password',
+                'placeholder' => 'Ваш пароль',
+                'autocomplete' => 'current-password',
+                'required' => true,
+              ])
             </div>
             <div class="auth__row-between">
               <label class="auth__check"><input type="checkbox" name="remember" value="1" @checked(old('remember')) /> Запомнить меня</label>
@@ -127,11 +133,23 @@
             </div>
             <div class="form__row">
               <label class="auth__label" for="reg-pass">Пароль</label>
-              <input type="password" id="reg-pass" name="password" placeholder="Не менее 8 символов" autocomplete="new-password" required />
+              @include('partials.password-field', [
+                'id' => 'reg-pass',
+                'name' => 'password',
+                'placeholder' => 'Не менее 8 символов',
+                'autocomplete' => 'new-password',
+                'required' => true,
+              ])
             </div>
             <div class="form__row">
               <label class="auth__label" for="reg-pass-confirm">Повторите пароль</label>
-              <input type="password" id="reg-pass-confirm" name="password_confirmation" placeholder="Повторите пароль" autocomplete="new-password" required />
+              @include('partials.password-field', [
+                'id' => 'reg-pass-confirm',
+                'name' => 'password_confirmation',
+                'placeholder' => 'Повторите пароль',
+                'autocomplete' => 'new-password',
+                'required' => true,
+              ])
             </div>
             <label class="auth__check auth__check--block">
               <input type="checkbox" name="offer_accepted" value="1" @checked(old('offer_accepted')) required /> Соглашаюсь с условиями <a href="#" class="auth__minor">договора-оферты</a>

@@ -173,6 +173,22 @@ const attachPhoneMask = (input, allowEmail = false) => {
   }
 };
 
+const togglePasswordVisibility = (btn) => {
+  const field = btn.closest('.password-field');
+  const input = field?.querySelector('input');
+  if (!input) return;
+
+  const showIcon = btn.querySelector('.password-field__icon--show');
+  const hideIcon = btn.querySelector('.password-field__icon--hide');
+  const visible = input.type === 'text';
+
+  input.type = visible ? 'password' : 'text';
+  btn.setAttribute('aria-pressed', visible ? 'false' : 'true');
+  btn.setAttribute('aria-label', visible ? 'Показать пароль' : 'Скрыть пароль');
+  showIcon?.toggleAttribute('hidden', !visible);
+  hideIcon?.toggleAttribute('hidden', visible);
+};
+
 // ===== Вкладки входа / регистрации =====
 const authTabs = document.querySelectorAll('.auth__tab');
 if (authTabs.length) {
@@ -205,7 +221,12 @@ if (authTabs.length) {
   document.querySelectorAll('[data-phone-mask]').forEach((input) => {
     attachPhoneMask(input, input.dataset.phoneMask === 'optional');
   });
+
 }
+
+document.querySelectorAll('[data-password-toggle]').forEach((btn) => {
+  btn.addEventListener('click', () => togglePasswordVisibility(btn));
+});
 
 // ===== Разделы личного кабинета =====
 const lkNav = document.getElementById('lkNav');
