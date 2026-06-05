@@ -101,25 +101,29 @@
             </div>
 
             <label class="auth__label">Дата рождения</label>
-            <div class="auth__row3">
+            <div class="auth__row3 auth__birth">
               <div class="form__row">
-                <select name="birth_day" aria-label="День" required>
-                  <option value="">День</option>
-                  @for($d = 1; $d <= 31; $d++)
-                    <option value="{{ $d }}" @selected((int) old('birth_day') === $d)>{{ $d }}</option>
-                  @endfor
-                </select>
+                <div class="auth__select-wrap">
+                  <select name="birth_day" class="auth__select" aria-label="День" required>
+                    <option value="">День</option>
+                    @for($d = 1; $d <= 31; $d++)
+                      <option value="{{ $d }}" @selected((int) old('birth_day') === $d)>{{ $d }}</option>
+                    @endfor
+                  </select>
+                </div>
               </div>
               <div class="form__row">
-                <select name="birth_month" aria-label="Месяц" required>
-                  <option value="">Месяц</option>
-                  @foreach($months as $idx => $m)
-                    <option value="{{ $idx + 1 }}" @selected((int) old('birth_month') === $idx + 1)>{{ $m }}</option>
-                  @endforeach
-                </select>
+                <div class="auth__select-wrap">
+                  <select name="birth_month" class="auth__select auth__select--month" aria-label="Месяц" required>
+                    <option value="">Месяц</option>
+                    @foreach($months as $idx => $m)
+                      <option value="{{ $idx + 1 }}" @selected((int) old('birth_month') === $idx + 1)>{{ $m }}</option>
+                    @endforeach
+                  </select>
+                </div>
               </div>
               <div class="form__row">
-                <input type="number" name="birth_year" value="{{ old('birth_year') }}" placeholder="Год" min="1920" max="2026" />
+                <input type="number" name="birth_year" class="auth__input-year" value="{{ old('birth_year') }}" placeholder="Год" min="1920" max="2026" aria-label="Год рождения" />
               </div>
             </div>
 

@@ -407,7 +407,7 @@ a { color: inherit; text-decoration: none; }
 
 /* ============ Фоны-обои: приглушённый эвкалипт (едва заметный) ============ */
 /* Доминирует кремовый/мятный фон, листья — отдалённый полупрозрачный намёк */
-.directions, .teachers, .reviews {
+.directions, .teachers, .reviews, .auth {
   background:
     linear-gradient(rgba(244, 241, 230, 0.93), rgba(244, 241, 230, 0.93)),
     url('/images/decor/wallpaper-sage.webp') center / cover no-repeat fixed,
@@ -420,7 +420,7 @@ a { color: inherit; text-decoration: none; }
     var(--bg-soft);
 }
 @media (max-width: 880px) {
-  .hero, .directions, .teachers, .reviews, .about, .services, .contacts { background-attachment: scroll; }
+  .hero, .directions, .teachers, .reviews, .about, .services, .contacts, .auth { background-attachment: scroll; }
 }
 
 /* ============ Кнопка «Подробнее» на карточке ============ */
@@ -594,7 +594,7 @@ a { color: inherit; text-decoration: none; }
 .faq__a p { color: var(--ink-soft); font-size: 15.5px; line-height: 1.7; padding-bottom: 22px; max-width: 660px; }
 
 /* ============ Страница входа / регистрации ============ */
-.auth { padding-top: 130px; min-height: 70vh; }
+.auth { padding: 130px 0 100px; min-height: calc(100vh - 114px); }
 .auth__wrap { display: grid; grid-template-columns: 1fr 1fr; max-width: 960px; margin: 0 auto; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: 0 40px 90px -50px rgba(47,53,43,.5); }
 .auth__aside { position: relative; padding: 48px 42px; color: var(--paper); background-image: url('https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&w=1100&q=80'); background-size: cover; background-position: center; display: flex; }
 .auth__aside-overlay { position: absolute; inset: 0; background: linear-gradient(160deg, rgba(42,46,27,.82), rgba(42,46,27,.6)); }
@@ -614,6 +614,61 @@ a { color: inherit; text-decoration: none; }
 .auth__label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-soft); margin-bottom: 7px; }
 .auth__row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .auth__row3 { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 10px; }
+.auth__birth { margin-bottom: 14px; }
+.auth__birth .form__row { margin-bottom: 0; }
+
+.auth__select-wrap { position: relative; }
+.auth__select-wrap::after {
+  content: "";
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid var(--sage);
+  border-bottom: 2px solid var(--sage);
+  transform: translateY(-65%) rotate(45deg);
+  pointer-events: none;
+  transition: border-color .3s var(--ease);
+}
+.auth__select-wrap:focus-within::after { border-color: var(--sage-deep); }
+
+.auth__select-wrap .auth__select,
+.auth__birth .auth__input-year {
+  width: 100%;
+  padding: 15px 42px 15px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 500;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color .3s var(--ease), box-shadow .3s var(--ease), background .3s var(--ease);
+}
+.auth__birth .auth__input-year {
+  cursor: text;
+  padding-right: 18px;
+}
+.auth__select-wrap .auth__select:hover,
+.auth__birth .auth__input-year:hover { border-color: #c5c9b0; background: #fffdf9; }
+.auth__select-wrap .auth__select:focus,
+.auth__birth .auth__input-year:focus {
+  outline: none;
+  border-color: var(--sage);
+  box-shadow: 0 0 0 3px rgba(124,139,107,.16);
+  background: #fffdf9;
+}
+.auth__select-wrap .auth__select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+.auth__select-wrap .auth__select:invalid { color: var(--muted); }
+.auth__select-wrap .auth__select option { color: var(--ink); font-weight: 500; }
+.auth__select-wrap .auth__select option[value=""] { color: var(--muted); }
+.auth__select-wrap .auth__select--month { font-size: 14.5px; }
 .auth__hint, .auth__demo, .auth__optional { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
 .auth__optional { font-weight: 400; }
 .auth__alert { padding: 12px 14px; border-radius: 10px; font-size: 14px; line-height: 1.5; margin-bottom: 18px; }
