@@ -1,0 +1,91 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\SubscriptionType;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
+
+#[Fillable([
+    'user_id',
+    'type',
+    'sessions_total',
+    'sessions_used',
+    'purchased_at',
+    'starts_at',
+    'ends_at',
+    'admin_note',
+])]
+class Subscription extends Model
+{
+    protected function casts(): array
+    {
+        return [
+            'type' => SubscriptionType::class,
+            'sessions_total' => 'integer',
+            'sessions_used' => 'integer',
+            'purchased_at' => 'date',
+            'starts_at' => 'date',
+            'ends_at' => 'date',
+        ];
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function usages(): HasMany
+    {
+        return $this->hasMany(SubscriptionUsage::class);
+    }
+
+    public function sessionsRemaining(): int
+    {
+        return max(0, $this->sessions_total - $this->sessions_used);
+    }
+
+    public function isActive(?Carbon $on = null): bool
+    {
+        $on ??= now()->startOfDay();
+
+        return $this->starts_at->lte($on)
+            && $this->ends_at->gte($on)
+            && $this->sessionsRemaining() > 0;
+    }
+
+    public function formattedStartsAt(): string
+    {
+        return $this->starts_at->translatedFormat('d F Y');
+    }
+
+    public function formattedEndsAt(): string
+    {
+        return $this->ends_at->translatedFormat('d F Y');
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    public function scopeActive(Builder $query, ?Carbon $on = null): Builder
+    {
+        $on ??= now()->startOfDay();
+
+        return $query
+            ->where('starts_at', '<=', $on)
+            ->where('ends_at', '>=', $on)
+            ->whereColumn('sessions_used', '<', 'sessions_total');
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    public function scopeForType(Builder $query, SubscriptionType $type): Builder
+    {
+        return $query->where('type', $type->value);
+    }
+}

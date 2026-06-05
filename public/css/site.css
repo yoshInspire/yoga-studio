@@ -659,6 +659,8 @@ a { color: inherit; text-decoration: none; }
 .sub__dates { display: flex; gap: 28px; }
 .sub__dates dt { font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .sub__dates dd { font-size: 14.5px; font-weight: 500; margin-top: 2px; }
+.sub--inactive { opacity: .72; }
+.sub__status { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
 
 .lk-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 22px; }
 .lk-row { display: flex; align-items: center; gap: 22px; border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 22px; background: var(--bg); }

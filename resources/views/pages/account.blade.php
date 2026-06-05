@@ -2,26 +2,6 @@
 
 @section('title', 'Личный кабинет — Студия йоги Ирины Коленцевой')
 
-@php
-  // Абонементы, записи и история — демо до блоков 4–5.
-  $subs = [
-    ['name' => 'Групповые занятия', 'type' => 'group', 'left' => 6, 'total' => 8, 'start' => '20 мая 2026', 'end' => '20 июля 2026'],
-    ['name' => 'Индивидуальные занятия', 'type' => 'indiv', 'left' => 2, 'total' => 4, 'start' => '01 июня 2026', 'end' => '01 августа 2026'],
-  ];
-  $bookings = [
-    ['date' => 'Ср, 5 июня', 'time' => '08:00', 'title' => 'Хатха-йога', 'trainer' => 'Ирина Коленцева', 'type' => 'Групповое'],
-    ['date' => 'Пт, 7 июня', 'time' => '12:00', 'title' => 'Индивидуальное занятие', 'trainer' => 'Ирина Коленцева', 'type' => 'Индивидуальное'],
-  ];
-  $history = [
-    ['date' => '28 мая 2026', 'title' => 'Инь-йога', 'sub' => 'Групповой абонемент'],
-    ['date' => '24 мая 2026', 'title' => 'Здоровая спина', 'sub' => 'Групповой абонемент'],
-    ['date' => '21 мая 2026', 'title' => 'Индивидуальное занятие', 'sub' => 'Индивидуальный абонемент'],
-  ];
-  $cancelled = [
-    ['date' => 'Пт, 7 июня · 18:00', 'title' => 'Инь-йога', 'reason' => 'Недостаточное количество участников в группе'],
-  ];
-@endphp
-
 @section('content')
   <section class="section lk">
     <div class="container">
@@ -79,21 +59,29 @@
             <h1 class="lk__title">Мои абонементы</h1>
             <p class="lk__lead">Групповой абонемент нельзя тратить на индивидуальное занятие и наоборот — при записи подходящий тип выбирается автоматически.</p>
             <div class="subs">
-              @foreach($subs as $sub)
-                @php $pct = $sub['total'] ? round($sub['left'] / $sub['total'] * 100) : 0; @endphp
-                <div class="sub">
+              @forelse($subscriptions as $sub)
+                @php
+                  $left = $sub->sessionsRemaining();
+                  $pct = $sub->sessions_total ? round($left / $sub->sessions_total * 100) : 0;
+                @endphp
+                <div class="sub {{ $sub->isActive() ? '' : 'sub--inactive' }}">
                   <div class="sub__head">
-                    <span class="badge badge--{{ $sub['type'] }}">{{ $sub['type'] === 'group' ? 'Групповой' : 'Индивидуальный' }}</span>
-                    <h3 class="sub__name">{{ $sub['name'] }}</h3>
+                    <span class="badge badge--{{ $sub->type->badgeClass() }}">{{ $sub->type->shortLabel() }}</span>
+                    <h3 class="sub__name">{{ $sub->type->label() }}</h3>
+                    @unless($sub->isActive())
+                      <span class="sub__status">Не активен</span>
+                    @endunless
                   </div>
-                  <div class="sub__count"><strong>{{ $sub['left'] }}</strong> из {{ $sub['total'] }} занятий осталось</div>
+                  <div class="sub__count"><strong>{{ $left }}</strong> из {{ $sub->sessions_total }} занятий осталось</div>
                   <div class="sub__bar"><span style="width: {{ $pct }}%"></span></div>
                   <dl class="sub__dates">
-                    <div><dt>Начало</dt><dd>{{ $sub['start'] }}</dd></div>
-                    <div><dt>Действует до</dt><dd>{{ $sub['end'] }}</dd></div>
+                    <div><dt>Начало</dt><dd>{{ $sub->formattedStartsAt() }}</dd></div>
+                    <div><dt>Действует до</dt><dd>{{ $sub->formattedEndsAt() }}</dd></div>
                   </dl>
                 </div>
-              @endforeach
+              @empty
+                <p class="lk__empty">У вас пока нет абонементов. Администратор студии добавит их после оплаты — или уточните в студии.</p>
+              @endforelse
             </div>
           </div>
 
@@ -128,9 +116,11 @@
             <table class="lk-table">
               <thead><tr><th>Дата</th><th>Занятие</th><th>Списано с</th></tr></thead>
               <tbody>
-                @foreach($history as $h)
+                @forelse($history as $h)
                   <tr><td>{{ $h['date'] }}</td><td>{{ $h['title'] }}</td><td>{{ $h['sub'] }}</td></tr>
-                @endforeach
+                @empty
+                  <tr><td colspan="3" class="lk__empty">История появится после посещений.</td></tr>
+                @endforelse
               </tbody>
             </table>
           </div>
