@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=17" />
+  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=18" />
   @stack('head')
 </head>
 <body>
@@ -40,7 +40,13 @@
       <div class="header__actions">
         <a href="{{ route('schedule') }}" class="btn btn--ghost">Расписание</a>
         @auth
-          <a href="{{ route('account') }}" class="btn btn--solid">Личный кабинет</a>
+          @if(auth()->user()->isTrainer())
+            <a href="{{ route('trainer') }}" class="btn btn--solid">Кабинет тренера</a>
+          @elseif(auth()->user()->isAdmin())
+            <a href="/admin" class="btn btn--solid">Админка</a>
+          @else
+            <a href="{{ route('account') }}" class="btn btn--solid">Личный кабинет</a>
+          @endif
         @else
           <a href="{{ route('login') }}" class="btn btn--solid">Личный кабинет</a>
         @endauth
@@ -61,7 +67,13 @@
     <div class="mobile-menu__actions">
       <a href="{{ route('schedule') }}" class="btn btn--ghost">Расписание</a>
       @auth
-        <a href="{{ route('account') }}" class="btn btn--solid">Личный кабинет</a>
+        @if(auth()->user()->isTrainer())
+          <a href="{{ route('trainer') }}" class="btn btn--solid">Кабинет тренера</a>
+        @elseif(auth()->user()->isAdmin())
+          <a href="/admin" class="btn btn--solid">Админка</a>
+        @else
+          <a href="{{ route('account') }}" class="btn btn--solid">Личный кабинет</a>
+        @endif
       @else
         <a href="{{ route('login') }}" class="btn btn--solid">Личный кабинет</a>
       @endauth

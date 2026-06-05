@@ -20,11 +20,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo(function () {
             $user = auth()->user();
 
-            if ($user?->role === \App\Enums\UserRole::Admin) {
-                return '/admin';
-            }
-
-            return route('account');
+            return match ($user?->role) {
+                \App\Enums\UserRole::Admin => '/admin',
+                \App\Enums\UserRole::Trainer => route('trainer'),
+                default => route('account'),
+            };
         });
     })
     ->withExceptions(function (Exceptions $exceptions): void {

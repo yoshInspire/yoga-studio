@@ -29,9 +29,13 @@ composer install --no-dev --optimize-autoloader --no-interaction
 grep -q '^ADMIN_EMAIL=' .env || echo 'ADMIN_EMAIL=admin@ekoyoga-ik.ru' >> .env
 grep -q '^ADMIN_PHONE=' .env || echo 'ADMIN_PHONE=+79000000000' >> .env
 grep -q '^ADMIN_PASSWORD=' .env || echo 'ADMIN_PASSWORD=StudioAdmin2026!' >> .env
+grep -q '^TRAINER_EMAIL=' .env || echo 'TRAINER_EMAIL=trainer@ekoyoga-ik.ru' >> .env
+grep -q '^TRAINER_PHONE=' .env || echo 'TRAINER_PHONE=+79000000001' >> .env
+grep -q '^TRAINER_PASSWORD=' .env || echo 'TRAINER_PASSWORD=StudioTrainer2026!' >> .env
 
 php artisan migrate --force
 php artisan db:seed --class=AdminUserSeeder --force
+php artisan db:seed --class=TrainerUserSeeder --force
 
 php artisan config:clear
 php artisan config:cache

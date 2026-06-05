@@ -46,7 +46,7 @@ class LoginController extends Controller
     {
         return match ($user->role) {
             UserRole::Admin => redirect()->intended('/admin'),
-            UserRole::Trainer => redirect()->route('home')->with('status', 'Кабинет тренера скоро будет доступен.'),
+            UserRole::Trainer => redirect()->intended(route('trainer')),
             default => redirect()->intended(route('account')),
         };
     }

@@ -120,6 +120,16 @@ class User extends Authenticatable implements FilamentUser
         return $this->role === UserRole::Client;
     }
 
+    public function isTrainer(): bool
+    {
+        return $this->role === UserRole::Trainer;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === UserRole::Admin;
+    }
+
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
