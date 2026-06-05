@@ -49,14 +49,14 @@
 
             <div class="form__row">
               <label class="auth__label" for="login-id">Email или телефон</label>
-              <input type="text" id="login-id" name="login" value="{{ old('login') }}" placeholder="email@example.com или +7 (___) ___-__-__" autocomplete="username" inputmode="text" data-phone-mask="optional" required />
+              <input type="text" id="login-id" name="login" value="{{ old('login') }}" autocomplete="username" inputmode="text" data-phone-mask="login" required />
             </div>
             <div class="form__row">
               <label class="auth__label" for="login-pass">Пароль</label>
               @include('partials.password-field', [
                 'id' => 'login-pass',
                 'name' => 'password',
-                'placeholder' => 'Ваш пароль',
+                'placeholder' => '',
                 'autocomplete' => 'current-password',
                 'required' => true,
               ])

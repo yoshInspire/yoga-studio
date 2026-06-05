@@ -123,7 +123,7 @@
     </div>
   </footer>
 
-  <script src="{{ asset('js/site.js') }}?v=9"></script>
+  <script src="{{ asset('js/site.js') }}?v=10"></script>
   @stack('scripts')
 </body>
 </html>

@@ -155,12 +155,27 @@ const formatRuPhone = (raw) => {
   return `${out}-${digits.slice(8, 10)}`;
 };
 
-const looksLikePhone = (value) => /^[\d+\s()-]/.test(value.trim()) && !value.includes('@');
+const isLoginText = (value) => /[@a-zA-Zа-яА-ЯёЁ._-]/.test(value);
 
-const attachPhoneMask = (input, allowEmail = false) => {
+const shouldFormatAsPhone = (value, mode) => {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+
+  if (mode === 'login') {
+    if (isLoginText(trimmed)) return false;
+    if (!/^[\d+\s()-]+$/.test(trimmed)) return false;
+    const digits = trimmed.replace(/\D/g, '');
+    // Одна цифра «7» — скорее начало email/логина, не телефон
+    if (digits.length === 1 && digits === '7') return false;
+    return true;
+  }
+
+  return true;
+};
+
+const attachPhoneMask = (input, mode = 'phone') => {
   const apply = () => {
-    if (allowEmail && input.value.includes('@')) return;
-    if (allowEmail && input.value.trim() && !looksLikePhone(input.value)) return;
+    if (!shouldFormatAsPhone(input.value, mode)) return;
 
     const formatted = formatRuPhone(input.value);
     if (input.value !== formatted) input.value = formatted;
@@ -168,7 +183,7 @@ const attachPhoneMask = (input, allowEmail = false) => {
 
   input.addEventListener('input', apply);
   input.addEventListener('blur', apply);
-  if (input.value && (!allowEmail || looksLikePhone(input.value))) {
+  if (input.value && shouldFormatAsPhone(input.value, mode)) {
     input.value = formatRuPhone(input.value);
   }
 };
@@ -219,7 +234,8 @@ if (authTabs.length) {
   }
 
   document.querySelectorAll('[data-phone-mask]').forEach((input) => {
-    attachPhoneMask(input, input.dataset.phoneMask === 'optional');
+    const mode = input.dataset.phoneMask === 'login' ? 'login' : 'phone';
+    attachPhoneMask(input, mode);
   });
 
 }
