@@ -32,7 +32,7 @@
         <a href="{{ route('home') }}#directions" class="nav__link">Направления</a>
         <a href="{{ route('home') }}#services" class="nav__link">Услуги</a>
         <a href="{{ route('home') }}#teachers" class="nav__link">Тренеры</a>
-        <a href="{{ route('home') }}#reviews" class="nav__link">Отзывы</a>
+        <a href="{{ route('news.index') }}" class="nav__link">Новости</a>
         <a href="{{ route('home') }}#about" class="nav__link">О студии</a>
         <a href="{{ route('home') }}#contacts" class="nav__link">Контакты</a>
       </nav>
@@ -61,7 +61,7 @@
     <a href="{{ route('home') }}#directions" class="mobile-menu__link">Направления</a>
     <a href="{{ route('home') }}#services" class="mobile-menu__link">Услуги</a>
     <a href="{{ route('home') }}#teachers" class="mobile-menu__link">Тренеры</a>
-    <a href="{{ route('home') }}#reviews" class="mobile-menu__link">Отзывы</a>
+    <a href="{{ route('news.index') }}" class="mobile-menu__link">Новости</a>
     <a href="{{ route('home') }}#about" class="mobile-menu__link">О студии</a>
     <a href="{{ route('home') }}#contacts" class="mobile-menu__link">Контакты</a>
     <div class="mobile-menu__actions">
@@ -99,7 +99,7 @@
           <a href="{{ route('home') }}#directions">Направления</a>
           <a href="{{ route('home') }}#services">Услуги и цены</a>
           <a href="{{ route('home') }}#teachers">Тренеры</a>
-          <a href="{{ route('home') }}#reviews">Отзывы</a>
+          <a href="{{ route('news.index') }}">Новости</a>
         </div>
         <div class="footer__col">
           <h4>Гостям</h4>

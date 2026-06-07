@@ -12,4 +12,7 @@ return [
 
     /** Лимит мест в группе по умолчанию */
     'default_class_capacity' => 6,
+
+    /** Куда отправлять заявки с формы на главной */
+    'lead_email' => env('STUDIO_LEAD_EMAIL', 'hello@ekoyoga-ik.ru'),
 ];

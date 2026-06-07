@@ -9,6 +9,7 @@ use App\Filament\Resources\Bookings\Pages\EditBooking;
 use App\Filament\Resources\Bookings\Pages\ListBookings;
 use App\Models\Booking;
 use App\Models\ClassSession;
+use App\Models\Subscription;
 use App\Models\User;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
@@ -54,6 +55,8 @@ class BookingResource extends Resource
                             ->searchable(['last_name', 'first_name', 'phone'])
                             ->preload()
                             ->required()
+                            ->live()
+                            ->afterStateUpdated(fn ($set) => $set('subscription_id', null))
                             ->visibleOn('create'),
                         Select::make('class_session_id')
                             ->label('Занятие')
@@ -62,11 +65,45 @@ class BookingResource extends Resource
                                 ->orderBy('starts_at')
                                 ->get()
                                 ->mapWithKeys(fn (ClassSession $s) => [
-                                    $s->id => $s->starts_at->format('d.m.Y H:i').' — '.$s->title,
+                                    $s->id => $s->starts_at->format('d.m.Y H:i').' — '.$s->title.' ('.$s->type->shortLabel().')',
                                 ])
                                 ->all())
                             ->searchable()
                             ->required()
+                            ->live()
+                            ->afterStateUpdated(fn ($set) => $set('subscription_id', null))
+                            ->visibleOn('create'),
+                        Select::make('subscription_id')
+                            ->label('Абонемент для списания')
+                            ->placeholder('Подобрать автоматически')
+                            ->helperText('Оставьте пустым — система выберет подходящий абонемент нужного типа. Или укажите явно, с какого списать.')
+                            ->options(function ($get) {
+                                $userId = $get('user_id');
+                                $sessionId = $get('class_session_id');
+
+                                if (! $userId || ! $sessionId) {
+                                    return [];
+                                }
+
+                                $session = ClassSession::find($sessionId);
+
+                                if (! $session) {
+                                    return [];
+                                }
+
+                                return Subscription::query()
+                                    ->where('user_id', $userId)
+                                    ->forType($session->type)
+                                    ->active()
+                                    ->orderBy('ends_at')
+                                    ->get()
+                                    ->mapWithKeys(fn (Subscription $s) => [
+                                        $s->id => $s->type->shortLabel()
+                                            .' · остаток '.$s->sessionsRemaining().'/'.$s->sessions_total
+                                            .' · до '.$s->ends_at->format('d.m.Y'),
+                                    ])
+                                    ->all();
+                            })
                             ->visibleOn('create'),
                     ]),
             ]);

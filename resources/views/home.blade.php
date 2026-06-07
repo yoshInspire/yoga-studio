@@ -227,12 +227,26 @@
           <a href="tel:+79647834353">Позвонить</a>
         </div>
       </div>
-      <form class="contacts__form reveal" action="#" method="post" onsubmit="return false">
+      <form class="contacts__form reveal" action="{{ route('lead.store') }}" method="post" id="leadForm">
         @csrf
         <h3 class="form__title">Оставить заявку</h3>
         <p class="form__sub">Оставьте контакты — мы поможем подобрать занятие.</p>
-        <div class="form__row"><input type="text" name="name" placeholder="Ваше имя" required /></div>
-        <div class="form__row"><input type="tel" name="phone" placeholder="Телефон" required /></div>
+        @if (session('lead_status'))
+          <div class="auth__alert auth__alert--ok" style="margin-bottom: 14px">{{ session('lead_status') }}</div>
+        @endif
+        @if (session('lead_error'))
+          <div class="auth__alert auth__alert--error" style="margin-bottom: 14px">{{ session('lead_error') }}</div>
+        @endif
+        @if ($errors->any())
+          <div class="auth__alert auth__alert--error" style="margin-bottom: 14px">{{ $errors->first() }}</div>
+        @endif
+        <div class="form__row"><input type="text" name="name" value="{{ old('name') }}" placeholder="Ваше имя" required /></div>
+        <div class="form__row"><input type="tel" name="phone" value="{{ old('phone') }}" placeholder="Телефон" required /></div>
+        <div class="form__row"><input type="text" name="message" value="{{ old('message') }}" placeholder="Комментарий (необязательно)" /></div>
+        {{-- honeypot: скрыто от людей, ловит ботов --}}
+        <div style="position:absolute;left:-9999px" aria-hidden="true">
+          <input type="text" name="company" tabindex="-1" autocomplete="off" />
+        </div>
         <button class="btn btn--solid btn--full" type="submit">Отправить заявку</button>
         <p class="form__note">Нажимая кнопку, вы соглашаетесь с политикой обработки персональных данных.</p>
       </form>

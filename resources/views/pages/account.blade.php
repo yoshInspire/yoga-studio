@@ -169,7 +169,11 @@
                 <strong>Договор публичной оферты</strong>
                 <span>Просмотр в защищённом режиме, без прямого скачивания.</span>
               </div>
-              <button type="button" class="btn btn--solid">Открыть оферту</button>
+              @if ($offerAvailable)
+                <a href="{{ route('offer.show') }}" target="_blank" rel="noopener" class="btn btn--solid">Открыть оферту</a>
+              @else
+                <button type="button" class="btn btn--solid" disabled title="Документ ещё не загружен">Скоро будет</button>
+              @endif
             </div>
           </div>
         </div>

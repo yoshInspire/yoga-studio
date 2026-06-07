@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\BookingStatus;
 use App\Services\SubscriptionService;
+use App\Support\OfferStorage;
 use Illuminate\View\View;
 
 class AccountController extends Controller
@@ -58,6 +59,7 @@ class AccountController extends Controller
             'bookings' => $upcomingBookings,
             'history' => $history,
             'cancelled' => $cancelled,
+            'offerAvailable' => OfferStorage::exists(),
         ]);
     }
 }
