@@ -63,7 +63,7 @@
             </div>
             <div class="auth__row-between">
               <label class="auth__check"><input type="checkbox" name="remember" value="1" @checked(old('remember')) /> Запомнить меня</label>
-              <a href="#" class="auth__minor">Забыли пароль?</a>
+              <a href="#" class="auth__minor" data-soon="Восстановление пароля скоро появится. Пока, если забыли пароль, напишите или позвоните в студию — администратор поможет восстановить доступ.">Забыли пароль?</a>
             </div>
             <button type="submit" class="btn btn--solid btn--full btn--lg">Войти</button>
             <p class="auth__switch">Нет аккаунта? <button type="button" class="auth__link" data-goto="register">Зарегистрироваться</button></p>
@@ -156,7 +156,7 @@
               ])
             </div>
             <label class="auth__check auth__check--block">
-              <input type="checkbox" name="offer_accepted" value="1" @checked(old('offer_accepted')) required /> Соглашаюсь с условиями <a href="#" class="auth__minor">договора-оферты</a>
+              <input type="checkbox" name="offer_accepted" value="1" @checked(old('offer_accepted')) required /> Соглашаюсь с условиями <a href="#" class="auth__minor" data-soon="Полный текст договора-оферты будет доступен в личном кабинете после входа, в разделе «Договор-оферта».">договора-оферты</a>
             </label>
             <button type="submit" class="btn btn--solid btn--full btn--lg">Зарегистрироваться</button>
             <p class="auth__switch">Уже есть аккаунт? <button type="button" class="auth__link" data-goto="login">Войти</button></p>

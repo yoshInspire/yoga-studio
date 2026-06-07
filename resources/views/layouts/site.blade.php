@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=20" />
+  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=21" />
   @stack('head')
 </head>
 <body>
@@ -123,7 +123,19 @@
     </div>
   </footer>
 
-  <script src="{{ asset('js/site.js') }}?v=10"></script>
+  {{-- Универсальная модалка «функция в разработке» --}}
+  <div class="soon-modal" id="soonModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="soonModalTitle">
+    <div class="soon-modal__overlay" data-soon-close></div>
+    <div class="soon-modal__box" role="document">
+      <button type="button" class="soon-modal__close" data-soon-close aria-label="Закрыть">&times;</button>
+      <span class="soon-modal__icon" aria-hidden="true">✦</span>
+      <h3 class="soon-modal__title" id="soonModalTitle">Скоро будет доступно</h3>
+      <p class="soon-modal__text" id="soonModalText">Эта возможность ещё в разработке — мы добавим её в ближайшее время.</p>
+      <button type="button" class="btn btn--solid" data-soon-close>Понятно</button>
+    </div>
+  </div>
+
+  <script src="{{ asset('js/site.js') }}?v=11"></script>
   @stack('scripts')
 </body>
 </html>

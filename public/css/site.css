@@ -895,3 +895,30 @@ a { color: inherit; text-decoration: none; }
 .news__pagination [aria-current] span { background: var(--clay); color: #fffdf9; border-color: var(--clay); }
 .news__pagination .cursor-not-allowed,
 .news__pagination [aria-disabled] span { opacity: .45; }
+
+/* ============ Модалка «скоро» ============ */
+.soon-modal {
+  position: fixed; inset: 0; z-index: 200;
+  display: none; align-items: center; justify-content: center; padding: 24px;
+}
+.soon-modal.is-open { display: flex; }
+.soon-modal__overlay { position: absolute; inset: 0; background: rgba(42,46,27,.55); backdrop-filter: blur(2px); }
+.soon-modal__box {
+  position: relative; z-index: 1; width: 100%; max-width: 440px;
+  background: var(--paper); border-radius: var(--radius); padding: 40px 32px 32px;
+  text-align: center; box-shadow: 0 30px 70px rgba(42,46,27,.28);
+  animation: soonpop .28s var(--ease);
+}
+@keyframes soonpop { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+.soon-modal__close {
+  position: absolute; top: 14px; right: 16px; background: none; border: 0; cursor: pointer;
+  font-size: 28px; line-height: 1; color: var(--muted); transition: color .2s;
+}
+.soon-modal__close:hover { color: var(--clay); }
+.soon-modal__icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 56px; height: 56px; border-radius: 50%; margin-bottom: 16px;
+  background: var(--bg-soft); color: var(--sage); font-size: 24px;
+}
+.soon-modal__title { font-family: var(--serif); font-size: 26px; font-weight: 600; color: var(--sage-deep); margin-bottom: 10px; }
+.soon-modal__text { color: var(--ink-soft); font-size: 15.5px; line-height: 1.65; margin-bottom: 22px; }

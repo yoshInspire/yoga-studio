@@ -244,6 +244,45 @@ document.querySelectorAll('[data-password-toggle]').forEach((btn) => {
   btn.addEventListener('click', () => togglePasswordVisibility(btn));
 });
 
+// ===== Модалка «функция в разработке» =====
+const soonModal = document.getElementById('soonModal');
+if (soonModal) {
+  const textEl = document.getElementById('soonModalText');
+  const defaultText = textEl ? textEl.textContent : '';
+  let lastFocusedSoon = null;
+
+  const openSoon = (msg) => {
+    if (textEl) textEl.textContent = msg && msg.trim() ? msg : defaultText;
+    lastFocusedSoon = document.activeElement;
+    soonModal.classList.add('is-open');
+    soonModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    soonModal.querySelector('.soon-modal__close')?.focus();
+  };
+
+  const closeSoon = () => {
+    soonModal.classList.remove('is-open');
+    soonModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    if (lastFocusedSoon) lastFocusedSoon.focus();
+  };
+
+  document.querySelectorAll('[data-soon]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openSoon(btn.getAttribute('data-soon'));
+    });
+  });
+
+  soonModal.querySelectorAll('[data-soon-close]').forEach((el) => {
+    el.addEventListener('click', closeSoon);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && soonModal.classList.contains('is-open')) closeSoon();
+  });
+}
+
 // ===== Разделы личного кабинета =====
 const lkNav = document.getElementById('lkNav');
 if (lkNav) {

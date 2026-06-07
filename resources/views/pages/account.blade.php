@@ -51,7 +51,7 @@
                 <div class="lk__field"><dt>Email</dt><dd>{{ $user->email }}</dd></div>
               @endif
             </dl>
-            <button type="button" class="btn btn--line">Редактировать профиль</button>
+            <button type="button" class="btn btn--line" data-soon="Редактирование профиля в личном кабинете скоро появится. Пока изменить данные можно через администратора студии — напишите или позвоните нам.">Редактировать профиль</button>
           </div>
 
           {{-- Абонементы --}}
@@ -172,7 +172,7 @@
               @if ($offerAvailable)
                 <a href="{{ route('offer.show') }}" target="_blank" rel="noopener" class="btn btn--solid">Открыть оферту</a>
               @else
-                <button type="button" class="btn btn--solid" disabled title="Документ ещё не загружен">Скоро будет</button>
+                <button type="button" class="btn btn--solid" data-soon="Договор-оферта появится здесь, как только студия загрузит документ. Загляните чуть позже.">Открыть оферту</button>
               @endif
             </div>
           </div>
