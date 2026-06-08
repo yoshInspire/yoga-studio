@@ -7,11 +7,13 @@ use App\Enums\SubscriptionType;
 use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Support\PaymentReceiptBuilder;
 use App\Support\PurchaseCatalog;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use YooKassa\Common\Exceptions\ApiException;
 use YooKassa\Model\Notification\AbstractNotification;
 use YooKassa\Model\Payment\PaymentInterface;
 use YooKassa\Model\Payment\PaymentStatus as YooPaymentStatus;
@@ -51,23 +53,33 @@ class PaymentService
             'idempotence_key' => (string) Str::uuid(),
         ]);
 
-        $response = $this->yookassa->createPayment([
-            'amount' => [
-                'value' => $this->formatAmount($product['price']),
-                'currency' => config('yookassa.currency', 'RUB'),
-            ],
-            'confirmation' => [
-                'type' => 'redirect',
-                'return_url' => route('payments.return', ['payment' => $payment->id]),
-            ],
-            'capture' => true,
-            'description' => $this->paymentDescription($user, $product['name']),
-            'metadata' => [
-                'payment_id' => (string) $payment->id,
-                'user_id' => (string) $user->id,
-                'product_key' => $productKey,
-            ],
-        ], $payment->idempotence_key);
+        try {
+            $response = $this->yookassa->createPayment([
+                'amount' => [
+                    'value' => $this->formatAmount($product['price']),
+                    'currency' => config('yookassa.currency', 'RUB'),
+                ],
+                'confirmation' => [
+                    'type' => 'redirect',
+                    'return_url' => route('payments.return', ['payment' => $payment->id]),
+                ],
+                'capture' => true,
+                'description' => $this->paymentDescription($user, $product['name']),
+                'metadata' => [
+                    'payment_id' => (string) $payment->id,
+                    'user_id' => (string) $user->id,
+                    'product_key' => $productKey,
+                ],
+                'receipt' => PaymentReceiptBuilder::build($user, $product),
+            ], $payment->idempotence_key);
+        } catch (ApiException $e) {
+            $payment->delete();
+
+            throw new InvalidArgumentException(
+                'Не удалось создать платёж: '.$this->humanizeApiError($e),
+                previous: $e,
+            );
+        }
 
         $payment->update([
             'yookassa_payment_id' => $response->getId(),
@@ -207,5 +219,16 @@ class PaymentService
             YooPaymentStatus::CANCELED => PaymentStatus::Canceled,
             default => PaymentStatus::Pending,
         };
+    }
+
+    private function humanizeApiError(ApiException $e): string
+    {
+        $message = trim($e->getMessage());
+
+        if (str_contains($message, 'Receipt is missing')) {
+            return 'не настроена фискализация в ЮKassa. Обратитесь в студию.';
+        }
+
+        return $message !== '' ? $message : 'ошибка платёжного сервиса.';
     }
 }

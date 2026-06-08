@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Services\PaymentService;
 use App\Services\SubscriptionService;
+use App\Support\PaymentReceiptBuilder;
 use App\Support\PurchaseCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;

@@ -8,4 +8,10 @@ return [
     'webhook_url' => env('YOOKASSA_WEBHOOK_URL'),
 
     'currency' => 'RUB',
+
+    /** 1 = без НДС (обычно для УСН). См. https://yookassa.ru/developers/54fz/parameters-values#vat-codes */
+    'vat_code' => env('YOOKASSA_VAT_CODE', 1),
+
+    /** 2 = УСН «доходы». См. https://yookassa.ru/developers/54fz/parameters-values#tax-systems */
+    'tax_system_code' => env('YOOKASSA_TAX_SYSTEM_CODE', 2),
 ];
