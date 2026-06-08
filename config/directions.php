@@ -26,7 +26,14 @@ return [
             'num' => '01',
             'title' => 'Хатха-йога',
             'lead' => 'Хатха – основа большинства современных практик в йоге. Занятия включают фундаментальные асаны (позы) для работы всего тела. Позволяют бережно поработать над выносливостью, научиться лучше контролировать свое тело, развивают гибкость и успокаивают ум. Классы сочетают в себе выполнение статичных асан, динамичные движения.',
-            'img' => 'photo-1544367567-0f2fcb009e0b',
+            'img' => 'images/directions/hatha/01.png',
+            'gallery' => [
+                'images/directions/hatha/02.png',
+                'images/directions/hatha/03.png',
+                'images/directions/hatha/04.png',
+                'images/directions/hatha/05.png',
+                'images/directions/hatha/06.png',
+            ],
         ]),
 
         $dir([
@@ -134,9 +141,6 @@ return [
             'gallery' => [
                 'images/directions/pilates/02.png',
                 'images/directions/pilates/03.png',
-                'images/directions/pilates/04.png',
-                'images/directions/pilates/05.png',
-                'images/directions/pilates/06.png',
             ],
         ]),
 
