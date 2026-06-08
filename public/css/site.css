@@ -882,8 +882,6 @@ a { color: inherit; text-decoration: none; }
 .oferta__info span { font-size: 13.5px; color: var(--muted); }
 
 @media (max-width: 980px) {
-  .auth__wrap { grid-template-columns: 1fr; max-width: 480px; }
-  .auth__aside { display: none; }
   .lk__grid { grid-template-columns: 1fr; }
   .lk__aside { position: static; }
   .lk__nav { flex-direction: row; flex-wrap: wrap; gap: 6px; }
