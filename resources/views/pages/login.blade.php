@@ -14,7 +14,7 @@
         <aside class="auth__aside">
           <div class="auth__aside-overlay"></div>
           <div class="auth__aside-content">
-            <span class="logo__text auth__brand">ЙОГА<small>студия Ирины Коленцевой</small></span>
+            @include('partials.logo', ['theme' => 'light', 'class' => 'logo__img--auth'])
             <h2 class="auth__aside-title">Личный кабинет</h2>
             <p class="auth__aside-text">
               Расписание доступно всем гостям. Войдите или зарегистрируйтесь, чтобы

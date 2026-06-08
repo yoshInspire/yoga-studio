@@ -17,7 +17,7 @@
               @endforeach
             </div>
             <div class="dir-detail__hero-overlay"></div>
-            <span class="dir-detail__brand">ЙОГА<small>студия Ирины Коленцевой</small></span>
+            @include('partials.logo', ['theme' => 'light', 'class' => 'logo__img--dir-detail'])
             @if(count($slides) > 1)
               <button type="button" class="dir-detail__nav dir-detail__nav--prev" data-nav="prev" aria-label="Предыдущее фото">&lsaquo;</button>
               <button type="button" class="dir-detail__nav dir-detail__nav--next" data-nav="next" aria-label="Следующее фото">&rsaquo;</button>

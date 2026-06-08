@@ -5,10 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="@yield('meta_description', 'Студия йоги Ирины Коленцевой в Москве (р-н Коньково). Уютная студия, группы до 6 человек, индивидуальный подход.')" />
   <title>@yield('title', 'Студия йоги Ирины Коленцевой — Москва, Коньково')</title>
+  <link rel="icon" href="{{ asset('images/favicon.ico') }}" sizes="any" />
+  <link rel="icon" type="image/png" href="{{ asset('images/favico.png') }}" />
+  <link rel="apple-touch-icon" href="{{ asset('images/favico.png') }}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=21" />
+  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=22" />
   @stack('head')
 </head>
 <body>
@@ -24,8 +27,7 @@
   <header class="header" id="header">
     <div class="header__inner">
       <a href="{{ route('home') }}#hero" class="logo">
-        <span class="logo__mark" aria-hidden="true">◐</span>
-        <span class="logo__text">ЙОГА<small>студия Ирины Коленцевой</small></span>
+        @include('partials.logo', ['theme' => 'dark'])
       </a>
 
       <nav class="nav" id="nav">
@@ -87,9 +89,8 @@
   <footer class="footer">
     <div class="container footer__inner">
       <div class="footer__brand">
-        <a href="{{ route('home') }}#hero" class="logo logo--light">
-          <span class="logo__mark" aria-hidden="true">◐</span>
-          <span class="logo__text">ЙОГА<small>студия Ирины Коленцевой</small></span>
+        <a href="{{ route('home') }}#hero" class="logo">
+          @include('partials.logo', ['theme' => 'light', 'class' => 'logo__img--footer'])
         </a>
         <p>Уютная студия йоги в районе Коньково.<br />Маленькие группы, бережный подход, тёплая атмосфера.</p>
       </div>
