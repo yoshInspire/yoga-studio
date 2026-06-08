@@ -65,7 +65,14 @@ return [
             'num' => '05',
             'title' => 'Инь-йога',
             'lead' => 'Глубокое расслабление и наблюдение за своими ощущениями – без осуждения и оценки. Это статичная практика, где каждая асана выдерживается от 2 до 20 минут. За счет длительного пребывания в позе в работу включаются очень глубокие слои тканей и запускается процесс исцеления организма.',
-            'img' => 'photo-1506126613408-eca07ce68773',
+            'img' => 'images/directions/yin/01.png',
+            'gallery' => [
+                'images/directions/yin/02.png',
+                'images/directions/yin/03.png',
+                'images/directions/yin/04.png',
+                'images/directions/yin/05.png',
+                'images/directions/yin/06.png',
+            ],
         ]),
 
         $dir([
