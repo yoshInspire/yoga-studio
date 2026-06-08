@@ -11,19 +11,6 @@
   <section class="section auth">
     <div class="container">
       <div class="auth__wrap reveal">
-        <aside class="auth__aside">
-          <div class="auth__aside-overlay"></div>
-          <div class="auth__aside-content">
-            @include('partials.logo', ['theme' => 'light', 'class' => 'logo__img--auth'])
-            <h2 class="auth__aside-title">Личный кабинет</h2>
-            <p class="auth__aside-text">
-              Расписание доступно всем гостям. Войдите или зарегистрируйтесь, чтобы
-              записываться на занятия, видеть остаток по абонементам и историю посещений.
-            </p>
-            <a href="{{ route('schedule') }}" class="auth__aside-link">Смотреть расписание</a>
-          </div>
-        </aside>
-
         <div class="auth__panel">
           @if (session('status'))
             <div class="auth__alert auth__alert--ok">{{ session('status') }}</div>
