@@ -120,7 +120,6 @@
         @foreach(config('studio-photos.gallery') as $i => $photo)
           <figure class="studio-gallery__item {{ $photo['layout'] }} reveal" style="--d:{{ $i * 0.08 + 0.05 }}s">
             <img src="{{ asset($photo['src']) }}" alt="{{ $photo['alt'] }}" loading="lazy" decoding="async" />
-            <figcaption>{{ $photo['caption'] }}</figcaption>
           </figure>
         @endforeach
       </div>
