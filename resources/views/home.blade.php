@@ -68,7 +68,8 @@
   <section class="section about" id="about">
     <div class="container about__grid">
       <div class="about__media reveal">
-        <div class="about__img" style="background-image:url('https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=1000&q=80')"></div>
+        @php($aboutPhoto = config('studio-photos.about'))
+        <div class="about__img" style="background-image:url('{{ asset($aboutPhoto['src']) }}')" role="img" aria-label="{{ $aboutPhoto['alt'] }}"></div>
       </div>
       <div class="about__text">
         <p class="eyebrow reveal">О студии</p>
@@ -100,6 +101,35 @@
             </div>
           </li>
         </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section studio-gallery" aria-label="Фотографии студии">
+    <div class="container">
+      <div class="section__head">
+        <div>
+          <p class="eyebrow reveal">Наше пространство</p>
+          <h2 class="section__title reveal">Студия, в которую хочется приходить</h2>
+        </div>
+        <p class="section__desc reveal">
+          Светлые залы, уютная зона ожидания и всё необходимое для комфортной практики.
+        </p>
+      </div>
+      <div class="studio-gallery__grid">
+        @foreach(config('studio-photos.gallery') as $i => $photo)
+          @php
+            $layout = match ($i) {
+              0 => 'studio-gallery__item--wide',
+              1 => 'studio-gallery__item--tall',
+              default => $i % 2 === 0 ? 'studio-gallery__item--sm' : 'studio-gallery__item--md',
+            };
+          @endphp
+          <figure class="studio-gallery__item {{ $layout }} reveal" style="--d:{{ $i * 0.08 + 0.05 }}s">
+            <img src="{{ asset($photo['src']) }}" alt="{{ $photo['alt'] }}" loading="lazy" decoding="async" />
+            <figcaption>{{ $photo['caption'] }}</figcaption>
+          </figure>
+        @endforeach
       </div>
     </div>
   </section>

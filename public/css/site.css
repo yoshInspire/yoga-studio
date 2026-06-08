@@ -168,8 +168,8 @@ a { color: inherit; text-decoration: none; }
   display: flex; flex-direction: column; justify-content: center;
   padding: 60px 28px 120px; overflow: hidden;
   background:
-    linear-gradient(rgba(244, 241, 230, 0.93), rgba(244, 241, 230, 0.93)),
-    url('/images/decor/wallpaper-sage.webp') center / cover no-repeat fixed,
+    linear-gradient(105deg, rgba(244, 241, 230, 0.94) 42%, rgba(244, 241, 230, 0.78) 100%),
+    url('/images/studio/hero-hall.webp') center / cover no-repeat fixed,
     var(--bg);
 }
 .hero__content { position: relative; max-width: var(--max); margin: 0 auto; width: 100%; }
@@ -268,6 +268,34 @@ a { color: inherit; text-decoration: none; }
 .about__badge span { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .about__lead { color: var(--ink-soft); font-size: 18px; margin: 22px 0 36px; }
 
+/* ============ Studio gallery ============ */
+.studio-gallery { background: transparent; padding-top: 0; }
+.studio-gallery__grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: 220px;
+  gap: 18px;
+}
+.studio-gallery__item {
+  position: relative; overflow: hidden; border-radius: var(--radius);
+  border: 1px solid var(--line); background: var(--bg-soft);
+}
+.studio-gallery__item img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform .8s var(--ease);
+}
+.studio-gallery__item:hover img { transform: scale(1.05); }
+.studio-gallery__item figcaption {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 14px 18px;
+  background: linear-gradient(transparent, rgba(42, 46, 27, .72));
+  color: var(--paper); font-size: 13px; letter-spacing: .12em; text-transform: uppercase;
+}
+.studio-gallery__item--wide { grid-column: span 7; grid-row: span 2; }
+.studio-gallery__item--tall { grid-column: span 5; grid-row: span 2; }
+.studio-gallery__item--sm { grid-column: span 4; }
+.studio-gallery__item--md { grid-column: span 4; }
+
 .features { list-style: none; display: flex; flex-direction: column; gap: 26px; }
 .feature { display: flex; gap: 16px; }
 .feature__icon { color: var(--sage); font-size: 18px; margin-top: 3px; }
@@ -358,8 +386,8 @@ a { color: inherit; text-decoration: none; }
 .cta { position: relative; padding: 120px 0; overflow: hidden; color: var(--paper); text-align: center; }
 .cta__bg {
   position: absolute; inset: 0;
-  background-image: linear-gradient(rgba(28,29,24,.6), rgba(28,29,24,.72)), url('https://images.unsplash.com/photo-1593810450967-f9c42742e326?auto=format&fit=crop&w=1920&q=80');
-  background-size: cover; background-position: center; background-attachment: fixed;
+  background-image: linear-gradient(rgba(28,29,24,.62), rgba(28,29,24,.74)), url('/images/studio/cta-practice.webp');
+  background-size: cover; background-position: center 40%; background-attachment: fixed;
 }
 .cta__inner { position: relative; max-width: 720px; }
 .cta__title { font-family: var(--serif); font-weight: 500; font-size: clamp(34px, 5vw, 58px); line-height: 1.06; margin-bottom: 20px; }
@@ -426,7 +454,7 @@ a { color: inherit; text-decoration: none; }
     var(--bg-soft);
 }
 @media (max-width: 880px) {
-  .hero, .directions, .teachers, .reviews, .about, .services, .contacts, .auth { background-attachment: scroll; }
+  .hero, .directions, .teachers, .reviews, .about, .services, .contacts, .auth, .cta__bg { background-attachment: scroll; }
 }
 
 /* ============ Кнопка «Подробнее» на карточке ============ */
@@ -834,6 +862,12 @@ a { color: inherit; text-decoration: none; }
   .about__grid, .contacts__grid, .footer__inner { grid-template-columns: 1fr; gap: 40px; }
   .pricing { grid-template-columns: 1fr; max-width: 460px; margin: 0 auto; }
   .about__img { height: 420px; }
+  .studio-gallery__grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 200px; }
+  .studio-gallery__item--wide,
+  .studio-gallery__item--tall,
+  .studio-gallery__item--sm,
+  .studio-gallery__item--md { grid-column: span 1; grid-row: span 1; }
+  .studio-gallery__item--wide { grid-column: span 2; }
   .cta__bg { background-attachment: scroll; }
   .reviews__rating { align-items: flex-start; }
 }
@@ -844,6 +878,8 @@ a { color: inherit; text-decoration: none; }
   .logo__name { font-size: 8.5px; letter-spacing: .14em; }
   .logo__img--footer { height: 60px; }
   .cards, .teachers__grid, .teachers__grid--two, .reviews__grid { grid-template-columns: 1fr; }
+  .studio-gallery__grid { grid-template-columns: 1fr; grid-auto-rows: 240px; }
+  .studio-gallery__item--wide { grid-column: span 1; }
   .teachers__grid--two .teacher__img { height: 360px; }
   .hero__stats { gap: 30px; }
   .hero__stat strong { font-size: 40px; }
