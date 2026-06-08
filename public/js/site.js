@@ -1,12 +1,10 @@
 const header = document.getElementById('header');
-const topbar = document.querySelector('.topbar');
 const burger = document.getElementById('burger');
 const mobileMenu = document.getElementById('mobileMenu');
 
 const onScroll = () => {
   const scrolled = window.scrollY > 4;
   header?.classList.toggle('is-scrolled', scrolled);
-  topbar?.classList.toggle('is-collapsed', scrolled);
 };
 window.addEventListener('scroll', onScroll, { passive: true });
 onScroll();

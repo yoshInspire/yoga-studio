@@ -11,18 +11,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=25" />
+  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=26" />
   @stack('head')
 </head>
 <body>
-
-  <div class="topbar">
-    <div class="topbar__inner">
-      <span class="topbar__item">Москва · р-н Коньково · ул. Академика Арцимовича, 13</span>
-      <span class="topbar__dot">•</span>
-      <span class="topbar__item">Маленькие группы до 6 человек · первое занятие пробное</span>
-    </div>
-  </div>
 
   <header class="header" id="header">
     <div class="header__inner">
@@ -136,7 +128,7 @@
     </div>
   </div>
 
-  <script src="{{ asset('js/site.js') }}?v=11"></script>
+  <script src="{{ asset('js/site.js') }}?v=12"></script>
   @stack('scripts')
 </body>
 </html>
