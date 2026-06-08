@@ -132,7 +132,13 @@ return [
             'num' => '12',
             'title' => 'Здоровая спина',
             'lead' => 'Это классы терапевтического направления хатха-йоги, целиком посвящены здоровью спины и позвоночника',
-            'img' => 'photo-1518611012118-696072aa579a',
+            'img' => 'images/directions/healthy-back/01.png',
+            'gallery' => [
+                'images/directions/healthy-back/02.png',
+                'images/directions/healthy-back/03.png',
+                'images/directions/healthy-back/04.png',
+                'images/directions/healthy-back/05.png',
+            ],
         ]),
 
         $dir([
