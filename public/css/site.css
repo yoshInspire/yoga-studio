@@ -102,24 +102,37 @@ a { color: inherit; text-decoration: none; }
 }
 .header__inner {
   max-width: var(--max); margin: 0 auto; padding: 0 28px;
-  height: 80px; display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 20px;
 }
 
 .logo {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  line-height: 0;
-  min-height: 44px;
+  text-decoration: none;
+}
+.logo--header { line-height: 1; }
+.logo__stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
 }
 .logo__img {
   display: block;
   width: auto;
   max-width: none;
 }
-.logo__img--header {
-  height: 50px;
-  width: auto;
+.logo__img--mark { height: 42px; }
+.logo__name {
+  font-family: var(--sans);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  padding-left: 2px;
 }
 .logo__img--footer { height: 72px; }
 .logo__img--auth { height: 58px; margin-bottom: 8px; }
@@ -831,8 +844,9 @@ a { color: inherit; text-decoration: none; }
   .nav { display: none; }
   .burger { display: flex; }
   .header__actions .btn--ghost { display: none; }
-  .header__inner { height: 76px; gap: 16px; }
-  .logo__img--header { height: 40px; }
+  .header__inner { height: 72px; gap: 14px; }
+  .logo__img--mark { height: 38px; }
+  .logo__name { font-size: 9.5px; letter-spacing: .16em; }
 }
 @media (max-width: 880px) {
   .section { padding: 80px 0; }
@@ -845,7 +859,8 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 560px) {
   .container, .header__inner { padding-left: 20px; padding-right: 20px; }
   .header__inner { height: 68px; }
-  .logo__img--header { height: 36px; }
+  .logo__img--mark { height: 34px; }
+  .logo__name { font-size: 8.5px; letter-spacing: .14em; }
   .logo__img--footer { height: 60px; }
   .cards, .teachers__grid, .teachers__grid--two, .reviews__grid { grid-template-columns: 1fr; }
   .teachers__grid--two .teacher__img { height: 360px; }
