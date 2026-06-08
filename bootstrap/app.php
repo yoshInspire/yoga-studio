@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\EnsureRole::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'payments/webhook',
+        ]);
+
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(function () {
             $user = auth()->user();

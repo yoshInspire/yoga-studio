@@ -100,4 +100,32 @@ class SubscriptionService
 
         $usage->delete();
     }
+
+    public function createFromPurchase(
+        User $user,
+        SubscriptionType $type,
+        int $sessionsTotal,
+        Carbon $startsAt,
+        Carbon $purchasedAt,
+        int $validityDays,
+        ?string $adminNote = null,
+    ): Subscription {
+        if ($sessionsTotal < 1) {
+            throw new InvalidArgumentException('Количество занятий должно быть не меньше 1.');
+        }
+
+        $startsAt = $startsAt->copy()->startOfDay();
+        $endsAt = $startsAt->copy()->addDays($validityDays);
+
+        return Subscription::query()->create([
+            'user_id' => $user->id,
+            'type' => $type,
+            'sessions_total' => $sessionsTotal,
+            'sessions_used' => 0,
+            'purchased_at' => $purchasedAt->toDateString(),
+            'starts_at' => $startsAt->toDateString(),
+            'ends_at' => $endsAt->toDateString(),
+            'admin_note' => $adminNote,
+        ]);
+    }
 }

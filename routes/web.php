@@ -9,6 +9,8 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\OfferController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\TrainerController;
 use Illuminate\Support\Facades\Route;
@@ -37,9 +39,14 @@ Route::get('/oferta', [OfferController::class, 'show'])->middleware('auth')->nam
 
 Route::middleware(['auth', 'role:client'])->group(function () {
     Route::get('/account', AccountController::class)->name('account');
+    Route::get('/purchase', [PurchaseController::class, 'index'])->name('purchase.index');
+    Route::post('/purchase', [PurchaseController::class, 'store'])->name('purchase.store');
+    Route::get('/payments/{payment}/return', [PaymentController::class, 'return'])->name('payments.return');
     Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
 });
+
+Route::post('/payments/webhook', [PaymentController::class, 'webhook'])->name('payments.webhook');
 
 Route::middleware(['auth', 'role:trainer'])->group(function () {
     Route::get('/trainer', TrainerController::class)->name('trainer');

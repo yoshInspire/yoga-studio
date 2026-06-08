@@ -18,6 +18,7 @@
           <nav class="lk__nav" id="lkNav">
             <button type="button" class="lk__navlink is-active" data-sec="profile">Профиль</button>
             <button type="button" class="lk__navlink" data-sec="subs">Мои абонементы</button>
+            <a href="{{ route('purchase.index') }}" class="lk__navlink lk__navlink--buy">Купить абонемент</a>
             <button type="button" class="lk__navlink" data-sec="bookings">Мои записи</button>
             <button type="button" class="lk__navlink" data-sec="history">История посещений</button>
             <button type="button" class="lk__navlink" data-sec="cancelled">Отменённые занятия</button>
@@ -80,7 +81,7 @@
                   </dl>
                 </div>
               @empty
-                <p class="lk__empty">У вас пока нет абонементов. Администратор студии добавит их после оплаты — или уточните в студии.</p>
+                <p class="lk__empty">У вас пока нет абонементов. <a href="{{ route('purchase.index') }}">Купите абонемент онлайн</a> или уточните в студии.</p>
               @endforelse
             </div>
           </div>

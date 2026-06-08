@@ -25,6 +25,11 @@
       </ul>
 
       <a href="{{ route('login') }}" class="btn {{ $key === 'individual' ? 'btn--solid' : 'btn--line' }} btn--full">Записаться в кабинете</a>
+      @auth
+        @if(auth()->user()->role === \App\Enums\UserRole::Client)
+          <a href="{{ route('purchase.index') }}" class="btn btn--ghost btn--full" style="margin-top: 10px">Купить абонемент</a>
+        @endif
+      @endauth
     </article>
   @endforeach
 </div>

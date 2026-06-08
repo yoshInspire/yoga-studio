@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Carbon\Carbon;
 use Illuminate\Support\ServiceProvider;
+use YooKassa\Client;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -12,7 +13,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(Client::class, function () {
+            $client = new Client;
+            $client->setAuth(
+                (string) config('yookassa.shop_id'),
+                (string) config('yookassa.secret_key'),
+            );
+
+            return $client;
+        });
     }
 
     /**
