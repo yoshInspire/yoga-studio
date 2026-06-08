@@ -24,12 +24,12 @@
 
   <div class="marquee" aria-hidden="true">
     <div class="marquee__track">
-      <span>Хатха</span><span>•</span><span>Йогатерапия</span><span>•</span><span>Виньяса</span><span>•</span>
-      <span>Инь-</span><span>•</span><span>Аэройога</span><span>•</span><span>Пилатес</span><span>•</span>
-      <span>Нидра</span><span>•</span><span>Медитации</span><span>•</span><span>Stretching</span><span>•</span>
-      <span>Хатха</span><span>•</span><span>Йогатерапия</span><span>•</span><span>Виньяса</span><span>•</span>
-      <span>Инь-</span><span>•</span><span>Аэройога</span><span>•</span><span>Пилатес</span><span>•</span>
-      <span>Нидра</span><span>•</span><span>Медитации</span><span>•</span><span>Stretching</span><span>•</span>
+      <span>Хатха-йога</span><span>•</span><span>Йогатерапия</span><span>•</span><span>Виньяса-флоу</span><span>•</span>
+      <span>Инь-йога</span><span>•</span><span>Аэройога</span><span>•</span><span>Пилатес</span><span>•</span>
+      <span>Йога-нидра</span><span>•</span><span>Медитация</span><span>•</span><span>Stretching йога</span><span>•</span>
+      <span>Хатха-йога</span><span>•</span><span>Йогатерапия</span><span>•</span><span>Виньяса-флоу</span><span>•</span>
+      <span>Инь-йога</span><span>•</span><span>Аэройога</span><span>•</span><span>Пилатес</span><span>•</span>
+      <span>Йога-нидра</span><span>•</span><span>Медитация</span><span>•</span><span>Stretching йога</span><span>•</span>
     </div>
   </div>
 
@@ -49,7 +49,7 @@
       <div class="cards">
         @foreach(array_slice(config('directions.items'), 0, 8) as $i => $card)
           <article class="card reveal" style="--d:{{ $i * 0.08 + 0.05 }}s">
-            <div class="card__img" style="background-image:url('https://images.unsplash.com/{{ $card['img'] }}?auto=format&fit=crop&w=900&q=80')"></div>
+            <div class="card__img" style="background-image:url('{{ \App\Support\DirectionMedia::url($card['img']) }}')"></div>
             <div class="card__body">
               <span class="card__num">{{ $card['num'] }}</span>
               <h3 class="card__title">{{ $card['title'] }}</h3>

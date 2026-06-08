@@ -42,7 +42,7 @@ C:\php\php.exe artisan serve
 ## Контент
 
 - **Логотип:** `public/images/logo-header-mark.png`, `logo-footer.png`, favicon
-- **Направления:** редактировать в `config/directions.php`; фото заменить в полях `img` / `gallery`
+- **Направления:** редактировать в `config/directions.php`; локальные фото — `public/images/directions/{slug}/`, в конфиге путь `images/directions/...`
 
 ## Деплой
 

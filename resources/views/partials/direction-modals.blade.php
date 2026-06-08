@@ -13,7 +13,7 @@
             <div class="dir-detail__slides">
               @foreach($slides as $k => $photo)
                 <div class="dir-detail__slide @if($k === 0) is-active @endif"
-                     style="background-image:url('https://images.unsplash.com/{{ $photo }}?auto=format&fit=crop&w=1200&q=80')"></div>
+                     style="background-image:url('{{ \App\Support\DirectionMedia::url($photo, 1200) }}')"></div>
               @endforeach
             </div>
             <div class="dir-detail__hero-overlay"></div>

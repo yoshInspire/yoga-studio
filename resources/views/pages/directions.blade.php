@@ -20,7 +20,7 @@
       <div class="cards">
         @foreach(config('directions.items') as $i => $card)
           <article class="card reveal" style="--d:{{ ($i % 4) * 0.08 + 0.05 }}s">
-            <div class="card__img" style="background-image:url('https://images.unsplash.com/{{ $card['img'] }}?auto=format&fit=crop&w=900&q=80')"></div>
+            <div class="card__img" style="background-image:url('{{ \App\Support\DirectionMedia::url($card['img']) }}')"></div>
             <div class="card__body">
               <span class="card__num">{{ $card['num'] }}</span>
               <h3 class="card__title">{{ $card['title'] }}</h3>
