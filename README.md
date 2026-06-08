@@ -23,7 +23,7 @@ C:\php\php.exe artisan serve
 
 - `resources/views/home.blade.php` — главная страница
 - `resources/views/layouts/site.blade.php` — общий шаблон
-- `config/directions.php` — **17 направлений** (тексты клиента, фото — заглушки)
+- `config/directions.php` — **16 направлений** (названия и тексты клиента, фото — заглушки)
 - `public/css/site.css`, `public/js/site.js` — стили и скрипты лендинга
 - `docs/PROJECT_REQUIREMENTS.md` — единые требования (в родительской папке)
 
@@ -32,7 +32,7 @@ C:\php\php.exe artisan serve
 | URL | Описание |
 |-----|----------|
 | `/` | Главная |
-| `/directions` | Все 17 направлений |
+| `/directions` | Все 16 направлений |
 | `/schedule` | Расписание и запись |
 | `/news` | Новости |
 | `/login` | Вход / регистрация |
