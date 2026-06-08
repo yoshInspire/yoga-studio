@@ -18,26 +18,31 @@ return [
             'src' => 'images/studio/gallery-reception.webp',
             'alt' => 'Ресепшн и зона ожидания студии',
             'caption' => 'Ресепшн',
+            'layout' => 'studio-gallery__item--wide',
         ],
         [
             'src' => 'images/studio/gallery-waiting.webp',
             'alt' => 'Уютная зона ожидания',
             'caption' => 'Зона отдыха',
+            'layout' => 'studio-gallery__item--tall',
         ],
         [
             'src' => 'images/studio/gallery-meditation.webp',
             'alt' => 'Атмосфера медитации в студии',
             'caption' => 'Медитация',
+            'layout' => 'studio-gallery__item--sm',
         ],
         [
             'src' => 'images/studio/gallery-equipment.webp',
             'alt' => 'Йога-инвентарь в студии',
             'caption' => 'Инвентарь',
+            'layout' => 'studio-gallery__item--md',
         ],
         [
             'src' => 'images/studio/gallery-lockers.webp',
             'alt' => 'Раздевалка с шкафчиками',
             'caption' => 'Раздевалка',
+            'layout' => 'studio-gallery__item--sm',
         ],
     ],
 ];

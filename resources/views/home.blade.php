@@ -118,14 +118,7 @@
       </div>
       <div class="studio-gallery__grid">
         @foreach(config('studio-photos.gallery') as $i => $photo)
-          @php
-            $layout = match ($i) {
-              0 => 'studio-gallery__item--wide',
-              1 => 'studio-gallery__item--tall',
-              default => $i % 2 === 0 ? 'studio-gallery__item--sm' : 'studio-gallery__item--md',
-            };
-          @endphp
-          <figure class="studio-gallery__item {{ $layout }} reveal" style="--d:{{ $i * 0.08 + 0.05 }}s">
+          <figure class="studio-gallery__item {{ $photo['layout'] }} reveal" style="--d:{{ $i * 0.08 + 0.05 }}s">
             <img src="{{ asset($photo['src']) }}" alt="{{ $photo['alt'] }}" loading="lazy" decoding="async" />
             <figcaption>{{ $photo['caption'] }}</figcaption>
           </figure>
