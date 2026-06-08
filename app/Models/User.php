@@ -130,6 +130,26 @@ class User extends Authenticatable implements FilamentUser
         return $this->role === UserRole::Admin;
     }
 
+    /**
+     * Ссылка на кабинет с публичного сайта. Админка (/admin) сюда не попадает.
+     *
+     * @return array{url: string, label: string}|null
+     */
+    public function publicCabinetLink(): ?array
+    {
+        return match ($this->role) {
+            UserRole::Client => [
+                'url' => route('account'),
+                'label' => 'Личный кабинет',
+            ],
+            UserRole::Trainer => [
+                'url' => route('trainer'),
+                'label' => 'Кабинет тренера',
+            ],
+            UserRole::Admin => null,
+        };
+    }
+
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
