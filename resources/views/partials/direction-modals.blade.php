@@ -26,16 +26,20 @@
 
           <div class="dir-detail__content">
             <header class="dir-detail__head">
-              <span class="dir-detail__tag">{{ $dir['tag'] }}</span>
+              @if(!empty($dir['tag']))
+                <span class="dir-detail__tag">{{ $dir['tag'] }}</span>
+              @endif
               <h2 class="dir-detail__title" @if($loop->first) id="dirModalTitle" @endif>{{ $dir['title'] }}</h2>
               <p class="dir-detail__lead">{{ $dir['lead'] }}</p>
             </header>
 
-            <div class="dir-detail__body">
-              @foreach($dir['body'] as $para)
-                <p>{{ $para }}</p>
-              @endforeach
-            </div>
+            @if(!empty($dir['body']))
+              <div class="dir-detail__body">
+                @foreach($dir['body'] as $para)
+                  <p>{{ $para }}</p>
+                @endforeach
+              </div>
+            @endif
 
             @if(!empty($dir['benefits']))
               <div class="dir-detail__benefits">

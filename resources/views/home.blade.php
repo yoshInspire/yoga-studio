@@ -24,10 +24,12 @@
 
   <div class="marquee" aria-hidden="true">
     <div class="marquee__track">
-      <span>Хатха-йога</span><span>•</span><span>Инь-йога</span><span>•</span><span>Йогатерапия</span><span>•</span>
-      <span>Медитация</span><span>•</span><span>Йога-нидра</span><span>•</span><span>Пилатес</span><span>•</span>
-      <span>Хатха-йога</span><span>•</span><span>Инь-йога</span><span>•</span><span>Йогатерапия</span><span>•</span>
-      <span>Медитация</span><span>•</span><span>Йога-нидра</span><span>•</span><span>Пилатес</span><span>•</span>
+      <span>Хатха-йога</span><span>•</span><span>Йогатерапия</span><span>•</span><span>Виньяса-флоу</span><span>•</span>
+      <span>Инь-йога</span><span>•</span><span>Аэройога</span><span>•</span><span>Пилатес</span><span>•</span>
+      <span>Йога-нидра</span><span>•</span><span>Медитация</span><span>•</span><span>Stretching йога</span><span>•</span>
+      <span>Хатха-йога</span><span>•</span><span>Йогатерапия</span><span>•</span><span>Виньяса-флоу</span><span>•</span>
+      <span>Инь-йога</span><span>•</span><span>Аэройога</span><span>•</span><span>Пилатес</span><span>•</span>
+      <span>Йога-нидра</span><span>•</span><span>Медитация</span><span>•</span><span>Stretching йога</span><span>•</span>
     </div>
   </div>
 
@@ -41,7 +43,7 @@
       </div>
 
       <p class="directions__intro reveal">
-        В студии представлены более 10 направлений йоги для гостей разного уровня подготовки.
+        В студии представлено 17 направлений йоги и оздоровительных практик для гостей разного уровня подготовки.
       </p>
 
       <div class="cards">
