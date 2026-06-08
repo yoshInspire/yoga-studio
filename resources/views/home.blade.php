@@ -161,40 +161,9 @@
           <p class="eyebrow reveal">Форматы занятий</p>
           <h2 class="section__title reveal">Услуги и цены</h2>
         </div>
-        <p class="section__desc reveal">Групповые и индивидуальные занятия.</p>
+        <p class="section__desc reveal">Актуальные цены студии на групповые и индивидуальные форматы.</p>
       </div>
-      <div class="pricing">
-        <article class="price reveal" style="--d:.05s">
-          <h3 class="price__name">Групповое занятие</h3>
-          <p class="price__value">700 <span>₽</span></p>
-          <ul class="price__list">
-            <li>Группы до 6 человек</li>
-            <li>Любое групповое направление</li>
-            <li>Весь инвентарь — в студии</li>
-          </ul>
-          <a href="{{ route('login') }}" class="btn btn--line btn--full">Записаться в кабинете</a>
-        </article>
-        <article class="price price--featured reveal" style="--d:.15s">
-          <span class="price__tag">Популярное</span>
-          <h3 class="price__name">Индивидуальное занятие</h3>
-          <p class="price__value">3 500 <span>₽</span></p>
-          <ul class="price__list">
-            <li>Персональная программа</li>
-            <li>Работа со спиной и здоровьем</li>
-            <li>Удобное для вас время</li>
-          </ul>
-          <a href="{{ route('login') }}" class="btn btn--solid btn--full">Записаться в кабинете</a>
-        </article>
-        <article class="price reveal" style="--d:.25s">
-          <h3 class="price__name">Сплит · для двоих</h3>
-          <p class="price__value">3 200 <span>₽</span></p>
-          <ul class="price__list">
-            <li>Занятие на двоих</li>
-            <li>Внимание тренера к каждому</li>
-          </ul>
-          <a href="{{ route('login') }}" class="btn btn--line btn--full">Записаться в кабинете</a>
-        </article>
-      </div>
+      @include('partials.pricing')
     </div>
   </section>
 
@@ -227,7 +196,7 @@
       <p class="eyebrow eyebrow--light reveal">Впервые на йоге?</p>
       <h2 class="cta__title reveal">Начните с пробного занятия</h2>
       <p class="cta__text reveal">
-        Подберём направление под ваши цели. Маленькая группа и внимательный тренер.
+        Пробное групповое занятие — 1 400 ₽. Подберём направление под ваши цели.
       </p>
       <a href="{{ route('login') }}" class="btn btn--solid btn--lg reveal">Войти в личный кабинет</a>
     </div>
