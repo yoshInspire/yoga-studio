@@ -12,8 +12,12 @@ use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -93,7 +97,8 @@ class UserResource extends Resource
                                 fn (UserRole $role) => [$role->value => $role->label()]
                             )->all())
                             ->required()
-                            ->default(UserRole::Client->value),
+                            ->default(UserRole::Client->value)
+                            ->live(),
                         TextInput::make('password')
                             ->label('Пароль')
                             ->password()
@@ -102,6 +107,35 @@ class UserResource extends Resource
                             ->dehydrated(fn (?string $state): bool => filled($state))
                             ->minLength(8)
                             ->helperText('Оставьте пустым при редактировании, если менять пароль не нужно.'),
+                    ]),
+                Section::make('Профиль на сайте')
+                    ->description('Для пользователей с ролью «Тренер»: фото и описание на главной странице.')
+                    ->visible(fn (Get $get): bool => $get('role') === UserRole::Trainer->value)
+                    ->schema([
+                        Toggle::make('show_on_site')
+                            ->label('Показывать в блоке «Тренеры» на главной')
+                            ->default(true),
+                        TextInput::make('site_sort_order')
+                            ->label('Порядок на сайте')
+                            ->numeric()
+                            ->minValue(0)
+                            ->default(0)
+                            ->helperText('Меньшее число — выше в списке.'),
+                        FileUpload::make('trainer_photo_path')
+                            ->label('Фото')
+                            ->image()
+                            ->disk('public')
+                            ->directory('trainers')
+                            ->imageEditor()
+                            ->maxSize(8192),
+                        TextInput::make('trainer_title')
+                            ->label('Подпись под именем')
+                            ->maxLength(255)
+                            ->placeholder('Например: Тренер · аэройога и силовые практики'),
+                        Textarea::make('trainer_bio')
+                            ->label('Описание')
+                            ->rows(4)
+                            ->maxLength(2000),
                     ]),
             ]);
     }

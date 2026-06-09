@@ -126,6 +126,7 @@
     </div>
   </section>
 
+  @if($trainers->isNotEmpty())
   <section class="section teachers" id="teachers">
     <div class="container">
       <div class="section__head">
@@ -137,22 +138,35 @@
           Внимательные преподаватели с подходом к гостю любого уровня.
         </p>
       </div>
-      <div class="teachers__grid teachers__grid--two">
-        <article class="teacher reveal" style="--d:.05s">
-          <div class="teacher__img" style="background-image:url('https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&w=800&q=80')"></div>
-          <h3 class="teacher__name">Ирина Коленцева</h3>
-          <p class="teacher__role">Основатель студии · ведущий тренер</p>
-          <p class="teacher__bio">Ведёт хатха-йогу, йогатерапию, гвоздестояние, медитации и индивидуальные практики.</p>
-        </article>
-        <article class="teacher reveal" style="--d:.15s">
-          <div class="teacher__img" style="background-image:url('https://images.unsplash.com/photo-1611672585731-fa10603fb9e0?auto=format&fit=crop&w=800&q=80')"></div>
-          <h3 class="teacher__name">Александр</h3>
-          <p class="teacher__role">Тренер · аэройога и силовые практики</p>
-          <p class="teacher__bio">Ведёт занятия на гамаках и силовые классы для любого уровня подготовки.</p>
-        </article>
-      </div>
+        <div @class([
+          'teachers__grid',
+          'teachers__grid--two' => $trainers->count() <= 2,
+        ])>
+          @foreach($trainers as $i => $trainer)
+            <article class="teacher reveal" style="--d:{{ $i * 0.1 + 0.05 }}s">
+              <div
+                @class(['teacher__img', 'teacher__img--placeholder' => ! $trainer->trainerPhotoUrl()])
+                @if($trainer->trainerPhotoUrl())
+                  style="background-image:url('{{ $trainer->trainerPhotoUrl() }}')"
+                @endif
+              >
+                @unless($trainer->trainerPhotoUrl())
+                  <span aria-hidden="true">{{ $trainer->initials() }}</span>
+                @endunless
+              </div>
+              <h3 class="teacher__name">{{ $trainer->trainerDisplayName() }}</h3>
+              @if($trainer->trainer_title)
+                <p class="teacher__role">{{ $trainer->trainer_title }}</p>
+              @endif
+              @if($trainer->trainer_bio)
+                <p class="teacher__bio">{{ $trainer->trainer_bio }}</p>
+              @endif
+            </article>
+          @endforeach
+        </div>
     </div>
   </section>
+  @endif
 
   <section class="section services" id="services">
     <div class="container">

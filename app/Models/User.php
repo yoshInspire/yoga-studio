@@ -10,8 +10,10 @@ use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Notifications\Notifiable;
 
 #[Fillable([
@@ -27,6 +29,11 @@ use Illuminate\Notifications\Notifiable;
     'birth_month',
     'birth_year',
     'role',
+    'trainer_photo_path',
+    'trainer_title',
+    'trainer_bio',
+    'show_on_site',
+    'site_sort_order',
     'password',
 ])]
 #[Hidden(['password', 'remember_token'])]
@@ -43,6 +50,8 @@ class User extends Authenticatable implements FilamentUser
             'telegram_linked_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
+            'show_on_site' => 'boolean',
+            'site_sort_order' => 'integer',
             'birth_day' => 'integer',
             'birth_month' => 'integer',
             'birth_year' => 'integer',
@@ -128,6 +137,31 @@ class User extends Authenticatable implements FilamentUser
     public function isTrainer(): bool
     {
         return $this->role === UserRole::Trainer;
+    }
+
+    public function trainerDisplayName(): string
+    {
+        return trim("{$this->first_name} {$this->last_name}");
+    }
+
+    public function trainerPhotoUrl(): ?string
+    {
+        if (! $this->trainer_photo_path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->trainer_photo_path);
+    }
+
+    /** @param  Builder<self>  $query */
+    public function scopePublishedOnSite(Builder $query): Builder
+    {
+        return $query
+            ->where('role', UserRole::Trainer)
+            ->where('show_on_site', true)
+            ->orderBy('site_sort_order')
+            ->orderBy('last_name')
+            ->orderBy('first_name');
     }
 
     public function isAdmin(): bool
