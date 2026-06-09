@@ -66,15 +66,70 @@ class SubscriptionService
         ]);
     }
 
-    public function extend(Subscription $subscription, Carbon $newEndsAt): Subscription
+    public function extend(Subscription $subscription, Carbon $newEndsAt, ?string $note = null): Subscription
     {
         if ($newEndsAt->lt($subscription->starts_at)) {
             throw new InvalidArgumentException('Дата окончания не может быть раньше даты начала.');
         }
 
-        $subscription->update(['ends_at' => $newEndsAt]);
+        $subscription->update([
+            'ends_at' => $newEndsAt,
+            'admin_note' => $this->appendAdminNote($subscription, $note),
+        ]);
 
         return $subscription->refresh();
+    }
+
+    public function extendByDays(Subscription $subscription, int $days, ?string $note = null): Subscription
+    {
+        if ($days < 1) {
+            throw new InvalidArgumentException('Количество дней должно быть не меньше 1.');
+        }
+
+        $baseDate = Carbon::parse($subscription->ends_at)->max(now()->startOfDay());
+
+        return $this->extend(
+            $subscription,
+            $baseDate->copy()->addDays($days),
+            $this->formatExtensionNote($days, $note),
+        );
+    }
+
+    private function formatExtensionNote(int $days, ?string $note): string
+    {
+        $line = now()->format('d.m.Y H:i')." — продление на {$days} "
+            .$this->daysLabel($days);
+
+        if ($note !== null && $note !== '') {
+            $line .= ': '.$note;
+        }
+
+        return $line;
+    }
+
+    private function daysLabel(int $days): string
+    {
+        $mod10 = $days % 10;
+        $mod100 = $days % 100;
+
+        if ($mod100 >= 11 && $mod100 <= 14) {
+            return 'дней';
+        }
+
+        return match ($mod10) {
+            1 => 'день',
+            2, 3, 4 => 'дня',
+            default => 'дней',
+        };
+    }
+
+    private function appendAdminNote(Subscription $subscription, ?string $note): ?string
+    {
+        if ($note === null || $note === '') {
+            return $subscription->admin_note;
+        }
+
+        return trim(($subscription->admin_note ? $subscription->admin_note."\n" : '').$note);
     }
 
     public function changeStartDate(Subscription $subscription, Carbon $newStartsAt): Subscription

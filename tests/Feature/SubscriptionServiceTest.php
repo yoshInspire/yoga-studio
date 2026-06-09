@@ -162,4 +162,46 @@ class SubscriptionServiceTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->service->returnSession($sub);
     }
+
+    public function test_extend_by_days_adds_to_current_end_date(): void
+    {
+        $user = $this->user();
+        $currentEndsAt = now()->addDays(20)->startOfDay();
+        $sub = $this->subscription($user, [
+            'ends_at' => $currentEndsAt,
+        ]);
+
+        $updated = $this->service->extendByDays($sub, 14, 'бесплатное продление');
+
+        $this->assertSame(
+            $currentEndsAt->copy()->addDays(14)->toDateString(),
+            $updated->ends_at->toDateString(),
+        );
+        $this->assertStringContainsString('продление на 14 дней', (string) $updated->admin_note);
+        $this->assertStringContainsString('бесплатное продление', (string) $updated->admin_note);
+    }
+
+    public function test_extend_by_days_starts_from_today_when_subscription_expired(): void
+    {
+        $user = $this->user();
+        $sub = $this->subscription($user, [
+            'ends_at' => now()->subDays(5),
+        ]);
+
+        $updated = $this->service->extendByDays($sub, 10);
+
+        $this->assertSame(
+            now()->startOfDay()->addDays(10)->toDateString(),
+            $updated->ends_at->toDateString(),
+        );
+    }
+
+    public function test_extend_by_days_with_invalid_count_throws(): void
+    {
+        $user = $this->user();
+        $sub = $this->subscription($user);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->service->extendByDays($sub, 0);
+    }
 }
