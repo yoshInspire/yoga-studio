@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\BookingStatus;
+use App\Services\ProfileEmailVerificationService;
 use App\Services\SubscriptionService;
 use App\Services\TelegramAuthService;
 use App\Support\OfferStorage;
@@ -10,7 +11,11 @@ use Illuminate\View\View;
 
 class AccountController extends Controller
 {
-    public function __invoke(SubscriptionService $subscriptions, TelegramAuthService $telegram): View
+    public function __invoke(
+        SubscriptionService $subscriptions,
+        TelegramAuthService $telegram,
+        ProfileEmailVerificationService $profileEmailVerification,
+    ): View
     {
         $user = auth()->user();
 
@@ -63,6 +68,11 @@ class AccountController extends Controller
             'offerAvailable' => OfferStorage::exists(),
             'telegramEnabled' => $telegram->isEnabled(),
             'telegramBotUsername' => $telegram->botUsername(),
+            'profileEditOpen' => session('profile_edit_open', false),
+            'profileCodeSent' => session('profile_code_sent', false),
+            'profileEmailVerified' => session('profile_email_verified') ?? $profileEmailVerification->verifiedEmail($user),
+            'profilePendingEmail' => $profileEmailVerification->pendingEmail($user),
+            'lkSection' => session('lk_section'),
         ]);
     }
 }

@@ -310,10 +310,183 @@ const lkNav = document.getElementById('lkNav');
 if (lkNav) {
   const links = lkNav.querySelectorAll('.lk__navlink[data-sec]');
   const panels = document.querySelectorAll('.lk__panel');
+
+  const switchLkSection = (section) => {
+    if (!section) return;
+    const link = lkNav.querySelector(`.lk__navlink[data-sec="${section}"]`);
+    if (!link) return;
+    links.forEach((l) => l.classList.toggle('is-active', l === link));
+    panels.forEach((p) => p.classList.toggle('is-hidden', p.dataset.panel !== section));
+  };
+
   links.forEach((link) => {
-    link.addEventListener('click', () => {
-      links.forEach((l) => l.classList.toggle('is-active', l === link));
-      panels.forEach((p) => p.classList.toggle('is-hidden', p.dataset.panel !== link.dataset.sec));
-    });
+    link.addEventListener('click', () => switchLkSection(link.dataset.sec));
   });
+
+  switchLkSection(lkNav.dataset.initialSection);
+}
+
+// ===== Редактирование профиля в ЛК =====
+const profileView = document.getElementById('profileView');
+const profileEdit = document.getElementById('profileEdit');
+const profileEditForm = document.getElementById('profileEditForm');
+
+if (profileView && profileEdit && profileEditForm) {
+  const profileEditBtn = document.getElementById('profileEditBtn');
+  const profileCancelBtn = document.getElementById('profileCancelBtn');
+  const profileSaveBtn = document.getElementById('profileSaveBtn');
+  const profileEmailInput = document.getElementById('profile-email');
+  const profileEmailVerify = document.getElementById('profileEmailVerify');
+  const profileEmailVerified = document.getElementById('profileEmailVerified');
+  const profileSendCodeBtn = document.getElementById('profileSendCodeBtn');
+  const profileVerifyEmailBtn = document.getElementById('profileVerifyEmailBtn');
+  const profileEmailCode = document.getElementById('profile-email-code');
+  const profileCodeRow = document.getElementById('profileCodeRow');
+  const profileEmailSendForm = document.getElementById('profileEmailSendForm');
+  const profileEmailVerifyForm = document.getElementById('profileEmailVerifyForm');
+  const profilePatronymicToggle = document.getElementById('profile-patronymic-toggle');
+  const profilePatronymicField = document.getElementById('profile-patronymic-field');
+  const profileFieldNames = [
+    'first_name',
+    'last_name',
+    'patronymic',
+    'birth_day',
+    'birth_month',
+    'birth_year',
+    'phone',
+    'email',
+  ];
+
+  const normalizeEmail = (value) => (value || '').trim().toLowerCase();
+
+  const getOriginalEmail = () => normalizeEmail(profileEditForm.dataset.originalEmail);
+  const getVerifiedEmail = () => normalizeEmail(profileEditForm.dataset.verifiedEmail);
+  const getFormEmail = () => normalizeEmail(profileEmailInput?.value);
+
+  const emailChangeRequiresVerification = () => {
+    const formEmail = getFormEmail();
+    if (!formEmail) return false;
+    return formEmail !== getOriginalEmail();
+  };
+
+  const isEmailVerifiedForForm = () => {
+    const formEmail = getFormEmail();
+    if (!emailChangeRequiresVerification()) return true;
+    return getVerifiedEmail() === formEmail;
+  };
+
+  const syncProfileEmailState = () => {
+    const needsVerify = emailChangeRequiresVerification();
+    const verified = isEmailVerifiedForForm();
+
+    if (profileEmailVerify) {
+      profileEmailVerify.classList.toggle('is-hidden', !needsVerify || verified);
+    }
+    if (profileEmailVerified) {
+      profileEmailVerified.classList.toggle('is-hidden', !needsVerify || !verified);
+    }
+    if (profileSaveBtn) {
+      profileSaveBtn.disabled = needsVerify && !verified;
+      profileSaveBtn.title = needsVerify && !verified
+        ? 'Подтвердите email перед сохранением'
+        : '';
+    }
+
+    if (profileCodeRow) {
+      const showCodeRow = needsVerify && (
+        profileEditForm.dataset.codeSent === '1'
+        || profileEditForm.dataset.pendingEmail === getFormEmail()
+      );
+      profileCodeRow.classList.toggle('is-hidden', !showCodeRow);
+    }
+
+    if (needsVerify && profileEmailCode && profileEditForm.dataset.codeSent === '1') {
+      profileEmailCode.focus();
+    }
+  };
+
+  const copyProfileFieldsToForm = (targetForm, extra = {}) => {
+    if (!targetForm) return;
+    targetForm.querySelectorAll('[data-profile-field]').forEach((el) => el.remove());
+
+    profileFieldNames.forEach((name) => {
+      const source = profileEditForm.elements[name];
+      if (!source) return;
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = source.value;
+      input.dataset.profileField = '1';
+      targetForm.appendChild(input);
+    });
+
+    Object.entries(extra).forEach(([name, value]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = value;
+      input.dataset.profileField = '1';
+      targetForm.appendChild(input);
+    });
+  };
+
+  const openProfileEdit = () => {
+    profileView.classList.add('is-hidden');
+    profileEdit.classList.remove('is-hidden');
+    syncProfileEmailState();
+  };
+
+  const closeProfileEdit = () => {
+    profileEdit.classList.add('is-hidden');
+    profileView.classList.remove('is-hidden');
+  };
+
+  profileEditBtn?.addEventListener('click', openProfileEdit);
+  profileCancelBtn?.addEventListener('click', closeProfileEdit);
+
+  profileEmailInput?.addEventListener('input', () => {
+    const formEmail = getFormEmail();
+    if (formEmail !== getVerifiedEmail()) {
+      profileEditForm.dataset.verifiedEmail = '';
+    }
+    syncProfileEmailState();
+  });
+
+  profileSendCodeBtn?.addEventListener('click', () => {
+    if (!profileEmailInput?.value.trim()) {
+      profileEmailInput?.focus();
+      return;
+    }
+    copyProfileFieldsToForm(profileEmailSendForm);
+    profileEmailSendForm?.submit();
+  });
+
+  profileVerifyEmailBtn?.addEventListener('click', () => {
+    const code = profileEmailCode?.value.trim() || '';
+    if (!code) {
+      profileEmailCode?.focus();
+      return;
+    }
+    copyProfileFieldsToForm(profileEmailVerifyForm, { code });
+    profileEmailVerifyForm?.submit();
+  });
+
+  if (profilePatronymicToggle && profilePatronymicField) {
+    const syncPatronymic = () => {
+      profilePatronymicField.classList.toggle('is-hidden', !profilePatronymicToggle.checked);
+      if (!profilePatronymicToggle.checked) {
+        const input = profilePatronymicField.querySelector('input');
+        if (input) input.value = '';
+      }
+    };
+    profilePatronymicToggle.addEventListener('change', syncPatronymic);
+    syncPatronymic();
+  }
+
+  const profilePhone = document.getElementById('profile-phone');
+  if (profilePhone) {
+    attachPhoneMask(profilePhone, 'phone');
+  }
+
+  syncProfileEmailState();
 }

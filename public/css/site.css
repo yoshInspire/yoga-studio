@@ -887,6 +887,18 @@ a { color: inherit; text-decoration: none; }
 .lk__field { display: flex; flex-direction: column; gap: 4px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
 .lk__field dt { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .lk__field dd { font-size: 17px; font-weight: 500; }
+.lk__alert { margin-bottom: 18px; }
+.lk__profile-edit { max-width: 560px; }
+.lk__profile-form { margin-top: 8px; }
+.lk__profile-form .form__row { margin-bottom: 16px; }
+.lk__profile-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.lk__email-verify { margin-top: 12px; padding: 14px 16px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.lk__email-verify-lead { font-size: 14px; color: var(--ink-soft); margin: 0 0 12px; line-height: 1.5; }
+.lk__email-send { margin-bottom: 10px; }
+.lk__email-verify-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 4px; }
+.lk__email-code { width: 140px; max-width: 100%; }
+.lk__email-verified { margin: 10px 0 0; font-size: 14px; color: var(--sage-deep); font-weight: 600; }
+.lk__patronymic-toggle { margin-bottom: 10px; }
 
 .subs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .sub { border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 24px 26px; background: var(--bg); }

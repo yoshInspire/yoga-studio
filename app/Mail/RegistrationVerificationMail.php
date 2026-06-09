@@ -15,12 +15,17 @@ class RegistrationVerificationMail extends Mailable
     public function __construct(
         public string $code,
         public int $ttlMinutes,
+        public string $context = 'registration',
     ) {}
 
     public function envelope(): Envelope
     {
+        $subject = $this->context === 'profile'
+            ? 'Код подтверждения email · ЭКО YOGA'
+            : 'Код подтверждения регистрации · ЭКО YOGA';
+
         return new Envelope(
-            subject: 'Код подтверждения регистрации · ЭКО YOGA',
+            subject: $subject,
         );
     }
 
@@ -28,6 +33,9 @@ class RegistrationVerificationMail extends Mailable
     {
         return new Content(
             view: 'emails.registration-verification',
+            with: [
+                'context' => $this->context,
+            ],
         );
     }
 }

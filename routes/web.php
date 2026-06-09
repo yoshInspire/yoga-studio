@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Account\TelegramLinkController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\LoginController;
@@ -54,6 +55,13 @@ Route::get('/oferta', [OfferController::class, 'show'])->middleware('auth')->nam
 
 Route::middleware(['auth', 'role:client'])->group(function () {
     Route::get('/account', AccountController::class)->name('account');
+    Route::put('/account/profile', [ProfileController::class, 'update'])->name('account.profile.update');
+    Route::post('/account/profile/email/send-code', [ProfileController::class, 'sendEmailCode'])
+        ->middleware('throttle:3,1')
+        ->name('account.profile.email.send');
+    Route::post('/account/profile/email/verify', [ProfileController::class, 'verifyEmailCode'])
+        ->middleware('throttle:12,1')
+        ->name('account.profile.email.verify');
     Route::get('/account/telegram/callback', [TelegramLinkController::class, 'callback'])
         ->middleware('throttle:20,1')
         ->name('account.telegram.callback');
