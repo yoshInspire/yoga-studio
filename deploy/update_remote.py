@@ -66,6 +66,9 @@ set_env ADMIN_PASSWORD StudioAdmin2026!
 set_env TRAINER_EMAIL trainer@ekoyoga-ik.ru
 set_env TRAINER_PHONE +79000000001
 set_env TRAINER_PASSWORD StudioTrainer2026!
+
+grep -q '^MAIL_FROM_NAME=' .env && sed -i 's|^MAIL_FROM_NAME=.*|MAIL_FROM_NAME="ЭКО YOGA"|' .env || echo 'MAIL_FROM_NAME="ЭКО YOGA"' >> .env
+grep -q '^MAIL_FROM_ADDRESS=' .env && sed -i 's|^MAIL_FROM_ADDRESS=.*|MAIL_FROM_ADDRESS=ecoyoga-ik@yandex.ru|' .env || echo 'MAIL_FROM_ADDRESS=ecoyoga-ik@yandex.ru' >> .env
 """
     if telegram_token:
         script += f"set_env TELEGRAM_BOT_TOKEN {telegram_token}\n"
