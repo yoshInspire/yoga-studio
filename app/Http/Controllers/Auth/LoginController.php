@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\Concerns\RedirectsAuthenticatedUsers;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
+use App\Services\RegistrationEmailVerificationService;
 use App\Services\TelegramAuthService;
 use App\Support\TelegramAuthData;
 use Illuminate\Http\RedirectResponse;
@@ -19,6 +20,7 @@ class LoginController extends Controller
 
     public function __construct(
         protected TelegramAuthService $telegram,
+        protected RegistrationEmailVerificationService $emailVerification,
     ) {}
     public function create(): View|RedirectResponse
     {
@@ -28,13 +30,19 @@ class LoginController extends Controller
 
         $telegramPending = session('telegram_pending');
 
+        $activeTab = session('auth_tab', 'login');
+        if ($activeTab !== 'verify-email' && $this->emailVerification->hasPending(session())) {
+            $activeTab = 'verify-email';
+        }
+
         return view('pages.login', [
-            'activeTab' => session('auth_tab', 'login'),
+            'activeTab' => $activeTab,
             'telegramEnabled' => $this->telegram->isEnabled(),
             'telegramBotUsername' => $this->telegram->botUsername(),
             'telegramPending' => is_array($telegramPending)
                 ? TelegramAuthData::fromSession($telegramPending)
                 : null,
+            'verificationEmail' => $this->emailVerification->pendingEmail(session()),
         ]);
     }
 

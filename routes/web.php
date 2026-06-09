@@ -32,7 +32,17 @@ Route::post('/lead', [LeadController::class, 'store'])
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->name('login.store');
-    Route::post('/register', [RegisterController::class, 'store'])->name('register');
+    Route::post('/register', [RegisterController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('register');
+    Route::post('/register/verify', [RegisterController::class, 'verify'])
+        ->middleware('throttle:12,1')
+        ->name('register.verify');
+    Route::post('/register/resend', [RegisterController::class, 'resend'])
+        ->middleware('throttle:3,1')
+        ->name('register.resend');
+    Route::post('/register/cancel', [RegisterController::class, 'cancelVerification'])
+        ->name('register.cancel');
     Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'])
         ->middleware('throttle:20,1')
         ->name('auth.telegram.callback');

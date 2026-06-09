@@ -6,6 +6,8 @@
   $months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
   $activeTab = $activeTab ?? session('auth_tab', 'login');
   $telegramPending = $telegramPending ?? null;
+  $verificationEmail = $verificationEmail ?? null;
+  $emailRequired = ! $telegramPending;
 @endphp
 
 @section('content')
@@ -17,7 +19,7 @@
             <div class="auth__alert auth__alert--ok" data-auto-dismiss="3000">{{ session('status') }}</div>
           @endif
 
-          <div class="auth__tabs" role="tablist">
+          <div class="auth__tabs {{ $activeTab === 'verify-email' ? 'is-hidden' : '' }}" role="tablist" data-auth-tabs>
             <button type="button" class="auth__tab {{ $activeTab === 'login' ? 'is-active' : '' }}" data-tab="login" role="tab" aria-selected="{{ $activeTab === 'login' ? 'true' : 'false' }}">Вход</button>
             <button type="button" class="auth__tab {{ $activeTab === 'register' ? 'is-active' : '' }}" data-tab="register" role="tab" aria-selected="{{ $activeTab === 'register' ? 'true' : 'false' }}">Регистрация</button>
           </div>
@@ -137,8 +139,15 @@
               <input type="tel" id="reg-phone" name="phone" value="{{ old('phone') }}" placeholder="+7 (___) ___-__-__" autocomplete="tel" inputmode="tel" data-phone-mask required />
             </div>
             <div class="form__row">
-              <label class="auth__label" for="reg-email">Email <span class="auth__optional">(необязательно)</span></label>
-              <input type="email" id="reg-email" name="email" value="{{ old('email') }}" placeholder="email@example.com" autocomplete="email" />
+              <label class="auth__label" for="reg-email">
+                Email
+                @if ($emailRequired)
+                  <span class="auth__required" aria-hidden="true">*</span>
+                @else
+                  <span class="auth__optional">(необязательно)</span>
+                @endif
+              </label>
+              <input type="email" id="reg-email" name="email" value="{{ old('email') }}" placeholder="email@example.com" autocomplete="email" @if ($emailRequired) required @endif />
             </div>
             <div class="form__row">
               <label class="auth__label" for="reg-pass">Пароль</label>
@@ -166,6 +175,56 @@
             <button type="submit" class="btn btn--solid btn--full btn--lg">Зарегистрироваться</button>
             <p class="auth__switch">Уже есть аккаунт? <button type="button" class="auth__link" data-goto="login">Войти</button></p>
           </form>
+
+          {{-- Подтверждение email --}}
+          <form class="auth__form {{ $activeTab === 'verify-email' ? '' : 'is-hidden' }}" data-form="verify-email" data-auth-panel="verify-email" action="{{ route('register.verify') }}" method="post">
+            @csrf
+            <p class="form__sub">
+              @if ($verificationEmail)
+                Введите 6-значный код из письма, отправленного на <strong>{{ $verificationEmail }}</strong>.
+              @else
+                Введите 6-значный код из письма для завершения регистрации.
+              @endif
+            </p>
+
+            @if ($errors->getBag('verify')->any())
+              <div class="auth__alert auth__alert--error">
+                @foreach ($errors->getBag('verify')->all() as $error)
+                  <p>{{ $error }}</p>
+                @endforeach
+              </div>
+            @endif
+
+            <div class="form__row">
+              <label class="auth__label" for="verify-code">Код из письма</label>
+              <input
+                type="text"
+                id="verify-code"
+                name="code"
+                value="{{ old('code') }}"
+                placeholder="000000"
+                inputmode="numeric"
+                pattern="\d{6}"
+                maxlength="6"
+                autocomplete="one-time-code"
+                class="auth__code-input"
+                required
+              />
+            </div>
+
+            <button type="submit" class="btn btn--solid btn--full btn--lg">Подтвердить и зарегистрироваться</button>
+          </form>
+
+          <div class="auth__verify-actions {{ $activeTab === 'verify-email' ? '' : 'is-hidden' }}" data-auth-panel="verify-email">
+            <form action="{{ route('register.resend') }}" method="post">
+              @csrf
+              <button type="submit" class="auth__link auth__link--btn">Отправить код ещё раз</button>
+            </form>
+            <form action="{{ route('register.cancel') }}" method="post">
+              @csrf
+              <button type="submit" class="auth__link auth__link--btn">Отменить регистрацию</button>
+            </form>
+          </div>
         </div>
       </div>
     </div>

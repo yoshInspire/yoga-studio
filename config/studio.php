@@ -15,4 +15,8 @@ return [
 
     /** Куда отправлять заявки с формы на главной */
     'lead_email' => env('STUDIO_LEAD_EMAIL', 'hello@ekoyoga-ik.ru'),
+
+    /** Код подтверждения email при регистрации (без Telegram) */
+    'registration_email_verification_ttl_minutes' => 15,
+    'registration_email_verification_max_attempts' => 5,
 ];

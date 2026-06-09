@@ -217,6 +217,8 @@ document.querySelectorAll('[data-auto-dismiss]').forEach((alert) => {
 const authTabs = document.querySelectorAll('.auth__tab');
 if (authTabs.length) {
   const forms = document.querySelectorAll('.auth__form');
+  const authPanels = document.querySelectorAll('[data-auth-panel]');
+  const authTabsWrap = document.querySelector('[data-auth-tabs]');
   const switchAuth = (name) => {
     authTabs.forEach((t) => {
       const on = t.dataset.tab === name;
@@ -224,6 +226,12 @@ if (authTabs.length) {
       t.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     forms.forEach((f) => f.classList.toggle('is-hidden', f.dataset.form !== name));
+    authPanels.forEach((panel) => {
+      panel.classList.toggle('is-hidden', panel.dataset.authPanel !== name);
+    });
+    if (authTabsWrap) {
+      authTabsWrap.classList.toggle('is-hidden', name === 'verify-email');
+    }
   };
   authTabs.forEach((t) => t.addEventListener('click', () => switchAuth(t.dataset.tab)));
   document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => switchAuth(b.dataset.goto)));

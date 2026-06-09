@@ -33,11 +33,20 @@ class RegisterRequest extends FormRequest
         }
     }
 
+    public function requiresEmail(): bool
+    {
+        return ! $this->session()->has('telegram_pending');
+    }
+
     /**
      * @return array<string, mixed>
      */
     public function rules(): array
     {
+        $emailRules = $this->requiresEmail()
+            ? ['required', 'email', 'max:255', 'unique:users,email']
+            : ['nullable', 'email', 'max:255', 'unique:users,email'];
+
         return [
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
@@ -56,7 +65,7 @@ class RegisterRequest extends FormRequest
                 'size:11',
                 'unique:users,phone',
             ],
-            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
+            'email' => $emailRules,
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'offer_accepted' => ['accepted'],
         ];
@@ -84,6 +93,8 @@ class RegisterRequest extends FormRequest
             'phone.required' => 'Укажите телефон.',
             'phone.size' => 'Введите корректный номер телефона.',
             'phone.unique' => 'Этот телефон уже зарегистрирован.',
+            'email.required' => 'Укажите email.',
+            'email.email' => 'Введите корректный email.',
             'email.unique' => 'Этот email уже зарегистрирован.',
             'password.min' => 'Пароль должен быть не короче 8 символов.',
             'password.confirmed' => 'Пароли не совпадают.',
