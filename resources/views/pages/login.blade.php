@@ -25,7 +25,7 @@
           </div>
 
           {{-- Вход --}}
-          <form class="auth__form {{ $activeTab === 'register' ? 'is-hidden' : '' }}" data-form="login" action="{{ route('login.store') }}" method="post">
+          <form class="auth__form {{ $activeTab === 'login' ? '' : 'is-hidden' }}" data-form="login" action="{{ route('login.store') }}" method="post">
             @csrf
             <p class="form__sub">Введите email или телефон и пароль.</p>
 

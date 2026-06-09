@@ -236,6 +236,11 @@ if (authTabs.length) {
   authTabs.forEach((t) => t.addEventListener('click', () => switchAuth(t.dataset.tab)));
   document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => switchAuth(b.dataset.goto)));
 
+  const initialAuthTab = document.querySelector('.auth__form:not(.is-hidden)')?.dataset.form;
+  if (initialAuthTab === 'verify-email') {
+    switchAuth('verify-email');
+  }
+
   const patronymicToggle = document.getElementById('patronymic-toggle');
   const patronymicField = document.getElementById('patronymic-field');
   if (patronymicToggle && patronymicField) {
