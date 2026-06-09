@@ -58,31 +58,36 @@
                 <div class="lk__field"><dt>Дата рождения</dt><dd>{{ $user->formattedBirthDate() ?? '—' }}</dd></div>
                 <div class="lk__field"><dt>Телефон</dt><dd>{{ $user->formattedPhone() ?? '—' }}</dd></div>
                 <div class="lk__field"><dt>Email</dt><dd>{{ $user->email ?? '—' }}</dd></div>
-                <div class="lk__field">
+                <div class="lk__field lk__field--telegram">
                   <dt>Telegram</dt>
-                  <dd>{{ $user->telegramDisplayAccount() ?? 'Не привязан' }}</dd>
+                  <dd>
+                    @if ($user->hasTelegram())
+                      <div class="lk-tg-row">
+                        <span class="lk-tg-row__name">{{ $user->telegramDisplayAccount() }}</span>
+                        <form action="{{ route('account.telegram.unlink') }}" method="post" class="lk-tg-row__form">
+                          @csrf
+                          @method('DELETE')
+                          <button type="submit" class="lk-tg-unlink">Отвязать</button>
+                        </form>
+                      </div>
+                    @else
+                      <div class="lk-tg-row">
+                        <span class="lk-tg-row__empty">Не привязан</span>
+                        @if ($telegramEnabled ?? false)
+                          <div class="lk-tg-row__widget">
+                            @include('partials.telegram-login-widget', [
+                              'telegramEnabled' => $telegramEnabled,
+                              'telegramBotUsername' => $telegramBotUsername,
+                              'telegramAuthUrl' => route('account.telegram.callback'),
+                              'telegramWidgetSize' => 'medium',
+                            ])
+                          </div>
+                        @endif
+                      </div>
+                    @endif
+                  </dd>
                 </div>
               </dl>
-
-              <div class="lk__telegram">
-                @if ($user->hasTelegram())
-                  <p class="lk__lead">Вход через Telegram доступен для вашего аккаунта.</p>
-                  <form action="{{ route('account.telegram.unlink') }}" method="post" class="lk__telegram-actions">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn--ghost">Отвязать Telegram</button>
-                  </form>
-                @elseif ($telegramEnabled ?? false)
-                  <p class="lk__lead">Привяжите Telegram, чтобы входить на сайт без пароля и не пропускать важные новости студии.</p>
-                  @include('partials.telegram-login-widget', [
-                    'telegramEnabled' => $telegramEnabled,
-                    'telegramBotUsername' => $telegramBotUsername,
-                    'telegramAuthUrl' => route('account.telegram.callback'),
-                  ])
-                @else
-                  <p class="lk__lead">Привязка Telegram скоро будет доступна.</p>
-                @endif
-              </div>
 
               <button type="button" class="btn btn--line" id="profileEditBtn">Редактировать профиль</button>
             </div>

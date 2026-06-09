@@ -4,7 +4,7 @@
       async
       src="https://telegram.org/js/telegram-widget.js?22"
       data-telegram-login="{{ $telegramBotUsername }}"
-      data-size="large"
+      data-size="{{ $telegramWidgetSize ?? 'large' }}"
       data-radius="12"
       data-auth-url="{{ $telegramAuthUrl }}"
       data-request-access="write"

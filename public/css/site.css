@@ -798,14 +798,43 @@ a { color: inherit; text-decoration: none; }
   background: #f6f4ef;
   color: var(--ink-soft);
 }
-.lk__telegram {
-  margin: 22px 0 18px;
-  padding: 18px 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
+.lk__field--telegram dd { min-width: 0; }
+.lk-tg-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
-.lk__telegram-actions { margin-top: 12px; }
+.lk-tg-row__name {
+  font-size: 17px;
+  font-weight: 500;
+}
+.lk-tg-row__empty {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.lk-tg-row__form { margin: 0; }
+.lk-tg-unlink {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: border-color .25s var(--ease), color .25s var(--ease), background .25s var(--ease);
+}
+.lk-tg-unlink:hover {
+  border-color: #d4a59a;
+  color: var(--clay);
+  background: #fffdf9;
+}
+.lk-tg-row__widget { line-height: 0; }
+.lk-tg-row__widget .auth__telegram { margin: 0; }
 
 .password-field { position: relative; }
 .password-field input {
