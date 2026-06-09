@@ -36,7 +36,6 @@
           {{-- Профиль --}}
           <div class="lk__panel" data-panel="profile">
             <h1 class="lk__title">Профиль</h1>
-            <p class="lk__lead">Данные из регистрации. Их можно изменить — или попросить администратора.</p>
             @if (session('status'))
               <div class="auth__alert auth__alert--ok" style="margin-bottom: 18px">{{ session('status') }}</div>
             @endif
