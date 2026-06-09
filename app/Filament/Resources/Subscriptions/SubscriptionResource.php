@@ -19,6 +19,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -79,7 +80,12 @@ class SubscriptionResource extends Resource
                                 ->minValue(0)
                                 ->default(0)
                                 ->required()
-                                ->rules(['lte:sessions_total']),
+                                ->maxValue(fn (Get $get): ?int => filled($get('sessions_total'))
+                                    ? (int) $get('sessions_total')
+                                    : null)
+                                ->validationMessages([
+                                    'max' => 'Списано не может быть больше, чем всего занятий.',
+                                ]),
                         ]),
                         Select::make('sessions_per_day')
                             ->label('Списывать за один день')
