@@ -175,18 +175,7 @@
           <h2 class="section__title reveal">Отзывы</h2>
         </div>
       </div>
-      <div class="reviews__grid">
-        @foreach([
-          ['text' => '«В студии очень тепло и уютно. Ирина — очень чуткий тренер. Хожу с удовольствием!»', 'name' => 'Марина Лебедева', 'tag' => 'групповые занятия'],
-          ['text' => '«Ирина подбирает упражнения под мои проблемы со спиной. Попала в нужные руки!»', 'name' => 'Дарья', 'tag' => 'йогатерапия'],
-          ['text' => '«Группы маленькие — тренер уделяет внимание каждому. Продолжу ходить именно сюда.»', 'name' => 'Екатерина М.', 'tag' => 'новичок'],
-        ] as $i => $review)
-          <blockquote class="review reveal" style="--d:{{ $i * 0.1 + 0.05 }}s">
-            <p>{{ $review['text'] }}</p>
-            <footer><strong>{{ $review['name'] }}</strong><span>{{ $review['tag'] }}</span></footer>
-          </blockquote>
-        @endforeach
-      </div>
+      @include('partials.yandex-reviews-widget')
     </div>
   </section>
 
