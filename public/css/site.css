@@ -759,6 +759,11 @@ a { color: inherit; text-decoration: none; }
 .auth__alert p + p { margin-top: 4px; }
 .auth__alert--error { background: #fdecea; color: #8b3a32; border: 1px solid #f0c5c0; }
 .auth__alert--ok { background: #edf5ee; color: #2f5d3a; border: 1px solid #c8dcc9; }
+.auth__alert.is-dismissing {
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity .3s var(--ease), transform .3s var(--ease);
+}
 .auth__patronymic.is-hidden { display: none; }
 .auth__divider {
   display: flex;

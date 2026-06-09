@@ -14,7 +14,7 @@
       <div class="auth__wrap reveal">
         <div class="auth__panel">
           @if (session('status'))
-            <div class="auth__alert auth__alert--ok">{{ session('status') }}</div>
+            <div class="auth__alert auth__alert--ok" data-auto-dismiss="3000">{{ session('status') }}</div>
           @endif
 
           <div class="auth__tabs" role="tablist">
@@ -80,9 +80,6 @@
             @endif
 
             @if ($telegramPending)
-              <div class="auth__alert auth__alert--ok">
-                Telegram подтверждён: <strong>{{ $telegramPending->displayAccount() }}</strong>. Заполните оставшиеся поля и завершите регистрацию.
-              </div>
               <div class="form__row">
                 <label class="auth__label" for="reg-telegram">Telegram</label>
                 <input type="text" id="reg-telegram" value="{{ $telegramPending->displayAccount() }}" readonly class="auth__readonly" />

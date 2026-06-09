@@ -202,6 +202,17 @@ const togglePasswordVisibility = (btn) => {
   hideIcon?.toggleAttribute('hidden', visible);
 };
 
+// ===== Автоскрытие уведомлений на странице входа =====
+document.querySelectorAll('[data-auto-dismiss]').forEach((alert) => {
+  const delay = Number.parseInt(alert.dataset.autoDismiss, 10);
+  if (!Number.isFinite(delay) || delay <= 0) return;
+
+  window.setTimeout(() => {
+    alert.classList.add('is-dismissing');
+    window.setTimeout(() => alert.remove(), 300);
+  }, delay);
+});
+
 // ===== Вкладки входа / регистрации =====
 const authTabs = document.querySelectorAll('.auth__tab');
 if (authTabs.length) {

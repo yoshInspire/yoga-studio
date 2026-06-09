@@ -49,6 +49,6 @@ class TelegramAuthController extends Controller
         return redirect()
             ->route('login')
             ->with('auth_tab', 'register')
-            ->with('status', 'Telegram подтверждён. Заполните оставшиеся данные для регистрации.');
+            ->with('status', 'Telegram подтверждён: '.$authData->displayAccount().'. Заполните оставшиеся поля и завершите регистрацию.');
     }
 }
