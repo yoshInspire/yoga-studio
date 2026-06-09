@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Pull latest code on VPS and run migrations. python deploy/update_remote.py"""
 
+import os
+import re
 import sys
 
 import paramiko
@@ -11,7 +13,29 @@ PASSWORD = "R9%KS6zbau"
 APP_DIR = "/var/www/yoga-studio"
 
 
+def load_local_secrets() -> dict[str, str]:
+    secrets: dict[str, str] = {}
+    path = os.path.join(os.path.dirname(__file__), "SERVER.local.txt")
+
+    if not os.path.exists(path):
+        return secrets
+
+    with open(path, encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            match = re.match(r"^([A-Z0-9_]+)=(.+)$", line)
+            if match:
+                secrets[match.group(1)] = match.group(2).strip()
+
+    return secrets
+
+
 def main() -> int:
+    local = load_local_secrets()
+    telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN") or local.get("TELEGRAM_BOT_TOKEN", "")
+    telegram_username = os.environ.get("TELEGRAM_BOT_USERNAME") or local.get("TELEGRAM_BOT_USERNAME", "ekoyogabot")
     script = f"""set -e
 cd {APP_DIR}
 git config --global --add safe.directory {APP_DIR}
@@ -42,9 +66,13 @@ set_env ADMIN_PASSWORD StudioAdmin2026!
 set_env TRAINER_EMAIL trainer@ekoyoga-ik.ru
 set_env TRAINER_PHONE +79000000001
 set_env TRAINER_PASSWORD StudioTrainer2026!
-set_env TELEGRAM_BOT_TOKEN 8607223838:AAETw2YxBHJB5LIBQCjX1Y-cP30QVXsiTSQ
-set_env TELEGRAM_BOT_USERNAME ekoyogabot
-set_env TELEGRAM_AUTH_MAX_AGE 86400
+"""
+    if telegram_token:
+        script += f"set_env TELEGRAM_BOT_TOKEN {telegram_token}\n"
+        script += f"set_env TELEGRAM_BOT_USERNAME {telegram_username}\n"
+        script += "set_env TELEGRAM_AUTH_MAX_AGE 86400\n"
+
+    script += f"""
 
 php artisan migrate --force
 php artisan db:seed --class=AdminUserSeeder --force
