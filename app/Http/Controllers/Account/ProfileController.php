@@ -134,7 +134,6 @@ class ProfileController extends Controller
 
         return redirect()
             ->route('account')
-            ->with('status', 'Email подтверждён. Теперь можно сохранить изменения.')
             ->with('profile_edit_open', true)
             ->with('profile_email_verified', $verifiedEmail)
             ->with('lk_section', 'profile')

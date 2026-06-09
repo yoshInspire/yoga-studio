@@ -336,8 +336,8 @@ if (profileView && profileEdit && profileEditForm) {
   const profileCancelBtn = document.getElementById('profileCancelBtn');
   const profileSaveBtn = document.getElementById('profileSaveBtn');
   const profileEmailInput = document.getElementById('profile-email');
+  const profilePanelTitle = document.getElementById('profilePanelTitle');
   const profileEmailVerify = document.getElementById('profileEmailVerify');
-  const profileEmailVerified = document.getElementById('profileEmailVerified');
   const profileSendCodeBtn = document.getElementById('profileSendCodeBtn');
   const profileVerifyEmailBtn = document.getElementById('profileVerifyEmailBtn');
   const profileEmailCode = document.getElementById('profile-email-code');
@@ -382,18 +382,12 @@ if (profileView && profileEdit && profileEditForm) {
     if (profileEmailVerify) {
       profileEmailVerify.classList.toggle('is-hidden', !needsVerify || verified);
     }
-    if (profileEmailVerified) {
-      profileEmailVerified.classList.toggle('is-hidden', !needsVerify || !verified);
-    }
     if (profileSaveBtn) {
       profileSaveBtn.disabled = needsVerify && !verified;
-      profileSaveBtn.title = needsVerify && !verified
-        ? 'Подтвердите email перед сохранением'
-        : '';
     }
 
     if (profileCodeRow) {
-      const showCodeRow = needsVerify && (
+      const showCodeRow = needsVerify && !verified && (
         profileEditForm.dataset.codeSent === '1'
         || profileEditForm.dataset.pendingEmail === getFormEmail()
       );
@@ -433,12 +427,14 @@ if (profileView && profileEdit && profileEditForm) {
   const openProfileEdit = () => {
     profileView.classList.add('is-hidden');
     profileEdit.classList.remove('is-hidden');
+    if (profilePanelTitle) profilePanelTitle.textContent = 'Редактирование профиля';
     syncProfileEmailState();
   };
 
   const closeProfileEdit = () => {
     profileEdit.classList.add('is-hidden');
     profileView.classList.remove('is-hidden');
+    if (profilePanelTitle) profilePanelTitle.textContent = 'Профиль';
   };
 
   profileEditBtn?.addEventListener('click', openProfileEdit);

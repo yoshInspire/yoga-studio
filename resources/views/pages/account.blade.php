@@ -40,7 +40,7 @@
             $profilePatronymic = old('patronymic', $user->patronymic);
           @endphp
           <div class="lk__panel" data-panel="profile">
-            <h1 class="lk__title">Профиль</h1>
+            <h1 class="lk__title" id="profilePanelTitle">{{ $profileEditing ? 'Редактирование профиля' : 'Профиль' }}</h1>
             @if (session('status'))
               <div class="auth__alert auth__alert--ok lk__alert">{{ session('status') }}</div>
             @endif
@@ -48,7 +48,7 @@
               <div class="auth__alert auth__alert--error lk__alert">{{ $errors->first('telegram') }}</div>
             @endif
 
-            <div id="profileView" class="{{ $profileEditing ? 'is-hidden' : '' }}">
+            <div id="profileView" class="lk-profile-pane {{ $profileEditing ? 'is-hidden' : '' }}">
               <dl class="lk__fields">
                 <div class="lk__field"><dt>Имя</dt><dd>{{ $user->first_name }}</dd></div>
                 <div class="lk__field"><dt>Фамилия</dt><dd>{{ $user->last_name }}</dd></div>
@@ -87,7 +87,7 @@
               <button type="button" class="btn btn--line" id="profileEditBtn">Редактировать профиль</button>
             </div>
 
-            <div id="profileEdit" class="lk__profile-edit {{ $profileEditing ? '' : 'is-hidden' }}">
+            <div id="profileEdit" class="lk-profile-pane lk-profile-edit {{ $profileEditing ? '' : 'is-hidden' }}">
               @if ($errors->getBag('profile')->any())
                 <div class="auth__alert auth__alert--error lk__alert">
                   @foreach ($errors->getBag('profile')->all() as $error)
@@ -98,7 +98,7 @@
 
               <form
                 id="profileEditForm"
-                class="lk__profile-form auth__form"
+                class="lk-profile-form"
                 action="{{ route('account.profile.update') }}"
                 method="post"
                 data-original-email="{{ mb_strtolower(trim((string) $user->email)) }}"
@@ -109,89 +109,95 @@
                 @csrf
                 @method('PUT')
 
-                <div class="auth__row2">
-                  <div class="form__row">
-                    <label class="auth__label" for="profile-first-name">Имя</label>
-                    <input type="text" id="profile-first-name" name="first_name" value="{{ old('first_name', $user->first_name) }}" autocomplete="given-name" required />
-                  </div>
-                  <div class="form__row">
-                    <label class="auth__label" for="profile-last-name">Фамилия</label>
-                    <input type="text" id="profile-last-name" name="last_name" value="{{ old('last_name', $user->last_name) }}" autocomplete="family-name" required />
-                  </div>
-                </div>
-
-                <label class="auth__check auth__check--block lk__patronymic-toggle">
-                  <input type="checkbox" id="profile-patronymic-toggle" @checked($profilePatronymic) /> Указать отчество
-                </label>
-                <div class="form__row auth__patronymic {{ $profilePatronymic ? '' : 'is-hidden' }}" id="profile-patronymic-field">
-                  <label class="auth__label" for="profile-patronymic">Отчество</label>
-                  <input type="text" id="profile-patronymic" name="patronymic" value="{{ $profilePatronymic }}" autocomplete="additional-name" />
-                </div>
-
-                <label class="auth__label">Дата рождения</label>
-                <div class="auth__row3 auth__birth">
-                  <div class="form__row">
-                    <div class="auth__select-wrap">
-                      <select name="birth_day" class="auth__select" aria-label="День" required>
-                        <option value="">День</option>
-                        @for ($d = 1; $d <= 31; $d++)
-                          <option value="{{ $d }}" @selected((int) old('birth_day', $user->birth_day) === $d)>{{ $d }}</option>
-                        @endfor
-                      </select>
+                <div class="lk-profile-form__section">
+                  <h2 class="lk-profile-form__heading">Личные данные</h2>
+                  <div class="lk-profile-form__grid lk-profile-form__grid--2">
+                    <div class="lk-profile-form__field">
+                      <label class="lk-profile-form__label" for="profile-first-name">Имя</label>
+                      <input class="lk-profile-form__input" type="text" id="profile-first-name" name="first_name" value="{{ old('first_name', $user->first_name) }}" autocomplete="given-name" required />
+                    </div>
+                    <div class="lk-profile-form__field">
+                      <label class="lk-profile-form__label" for="profile-last-name">Фамилия</label>
+                      <input class="lk-profile-form__input" type="text" id="profile-last-name" name="last_name" value="{{ old('last_name', $user->last_name) }}" autocomplete="family-name" required />
                     </div>
                   </div>
-                  <div class="form__row">
-                    <div class="auth__select-wrap">
-                      <select name="birth_month" class="auth__select auth__select--month" aria-label="Месяц" required>
-                        <option value="">Месяц</option>
-                        @foreach ($profileMonths as $idx => $m)
-                          <option value="{{ $idx + 1 }}" @selected((int) old('birth_month', $user->birth_month) === $idx + 1)>{{ $m }}</option>
-                        @endforeach
-                      </select>
+
+                  <label class="lk-profile-form__check">
+                    <input type="checkbox" id="profile-patronymic-toggle" @checked($profilePatronymic) />
+                    <span>Указать отчество</span>
+                  </label>
+                  <div class="lk-profile-form__field lk-profile-form__patronymic {{ $profilePatronymic ? '' : 'is-hidden' }}" id="profile-patronymic-field">
+                    <label class="lk-profile-form__label" for="profile-patronymic">Отчество</label>
+                    <input class="lk-profile-form__input" type="text" id="profile-patronymic" name="patronymic" value="{{ $profilePatronymic }}" autocomplete="additional-name" />
+                  </div>
+                </div>
+
+                <div class="lk-profile-form__section">
+                  <h2 class="lk-profile-form__heading">Дата рождения</h2>
+                  <div class="lk-profile-form__birth">
+                    <div class="lk-profile-form__field">
+                      <label class="lk-profile-form__label" for="profile-birth-day">День</label>
+                      <div class="lk-profile-form__select-wrap">
+                        <select class="lk-profile-form__select" id="profile-birth-day" name="birth_day" required>
+                          <option value="">День</option>
+                          @for ($d = 1; $d <= 31; $d++)
+                            <option value="{{ $d }}" @selected((int) old('birth_day', $user->birth_day) === $d)>{{ $d }}</option>
+                          @endfor
+                        </select>
+                      </div>
+                    </div>
+                    <div class="lk-profile-form__field">
+                      <label class="lk-profile-form__label" for="profile-birth-month">Месяц</label>
+                      <div class="lk-profile-form__select-wrap">
+                        <select class="lk-profile-form__select" id="profile-birth-month" name="birth_month" required>
+                          <option value="">Месяц</option>
+                          @foreach ($profileMonths as $idx => $m)
+                            <option value="{{ $idx + 1 }}" @selected((int) old('birth_month', $user->birth_month) === $idx + 1)>{{ $m }}</option>
+                          @endforeach
+                        </select>
+                      </div>
+                    </div>
+                    <div class="lk-profile-form__field">
+                      <label class="lk-profile-form__label" for="profile-birth-year">Год</label>
+                      <input class="lk-profile-form__input" type="number" id="profile-birth-year" name="birth_year" value="{{ old('birth_year', $user->birth_year) }}" placeholder="Год" min="1920" max="2026" />
                     </div>
                   </div>
-                  <div class="form__row">
-                    <input type="number" name="birth_year" class="auth__input-year" value="{{ old('birth_year', $user->birth_year) }}" placeholder="Год" min="1920" max="2026" aria-label="Год рождения" />
+                </div>
+
+                <div class="lk-profile-form__section">
+                  <h2 class="lk-profile-form__heading">Контакты</h2>
+                  <div class="lk-profile-form__field">
+                    <label class="lk-profile-form__label" for="profile-phone">Телефон</label>
+                    <input class="lk-profile-form__input" type="tel" id="profile-phone" name="phone" value="{{ old('phone', $user->formattedPhone()) }}" autocomplete="tel" inputmode="tel" data-phone-mask required />
                   </div>
-                </div>
-
-                <div class="form__row">
-                  <label class="auth__label" for="profile-phone">Телефон</label>
-                  <input type="tel" id="profile-phone" name="phone" value="{{ old('phone', $user->formattedPhone()) }}" autocomplete="tel" inputmode="tel" data-phone-mask required />
-                </div>
-
-                <div class="form__row">
-                  <label class="auth__label" for="profile-email">Email <span class="auth__optional">(необязательно)</span></label>
-                  <input type="email" id="profile-email" name="email" value="{{ old('email', $user->email) }}" autocomplete="email" />
-                  <div id="profileEmailVerify" class="lk__email-verify is-hidden">
-                    <p class="lk__email-verify-lead" id="profileEmailVerifyLead">
-                      @if ($profilePendingEmail)
-                        Код отправлен на <strong>{{ $profilePendingEmail }}</strong>. Введите его ниже.
-                      @else
-                        Для сохранения нового email нужно подтвердить адрес.
-                      @endif
-                    </p>
-                    <button type="button" class="btn btn--ghost lk__email-send" id="profileSendCodeBtn">Отправить код на email</button>
-                    <div class="lk__email-verify-row {{ ($profileCodeSent ?? false) || $profilePendingEmail ? '' : 'is-hidden' }}" id="profileCodeRow">
-                      <input
-                        type="text"
-                        id="profile-email-code"
-                        placeholder="000000"
-                        inputmode="numeric"
-                        pattern="\d{6}"
-                        maxlength="6"
-                        autocomplete="one-time-code"
-                        class="auth__code-input lk__email-code"
-                        value="{{ old('code') }}"
-                      />
-                      <button type="button" class="btn btn--ghost" id="profileVerifyEmailBtn">Подтвердить email</button>
+                  <div class="lk-profile-form__field">
+                    <label class="lk-profile-form__label" for="profile-email">Email</label>
+                    <input class="lk-profile-form__input" type="email" id="profile-email" name="email" value="{{ old('email', $user->email) }}" autocomplete="email" placeholder="Необязательно" />
+                    <div id="profileEmailVerify" class="lk-profile-email is-hidden">
+                      <button type="button" class="btn btn--line lk-profile-email__send" id="profileSendCodeBtn">Отправить код</button>
+                      <div class="lk-profile-email__code {{ ($profileCodeSent ?? false) || $profilePendingEmail ? '' : 'is-hidden' }}" id="profileCodeRow">
+                        <label class="lk-profile-form__label" for="profile-email-code">Код из письма</label>
+                        <div class="lk-profile-email__code-row">
+                          <input
+                            type="text"
+                            id="profile-email-code"
+                            placeholder="000000"
+                            inputmode="numeric"
+                            pattern="\d{6}"
+                            maxlength="6"
+                            autocomplete="one-time-code"
+                            class="lk-profile-form__code"
+                            value="{{ old('code') }}"
+                          />
+                          <button type="button" class="btn btn--ghost" id="profileVerifyEmailBtn">Подтвердить</button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <p id="profileEmailVerified" class="lk__email-verified is-hidden">Email подтверждён — можно сохранить изменения.</p>
                 </div>
 
-                <div class="lk__profile-actions">
-                  <button type="submit" class="btn btn--solid" id="profileSaveBtn">Сохранить изменения</button>
+                <div class="lk-profile-form__actions">
+                  <button type="submit" class="btn btn--solid" id="profileSaveBtn">Сохранить</button>
                   <button type="button" class="btn btn--ghost" id="profileCancelBtn">Отмена</button>
                 </div>
               </form>
