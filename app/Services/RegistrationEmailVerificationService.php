@@ -100,7 +100,7 @@ class RegistrationEmailVerificationService
             throw new RuntimeException('Превышено число попыток. Заполните форму регистрации снова.');
         }
 
-        if (! hash_equals((string) $pending['code_hash'], hash('sha256', trim($code))) {
+        if (! hash_equals((string) $pending['code_hash'], hash('sha256', trim($code)))) {
             $pending['attempts'] = $attempts;
             Cache::put($cacheKey, $pending, now()->addMinutes($this->ttlMinutes()));
 
