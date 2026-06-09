@@ -7,9 +7,7 @@ import sys
 
 import paramiko
 
-HOST = "77.91.93.110"
-USER = "root"
-PASSWORD = "R9%KS6zbau"
+from credentials import ssh_credentials
 DOMAIN = "ekoyoga-ik.ru"
 REPO = "https://github.com/yoshInspire/yoga-studio.git"
 APP_DIR = "/var/www/yoga-studio"
@@ -126,10 +124,12 @@ certbot --nginx -d {DOMAIN} -d www.{DOMAIN} --non-interactive --agree-tos --regi
 echo DEPLOY_OK
 """
 
+    host, user, password = ssh_credentials()
+
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    print(f"Connecting to {HOST}...")
-    client.connect(HOST, username=USER, password=PASSWORD, timeout=30, banner_timeout=30)
+    print(f"Connecting to {host}...")
+    client.connect(host, username=user, password=password, timeout=30, banner_timeout=30)
 
     try:
         run(client, script, timeout=1800)

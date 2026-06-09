@@ -6,9 +6,9 @@
     <button type="button" class="dir-modal__close" data-close aria-label="Закрыть">&times;</button>
 
     <div class="dir-modal__scroll">
-      @foreach(config('directions.items') as $dir)
-        @php($slides = array_merge([$dir['img']], $dir['gallery'] ?? []))
-        <article class="dir-detail" data-dir="{{ $dir['slug'] }}" hidden>
+      @foreach($directions as $dir)
+        @php($slides = $dir->slidePaths())
+        <article class="dir-detail" data-dir="{{ $dir->slug }}" hidden>
           <div class="dir-detail__hero">
             <div class="dir-detail__slides">
               @foreach($slides as $k => $photo)
@@ -26,26 +26,26 @@
 
           <div class="dir-detail__content">
             <header class="dir-detail__head">
-              @if(!empty($dir['tag']))
-                <span class="dir-detail__tag">{{ $dir['tag'] }}</span>
+              @if(filled($dir->tag))
+                <span class="dir-detail__tag">{{ $dir->tag }}</span>
               @endif
-              <h2 class="dir-detail__title" @if($loop->first) id="dirModalTitle" @endif>{{ $dir['title'] }}</h2>
-              <p class="dir-detail__lead">{{ $dir['lead'] }}</p>
+              <h2 class="dir-detail__title" @if($loop->first) id="dirModalTitle" @endif>{{ $dir->title }}</h2>
+              <p class="dir-detail__lead">{{ $dir->lead }}</p>
             </header>
 
-            @if(!empty($dir['body']))
+            @if(!empty($dir->body))
               <div class="dir-detail__body">
-                @foreach($dir['body'] as $para)
+                @foreach($dir->body as $para)
                   <p>{{ $para }}</p>
                 @endforeach
               </div>
             @endif
 
-            @if(!empty($dir['benefits']))
+            @if(!empty($dir->benefits))
               <div class="dir-detail__benefits">
                 <h3>Что это даёт</h3>
                 <ul>
-                  @foreach($dir['benefits'] as $benefit)
+                  @foreach($dir->benefits as $benefit)
                     <li>{{ $benefit }}</li>
                   @endforeach
                 </ul>

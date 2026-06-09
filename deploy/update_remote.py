@@ -8,29 +8,9 @@ import sys
 
 import paramiko
 
-HOST = "77.91.93.110"
-USER = "root"
-PASSWORD = "R9%KS6zbau"
+from credentials import load_local_secrets, ssh_credentials
+
 APP_DIR = "/var/www/yoga-studio"
-
-
-def load_local_secrets() -> dict[str, str]:
-    secrets: dict[str, str] = {}
-    path = os.path.join(os.path.dirname(__file__), "SERVER.local.txt")
-
-    if not os.path.exists(path):
-        return secrets
-
-    with open(path, encoding="utf-8") as handle:
-        for line in handle:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            match = re.match(r"^([A-Z0-9_]+)=(.+)$", line)
-            if match:
-                secrets[match.group(1)] = match.group(2).strip()
-
-    return secrets
 
 
 def upload_offer_pdf(sftp: paramiko.SFTPClient) -> None:
@@ -110,6 +90,7 @@ set_env STUDIO_ADMIN_EMAIL ecoyoga-ik@yandex.ru
 php artisan migrate --force
 php artisan db:seed --class=AdminUserSeeder --force
 php artisan db:seed --class=TrainerUserSeeder --force
+php artisan db:seed --class=DirectionSeeder --force
 
 php artisan config:clear
 php artisan config:cache
@@ -135,10 +116,12 @@ curl -sI https://ekoyoga-ik.ru/admin | head -3
 echo DEPLOY_OK
 """
 
+    host, user, password = ssh_credentials()
+
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    print(f"Connecting to {HOST}...")
-    client.connect(HOST, username=USER, password=PASSWORD, timeout=30, banner_timeout=30)
+    print(f"Connecting to {host}...")
+    client.connect(host, username=user, password=password, timeout=30, banner_timeout=30)
 
     try:
         print("Running deploy...")

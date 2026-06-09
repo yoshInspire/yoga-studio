@@ -43,17 +43,17 @@
       </div>
 
       <p class="directions__intro reveal">
-        В студии представлено 17 направлений йоги и оздоровительных практик для гостей разного уровня подготовки.
+        В студии представлено {{ $directions->count() }} направлений йоги и оздоровительных практик для гостей разного уровня подготовки.
       </p>
 
       <div class="cards">
-        @foreach(array_slice(config('directions.items'), 0, 8) as $i => $card)
+        @foreach($directions->take(8) as $i => $card)
           <article class="card reveal" style="--d:{{ $i * 0.08 + 0.05 }}s">
-            <div class="card__img" style="background-image:url('{{ \App\Support\DirectionMedia::url($card['img']) }}')"></div>
+            <div class="card__img" style="background-image:url('{{ $card->coverUrl() }}')"></div>
             <div class="card__body">
-              <span class="card__num">{{ $card['num'] }}</span>
-              <h3 class="card__title">{{ $card['title'] }}</h3>
-              <button type="button" class="card__more" data-dir="{{ $card['slug'] }}">Подробнее</button>
+              <span class="card__num">{{ $card->num }}</span>
+              <h3 class="card__title">{{ $card->title }}</h3>
+              <button type="button" class="card__more" data-dir="{{ $card->slug }}">Подробнее</button>
             </div>
           </article>
         @endforeach

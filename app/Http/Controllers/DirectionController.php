@@ -3,15 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Direction;
-use App\Models\User;
 use Illuminate\View\View;
 
-class HomeController extends Controller
+class DirectionController extends Controller
 {
     public function __invoke(): View
     {
-        return view('home', [
-            'trainers' => User::query()->publishedOnSite()->get(),
+        return view('pages.directions', [
             'directions' => Direction::query()->published()->ordered()->get(),
         ]);
     }

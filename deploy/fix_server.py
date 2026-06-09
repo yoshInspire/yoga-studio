@@ -1,14 +1,18 @@
 import paramiko
 
+from credentials import ssh_credentials
+
+host, user, password = ssh_credentials()
+
 c = paramiko.SSHClient()
 c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-c.connect("77.91.93.110", username="root", password="R9%KS6zbau", timeout=30)
+c.connect(host, username=user, password=password, timeout=30)
 cmds = [
     "cd /var/www/yoga-studio && sed -i 's/^SESSION_DRIVER=.*/SESSION_DRIVER=file/' .env",
     "cd /var/www/yoga-studio && php artisan migrate --force",
     "cd /var/www/yoga-studio && php artisan config:cache",
     "curl -sI -H 'Host: ekoyoga-ik.ru' http://127.0.0.1/ | head -6",
-    "curl -sI http://77.91.93.110/ | head -6",
+    f"curl -sI http://{host}/ | head -6",
 ]
 for cmd in cmds:
     print(">>>", cmd)
