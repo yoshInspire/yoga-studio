@@ -106,7 +106,7 @@ class SubscriptionResource extends Resource
                             DatePicker::make('ends_at')
                                 ->label('Действует до')
                                 ->required()
-                                ->default(now()->addMonths(2))
+                                ->default(now()->addDays(30))
                                 ->after('starts_at'),
                         ]),
                     ]),
