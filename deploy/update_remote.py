@@ -122,8 +122,13 @@ systemctl restart php8.3-fpm
 
 # Планировщик Laravel: автоотмена недобранных групп и напоминания по абонементам.
 CRON_LINE="* * * * * cd {APP_DIR} && php artisan schedule:run >> /dev/null 2>&1"
-( crontab -l 2>/dev/null | grep -v 'artisan schedule:run' ; echo "$CRON_LINE" ) | crontab -
-echo "Cron schedule:run installed"
+CRON_TMP=$(mktemp)
+crontab -l 2>/dev/null | grep -v 'artisan schedule:run' > "$CRON_TMP" || true
+echo "$CRON_LINE" >> "$CRON_TMP"
+crontab "$CRON_TMP"
+rm -f "$CRON_TMP"
+echo "Cron schedule:run installed:"
+crontab -l | grep 'schedule:run'
 
 curl -sI https://ekoyoga-ik.ru/login | head -3
 curl -sI https://ekoyoga-ik.ru/admin | head -3
