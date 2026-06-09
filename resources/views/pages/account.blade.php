@@ -68,7 +68,7 @@
                   <button type="submit" class="btn btn--ghost">Отвязать Telegram</button>
                 </form>
               @elseif ($telegramEnabled ?? false)
-                <p class="lk__lead">Привяжите Telegram, чтобы входить на сайт без пароля.</p>
+                <p class="lk__lead">Привяжите Telegram, чтобы входить на сайт без пароля и не пропускать важные новости студии.</p>
                 @include('partials.telegram-login-widget', [
                   'telegramEnabled' => $telegramEnabled,
                   'telegramBotUsername' => $telegramBotUsername,
