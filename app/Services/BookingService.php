@@ -27,6 +27,11 @@ class BookingService
 
             $subscription ??= $this->subscriptions->findUsableForUser($user, $session->type, $session->starts_at);
 
+            // Второе занятие в один день по «двойному» абонементу: активный
+            // абонемент уже может быть исчерпан (списаны оба занятия), но день
+            // оплачен — позволяем записаться на второе занятие без доплаты.
+            $subscription ??= $this->findChargedDoubleSubscriptionForDay($user, $session);
+
             if ($subscription === null) {
                 throw new InvalidArgumentException('Нет подходящего абонемента с доступными занятиями.');
             }
@@ -39,20 +44,109 @@ class BookingService
                 throw new InvalidArgumentException('На занятии не осталось свободных мест.');
             }
 
-            $usage = $this->subscriptions->deduct(
-                $subscription,
-                $session->title.' · '.$session->starts_at->format('d.m.Y H:i'),
-                $session->starts_at,
-            );
+            $usageId = $this->chargeForBooking($user, $session, $subscription);
 
             return Booking::query()->create([
                 'user_id' => $user->id,
                 'class_session_id' => $session->id,
                 'subscription_id' => $subscription->id,
-                'subscription_usage_id' => $usage->id,
+                'subscription_usage_id' => $usageId,
                 'status' => BookingStatus::Confirmed,
             ]);
         });
+    }
+
+    /**
+     * Списать занятия за бронь и вернуть id записи об использовании
+     * (или null, если списывать нечего — например, это второе занятие в день
+     * по «двойному» абонементу, где день уже оплачен).
+     */
+    private function chargeForBooking(User $user, ClassSession $session, Subscription $subscription): ?int
+    {
+        $perDay = $subscription->sessionsPerDay();
+        $description = $session->title.' · '.$session->starts_at->format('d.m.Y H:i');
+
+        if ($perDay > 1) {
+            // Двойной абонемент: за один день использования списываются оба
+            // занятия. Если в этот день по этому абонементу уже есть бронь,
+            // держащая списание, то второе занятие не списываем повторно.
+            $alreadyCharged = Booking::query()
+                ->where('user_id', $user->id)
+                ->where('subscription_id', $subscription->id)
+                ->where('status', BookingStatus::Confirmed)
+                ->whereNotNull('subscription_usage_id')
+                ->whereHas('classSession', fn ($q) => $q->whereDate('starts_at', $session->starts_at->toDateString()))
+                ->exists();
+
+            if ($alreadyCharged) {
+                return null;
+            }
+        }
+
+        $usage = $this->subscriptions->deduct(
+            $subscription,
+            $description,
+            $session->starts_at,
+            $perDay,
+        );
+
+        return $usage->id;
+    }
+
+    /**
+     * Найти «двойной» абонемент, по которому в этот день уже оплачено занятие,
+     * чтобы записать клиента на второе занятие того же дня без повторного списания.
+     */
+    private function findChargedDoubleSubscriptionForDay(User $user, ClassSession $session): ?Subscription
+    {
+        $dayBooking = Booking::query()
+            ->where('user_id', $user->id)
+            ->where('status', BookingStatus::Confirmed)
+            ->whereNotNull('subscription_usage_id')
+            ->whereHas('classSession', fn ($q) => $q->whereDate('starts_at', $session->starts_at->toDateString()))
+            ->whereHas('subscription', fn ($q) => $q->where('sessions_per_day', '>', 1)->forType($session->type))
+            ->with('subscription')
+            ->first();
+
+        return $dayBooking?->subscription;
+    }
+
+    /**
+     * Освободить списание при отмене брони.
+     *
+     * Для обычного абонемента — просто возвращаем занятие. Для «двойного»
+     * абонемента день оплачен целиком (2 занятия), даже если клиент пришёл на
+     * одно: если в этот день есть другая активная бронь по тому же абонементу,
+     * возврат не делаем, а переносим списание на неё. Возврат происходит, только
+     * когда в этот день не остаётся ни одной активной брони.
+     */
+    private function releaseBooking(Booking $booking): void
+    {
+        $usage = $booking->subscriptionUsage;
+
+        if ($usage === null) {
+            return;
+        }
+
+        $subscription = $usage->subscription;
+
+        if ($subscription !== null && $subscription->isDoublePerDay()) {
+            $other = Booking::query()
+                ->where('id', '!=', $booking->id)
+                ->where('subscription_id', $subscription->id)
+                ->where('status', BookingStatus::Confirmed)
+                ->whereNull('subscription_usage_id')
+                ->whereHas('classSession', fn ($q) => $q->whereDate('starts_at', $usage->used_at->toDateString()))
+                ->first();
+
+            if ($other !== null) {
+                $other->update(['subscription_usage_id' => $usage->id]);
+
+                return;
+            }
+        }
+
+        $this->subscriptions->refundUsage($usage);
     }
 
     public function cancelByClient(Booking $booking): Booking
@@ -72,9 +166,7 @@ class BookingService
                 throw new InvalidArgumentException('Запись уже отменена.');
             }
 
-            if ($booking->subscriptionUsage) {
-                $this->subscriptions->refundUsage($booking->subscriptionUsage);
-            }
+            $this->releaseBooking($booking);
 
             $booking->update([
                 'status' => BookingStatus::CancelledByClient,
@@ -104,8 +196,8 @@ class BookingService
             $session->bookings()
                 ->where('status', BookingStatus::Confirmed)
                 ->each(function (Booking $booking) use ($reason, $refundClients) {
-                    if ($refundClients && $booking->subscriptionUsage) {
-                        $this->subscriptions->refundUsage($booking->subscriptionUsage);
+                    if ($refundClients) {
+                        $this->releaseBooking($booking);
                     }
 
                     $booking->update([
@@ -129,8 +221,8 @@ class BookingService
                 throw new InvalidArgumentException('Запись уже отменена.');
             }
 
-            if ($refund && $booking->subscriptionUsage) {
-                $this->subscriptions->refundUsage($booking->subscriptionUsage);
+            if ($refund) {
+                $this->releaseBooking($booking);
             }
 
             $booking->update([

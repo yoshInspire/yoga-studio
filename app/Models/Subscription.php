@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
     'type',
     'sessions_total',
     'sessions_used',
+    'sessions_per_day',
     'purchased_at',
     'starts_at',
     'ends_at',
@@ -30,6 +31,7 @@ class Subscription extends Model
             'type' => SubscriptionType::class,
             'sessions_total' => 'integer',
             'sessions_used' => 'integer',
+            'sessions_per_day' => 'integer',
             'purchased_at' => 'date',
             'starts_at' => 'date',
             'ends_at' => 'date',
@@ -51,6 +53,21 @@ class Subscription extends Model
     public function sessionsRemaining(): int
     {
         return max(0, $this->sessions_total - $this->sessions_used);
+    }
+
+    /**
+     * Сколько занятий списывается за один день использования.
+     * Для «двойного» абонемента — 2 (списываются всегда оба, даже если
+     * клиент пришёл на одно занятие в этот день).
+     */
+    public function sessionsPerDay(): int
+    {
+        return max(1, (int) $this->sessions_per_day);
+    }
+
+    public function isDoublePerDay(): bool
+    {
+        return $this->sessionsPerDay() > 1;
     }
 
     /**

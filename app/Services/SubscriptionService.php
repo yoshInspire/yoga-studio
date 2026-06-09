@@ -43,17 +43,26 @@ class SubscriptionService
         return $subscription->isActive($on);
     }
 
-    public function deduct(Subscription $subscription, ?string $description = null, ?Carbon $usedAt = null): SubscriptionUsage
+    public function deduct(Subscription $subscription, ?string $description = null, ?Carbon $usedAt = null, int $count = 1): SubscriptionUsage
     {
+        if ($count < 1) {
+            throw new InvalidArgumentException('Количество списываемых занятий должно быть не меньше 1.');
+        }
+
         if (! $this->canDeduct($subscription)) {
             throw new InvalidArgumentException('В абонементе нет доступных занятий или срок действия истёк.');
         }
 
-        $subscription->increment('sessions_used');
+        if ($subscription->sessionsRemaining() < $count) {
+            throw new InvalidArgumentException('В абонементе недостаточно занятий для списания.');
+        }
+
+        $subscription->increment('sessions_used', $count);
 
         return $subscription->usages()->create([
             'used_at' => $usedAt ?? now(),
             'description' => $description,
+            'sessions_spent' => $count,
         ]);
     }
 
@@ -98,10 +107,11 @@ class SubscriptionService
     public function refundUsage(SubscriptionUsage $usage): void
     {
         $subscription = $usage->subscription;
+        $spent = max(1, (int) $usage->sessions_spent);
 
-        if ($subscription->sessions_used > 0) {
-            $subscription->decrement('sessions_used');
-        }
+        $subscription->update([
+            'sessions_used' => max(0, $subscription->sessions_used - $spent),
+        ]);
 
         $usage->delete();
     }
@@ -116,9 +126,12 @@ class SubscriptionService
             throw new InvalidArgumentException('В абонементе нет списанных занятий для возврата.');
         }
 
-        $subscription->decrement('sessions_used');
-
         $latestUsage = $subscription->usages()->latest('used_at')->first();
+        $spent = $latestUsage !== null ? max(1, (int) $latestUsage->sessions_spent) : 1;
+
+        $subscription->update([
+            'sessions_used' => max(0, $subscription->sessions_used - $spent),
+        ]);
 
         if ($latestUsage !== null) {
             $latestUsage->delete();
@@ -141,6 +154,7 @@ class SubscriptionService
         Carbon $purchasedAt,
         int $validityDays,
         ?string $adminNote = null,
+        int $sessionsPerDay = 1,
     ): Subscription {
         if ($sessionsTotal < 1) {
             throw new InvalidArgumentException('Количество занятий должно быть не меньше 1.');
@@ -154,6 +168,7 @@ class SubscriptionService
             'type' => $type,
             'sessions_total' => $sessionsTotal,
             'sessions_used' => 0,
+            'sessions_per_day' => max(1, $sessionsPerDay),
             'purchased_at' => $purchasedAt->toDateString(),
             'starts_at' => $startsAt->toDateString(),
             'ends_at' => $endsAt->toDateString(),

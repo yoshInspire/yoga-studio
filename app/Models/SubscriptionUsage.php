@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'subscription_id',
     'used_at',
     'description',
+    'sessions_spent',
 ])]
 class SubscriptionUsage extends Model
 {
@@ -17,6 +18,7 @@ class SubscriptionUsage extends Model
     {
         return [
             'used_at' => 'datetime',
+            'sessions_spent' => 'integer',
         ];
     }
 

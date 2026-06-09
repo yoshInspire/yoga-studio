@@ -843,6 +843,18 @@ a { color: inherit; text-decoration: none; }
   color: var(--muted);
 }
 .lk-tg-row__form { margin: 0; }
+.lk-tg-hint {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.lk-tg-hint a {
+  color: var(--accent, #2a7);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.lk-tg-hint a:hover { text-decoration: underline; }
 .lk-tg-unlink {
   font-family: var(--sans);
   font-size: 13px;

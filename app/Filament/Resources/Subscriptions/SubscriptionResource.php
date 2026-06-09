@@ -81,6 +81,16 @@ class SubscriptionResource extends Resource
                                 ->required()
                                 ->rules(['lte:sessions_total']),
                         ]),
+                        Select::make('sessions_per_day')
+                            ->label('Списывать за один день')
+                            ->options([
+                                1 => '1 занятие',
+                                2 => '2 занятия (двойной абонемент)',
+                            ])
+                            ->default(1)
+                            ->required()
+                            ->native(false)
+                            ->helperText('Для абонемента «2 занятия в один день» за день использования спишутся оба занятия, даже если клиент пришёл только на одно.'),
                     ]),
                 Section::make('Сроки')
                     ->schema([
@@ -128,6 +138,12 @@ class SubscriptionResource extends Resource
                     ->label('Остаток')
                     ->state(fn (Subscription $record) => $record->sessionsRemaining())
                     ->suffix(fn (Subscription $record) => ' / '.$record->sessions_total),
+                TextColumn::make('sessions_per_day')
+                    ->label('За день')
+                    ->badge()
+                    ->color('warning')
+                    ->state(fn (Subscription $record) => $record->isDoublePerDay() ? '2 в день' : '')
+                    ->toggleable(),
                 TextColumn::make('starts_at')
                     ->label('Начало')
                     ->date('d.m.Y')

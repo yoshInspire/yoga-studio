@@ -221,6 +221,73 @@ class BookingServiceTest extends TestCase
         \Illuminate\Support\Carbon::setTestNow();
     }
 
+    public function test_double_subscription_charges_two_sessions_for_single_class(): void
+    {
+        $user = $this->client();
+        $sub = $this->subscription($user, ['sessions_total' => 2, 'sessions_per_day' => 2]);
+        $session = $this->makeSession(['starts_at' => now()->addDays(2)->setTime(10, 0)]);
+
+        $booking = $this->service->book($user, $session);
+
+        $this->assertSame(2, $sub->fresh()->sessions_used);
+        $this->assertSame(2, (int) $booking->subscriptionUsage->sessions_spent);
+    }
+
+    public function test_double_subscription_two_classes_same_day_charge_two_total(): void
+    {
+        config(['studio.max_bookings_per_day' => 2]);
+
+        $user = $this->client();
+        $sub = $this->subscription($user, ['sessions_total' => 2, 'sessions_per_day' => 2]);
+
+        $day = now()->addDays(2);
+        $first = $this->service->book($user, $this->makeSession(['starts_at' => $day->copy()->setTime(10, 0)]));
+        $second = $this->service->book($user, $this->makeSession(['starts_at' => $day->copy()->setTime(18, 0)]));
+
+        $this->assertSame(2, $sub->fresh()->sessions_used);
+        $this->assertNotNull($first->fresh()->subscription_usage_id);
+        $this->assertNull($second->fresh()->subscription_usage_id);
+        $this->assertSame($sub->id, $second->subscription_id);
+    }
+
+    public function test_double_subscription_cancel_single_refunds_both(): void
+    {
+        $user = $this->client();
+        $sub = $this->subscription($user, ['sessions_total' => 2, 'sessions_per_day' => 2]);
+        $session = $this->makeSession(['starts_at' => now()->addDays(2)->setTime(10, 0)]);
+
+        $booking = $this->service->book($user, $session);
+        $this->assertSame(2, $sub->fresh()->sessions_used);
+
+        $this->actingAs($user);
+        $this->service->cancelByClient($booking);
+
+        $this->assertSame(0, $sub->fresh()->sessions_used);
+    }
+
+    public function test_double_subscription_cancel_one_of_two_keeps_day_charged(): void
+    {
+        config(['studio.max_bookings_per_day' => 2]);
+
+        $user = $this->client();
+        $sub = $this->subscription($user, ['sessions_total' => 2, 'sessions_per_day' => 2]);
+
+        $day = now()->addDays(2);
+        $first = $this->service->book($user, $this->makeSession(['starts_at' => $day->copy()->setTime(10, 0)]));
+        $second = $this->service->book($user, $this->makeSession(['starts_at' => $day->copy()->setTime(18, 0)]));
+
+        $this->actingAs($user);
+
+        // Отменяем «оплаченное» занятие — день всё ещё используется второй записью.
+        $this->service->cancelByClient($first);
+        $this->assertSame(2, $sub->fresh()->sessions_used);
+        $this->assertNotNull($second->fresh()->subscription_usage_id);
+
+        // Отмена второго (последнего) занятия дня возвращает оба занятия.
+        $this->service->cancelByClient($second->fresh());
+        $this->assertSame(0, $sub->fresh()->sessions_used);
+    }
+
     public function test_cancel_class_refunds_all_clients_with_reason(): void
     {
         $session = $this->makeSession(['capacity' => 5]);

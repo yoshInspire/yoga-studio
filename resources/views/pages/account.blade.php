@@ -85,6 +85,17 @@
                         @endif
                       </div>
                     @endif
+                    @if ($telegramEnabled ?? false)
+                      <p class="lk-tg-hint">
+                        Чтобы получать уведомления в Telegram, откройте бота
+                        @if (!empty($telegramBotUsername))
+                          <a href="https://t.me/{{ $telegramBotUsername }}" target="_blank" rel="noopener">@<span>{{ $telegramBotUsername }}</span></a>
+                        @else
+                          студии
+                        @endif
+                        и нажмите «Старт». Без этого бот не сможет написать вам первым.
+                      </p>
+                    @endif
                   </dd>
                 </div>
               </dl>
