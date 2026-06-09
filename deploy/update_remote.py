@@ -3,6 +3,7 @@
 
 import os
 import re
+import stat
 import sys
 
 import paramiko
@@ -30,6 +31,32 @@ def load_local_secrets() -> dict[str, str]:
                 secrets[match.group(1)] = match.group(2).strip()
 
     return secrets
+
+
+def upload_offer_pdf(sftp: paramiko.SFTPClient) -> None:
+    local_path = os.path.join(os.path.dirname(__file__), "offer", "contract.pdf")
+    remote_dir = f"{APP_DIR}/storage/app/private/offer"
+    remote_path = f"{remote_dir}/contract.pdf"
+
+    if not os.path.isfile(local_path):
+        print(f"Offer PDF not found, skipping upload: {local_path}")
+        return
+
+    try:
+        sftp.stat(remote_dir)
+    except FileNotFoundError:
+        parts = remote_dir.strip("/").split("/")
+        current = ""
+        for part in parts:
+            current = f"{current}/{part}"
+            try:
+                sftp.stat(current)
+            except FileNotFoundError:
+                sftp.mkdir(current)
+
+    sftp.put(local_path, remote_path)
+    sftp.chmod(remote_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+    print(f"Uploaded offer PDF to {remote_path}")
 
 
 def main() -> int:
@@ -111,6 +138,17 @@ echo DEPLOY_OK
         if err.strip():
             sys.stdout.buffer.write(b"\nSTDERR:\n")
             sys.stdout.buffer.write(err.encode("utf-8", errors="replace"))
+
+        if code == 0:
+            print("Uploading offer PDF...")
+            sftp = client.open_sftp()
+            try:
+                upload_offer_pdf(sftp)
+            finally:
+                sftp.close()
+
+            chown_script = f"chown www-data:www-data {APP_DIR}/storage/app/private/offer/contract.pdf 2>/dev/null || true"
+            client.exec_command(chown_script, timeout=60)
 
         print(f"\nEXIT CODE: {code}")
         return code

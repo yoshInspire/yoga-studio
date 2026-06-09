@@ -51,7 +51,9 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', LogoutController::class)->name('logout')->middleware('auth');
 
-Route::get('/oferta', [OfferController::class, 'show'])->middleware('auth')->name('offer.show');
+Route::get('/oferta', [OfferController::class, 'show'])
+    ->middleware('throttle:30,1')
+    ->name('offer.show');
 
 Route::middleware(['auth', 'role:client'])->group(function () {
     Route::get('/account', AccountController::class)->name('account');
