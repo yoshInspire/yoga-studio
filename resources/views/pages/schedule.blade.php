@@ -101,11 +101,15 @@
           </div>
           <div class="faq__item">
             <button type="button" class="faq__q">Отмена записи<span class="faq__icon">+</span></button>
-            <div class="faq__a"><p>Отменить запись можно не позднее чем за&nbsp;4&nbsp;часа до начала занятия — тогда занятие вернётся на абонемент. При более поздней отмене занятие списывается.</p></div>
+            <div class="faq__a"><p>Отменить запись можно заранее, тогда занятие вернётся на абонемент. Для занятий <b>до&nbsp;12:00</b> — не позднее чем за&nbsp;14&nbsp;часов до начала, для занятий <b>с&nbsp;12:00</b> — не позднее чем за&nbsp;4&nbsp;часа. При более поздней отмене занятие списывается.</p></div>
           </div>
           <div class="faq__item">
             <button type="button" class="faq__q">Сколько человек в группе<span class="faq__icon">+</span></button>
             <div class="faq__a"><p>Группы маленькие — до&nbsp;6&nbsp;человек, на отдельных занятиях лимит может отличаться. Количество свободных мест видно прямо в расписании.</p></div>
+          </div>
+          <div class="faq__item">
+            <button type="button" class="faq__q">Что если группа не набралась<span class="faq__icon">+</span></button>
+            <div class="faq__a"><p>Если на групповое занятие записалось меньше&nbsp;2&nbsp;человек, оно может быть отменено заранее. Запись аннулируется, занятие возвращается на абонемент, а вам приходит уведомление на почту и&nbsp;в&nbsp;Telegram (если они привязаны).</p></div>
           </div>
           <div class="faq__item">
             <button type="button" class="faq__q">Абонементы и разовые занятия<span class="faq__icon">+</span></button>

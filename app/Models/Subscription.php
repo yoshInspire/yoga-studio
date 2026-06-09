@@ -19,6 +19,8 @@ use Illuminate\Support\Carbon;
     'starts_at',
     'ends_at',
     'admin_note',
+    'low_sessions_notified_at',
+    'expiring_notified_at',
 ])]
 class Subscription extends Model
 {
@@ -31,6 +33,8 @@ class Subscription extends Model
             'purchased_at' => 'date',
             'starts_at' => 'date',
             'ends_at' => 'date',
+            'low_sessions_notified_at' => 'datetime',
+            'expiring_notified_at' => 'datetime',
         ];
     }
 
@@ -47,6 +51,17 @@ class Subscription extends Model
     public function sessionsRemaining(): int
     {
         return max(0, $this->sessions_total - $this->sessions_used);
+    }
+
+    /**
+     * Сколько полных дней осталось до окончания действия (от сегодня).
+     * Отрицательное значение — абонемент уже просрочен.
+     */
+    public function daysUntilEnd(?Carbon $on = null): int
+    {
+        $on ??= now()->startOfDay();
+
+        return (int) $on->diffInDays($this->ends_at->copy()->startOfDay(), false);
     }
 
     public function isActive(?Carbon $on = null): bool

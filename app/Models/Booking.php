@@ -58,9 +58,38 @@ class Booking extends Model
             return false;
         }
 
-        $deadlineHours = (int) config('studio.cancellation_deadline_hours');
+        $deadlineHours = $this->cancellationDeadlineHours();
 
         return $this->classSession->starts_at->gt(now()->addHours($deadlineHours));
+    }
+
+    /**
+     * За сколько часов до начала клиент ещё может отменить запись.
+     * Зависит от времени занятия: до 12:00 — раньше, с 12:00 — позже.
+     */
+    public function cancellationDeadlineHours(): int
+    {
+        $config = config('studio.cancellation');
+
+        if (! is_array($config)) {
+            return (int) config('studio.cancellation_deadline_hours', 4);
+        }
+
+        $noonHour = (int) ($config['noon_hour'] ?? 12);
+        $isMorning = (int) $this->classSession->starts_at->format('H') < $noonHour;
+
+        return (int) ($isMorning ? ($config['morning_hours'] ?? 14) : ($config['day_hours'] ?? 4));
+    }
+
+    /**
+     * Текст для клиента, почему отменить запись уже нельзя.
+     */
+    public function cancellationBlockedMessage(): string
+    {
+        $hours = $this->cancellationDeadlineHours();
+
+        return 'Вы не можете отменить запись, так как до начала занятия осталось менее '
+            .$hours.' '.($hours === 1 ? 'часа' : 'часов').'.';
     }
 
     /**

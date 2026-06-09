@@ -52,7 +52,8 @@ class ClassSessionResource extends Resource
                         TextInput::make('title')
                             ->label('Название / тема')
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength((int) config('studio.class_title_max_length', 120))
+                            ->helperText('Максимум '.(int) config('studio.class_title_max_length', 120).' символов'),
                         Textarea::make('description')
                             ->label('Описание')
                             ->rows(3)

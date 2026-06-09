@@ -13,10 +13,15 @@ class SubscriptionService
 {
     public function findUsableForUser(User $user, SubscriptionType $classType, ?Carbon $on = null): ?Subscription
     {
+        // Историчность: списываем из абонемента, приобретённого раньше всех
+        // (первичный), затем — по сроку окончания.
         return $user->subscriptions()
             ->forType($classType)
             ->active($on)
+            ->orderBy('purchased_at')
+            ->orderBy('starts_at')
             ->orderBy('ends_at')
+            ->orderBy('id')
             ->first();
     }
 
@@ -99,6 +104,33 @@ class SubscriptionService
         }
 
         $usage->delete();
+    }
+
+    /**
+     * Вернуть администратором одно списанное занятие в абонемент
+     * (например, клиент не пришёл по уважительной причине, а занятие уже списали).
+     */
+    public function returnSession(Subscription $subscription, ?string $reason = null): Subscription
+    {
+        if ($subscription->sessions_used < 1) {
+            throw new InvalidArgumentException('В абонементе нет списанных занятий для возврата.');
+        }
+
+        $subscription->decrement('sessions_used');
+
+        $latestUsage = $subscription->usages()->latest('used_at')->first();
+
+        if ($latestUsage !== null) {
+            $latestUsage->delete();
+        }
+
+        if ($reason !== null && $reason !== '') {
+            $note = trim(($subscription->admin_note ? $subscription->admin_note."\n" : '')
+                .now()->format('d.m.Y H:i').' — возврат занятия: '.$reason);
+            $subscription->update(['admin_note' => $note]);
+        }
+
+        return $subscription->refresh();
     }
 
     public function createFromPurchase(

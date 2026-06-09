@@ -106,6 +106,33 @@ class ClassSession extends Model
         return $this->starts_at->format('H:i');
     }
 
+    public function formattedDateTime(): string
+    {
+        return $this->starts_at->translatedFormat('d.m.Y, H:i');
+    }
+
+    /**
+     * За сколько часов до начала проверяется набор группы (контроль автоотмены).
+     * Занятия до 12:00 проверяются раньше (раньше уведомляем), с 12:00 — позже.
+     */
+    public function autoCancelDeadlineHours(): int
+    {
+        $config = config('studio.auto_cancel');
+        $noonHour = (int) ($config['noon_hour'] ?? 12);
+        $isMorning = (int) $this->starts_at->format('H') < $noonHour;
+
+        return (int) ($isMorning ? ($config['morning_hours'] ?? 15) : ($config['day_hours'] ?? 5));
+    }
+
+    /**
+     * Момент, начиная с которого занятие может быть автоматически отменено
+     * при недоборе группы.
+     */
+    public function autoCancelCheckpoint(): Carbon
+    {
+        return $this->starts_at->copy()->subHours($this->autoCancelDeadlineHours());
+    }
+
     public function trainerName(): string
     {
         return $this->trainer?->shortName() ?? '—';

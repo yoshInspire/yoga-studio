@@ -62,9 +62,7 @@ class BookingService
         }
 
         if (! $booking->canBeCancelledByClient()) {
-            throw new InvalidArgumentException(
-                'Отменить запись можно не позднее чем за '.config('studio.cancellation_deadline_hours').' часа до начала.'
-            );
+            throw new InvalidArgumentException($booking->cancellationBlockedMessage());
         }
 
         return DB::transaction(function () use ($booking) {

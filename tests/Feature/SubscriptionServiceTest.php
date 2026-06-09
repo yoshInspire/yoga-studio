@@ -117,4 +117,49 @@ class SubscriptionServiceTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->service->changeStartDate($sub, Carbon::parse(now()->addDays(10)));
     }
+
+    public function test_deducts_from_earliest_purchased_subscription_first(): void
+    {
+        $user = $this->user();
+
+        // Более поздняя покупка, но раньше истекает.
+        $newer = $this->subscription($user, [
+            'purchased_at' => now()->subDays(2),
+            'ends_at' => now()->addDays(10),
+        ]);
+
+        // Первичный (приобретён раньше), истекает позже.
+        $primary = $this->subscription($user, [
+            'purchased_at' => now()->subDays(20),
+            'ends_at' => now()->addDays(30),
+        ]);
+
+        $found = $this->service->findUsableForUser($user, SubscriptionType::Group);
+
+        $this->assertNotNull($found);
+        $this->assertSame($primary->id, $found->id);
+    }
+
+    public function test_return_session_restores_used_count(): void
+    {
+        $user = $this->user();
+        $sub = $this->subscription($user, ['sessions_used' => 2]);
+        $sub->usages()->create(['used_at' => now()->subDay(), 'description' => 'first']);
+        $sub->usages()->create(['used_at' => now(), 'description' => 'second']);
+
+        $updated = $this->service->returnSession($sub, 'Клиент заболел');
+
+        $this->assertSame(1, $updated->sessions_used);
+        $this->assertSame(1, $sub->usages()->count());
+        $this->assertStringContainsString('Клиент заболел', (string) $updated->admin_note);
+    }
+
+    public function test_return_session_without_used_throws(): void
+    {
+        $user = $this->user();
+        $sub = $this->subscription($user, ['sessions_used' => 0]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->service->returnSession($sub);
+    }
 }

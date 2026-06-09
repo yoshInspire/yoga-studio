@@ -167,6 +167,60 @@ class BookingServiceTest extends TestCase
         $this->service->cancelByClient($booking);
     }
 
+    public function test_morning_class_uses_longer_cancellation_window(): void
+    {
+        config([
+            'studio.cancellation.noon_hour' => 12,
+            'studio.cancellation.morning_hours' => 14,
+            'studio.cancellation.day_hours' => 4,
+        ]);
+
+        \Illuminate\Support\Carbon::setTestNow('2026-06-15 06:00:00');
+
+        $user = $this->client();
+        $this->subscription($user);
+
+        // Утреннее занятие в этот же день в 09:00 — до начала 3 ч, окно утром 14 ч: нельзя.
+        $morning = $this->makeSession(['starts_at' => '2026-06-15 09:00:00']);
+        $booking = $this->service->book($user, $morning);
+
+        $this->actingAs($user);
+
+        try {
+            $this->expectException(InvalidArgumentException::class);
+            $this->service->cancelByClient($booking);
+        } finally {
+            \Illuminate\Support\Carbon::setTestNow();
+        }
+    }
+
+    public function test_afternoon_class_uses_shorter_cancellation_window(): void
+    {
+        config([
+            'studio.cancellation.noon_hour' => 12,
+            'studio.cancellation.morning_hours' => 14,
+            'studio.cancellation.day_hours' => 4,
+        ]);
+
+        \Illuminate\Support\Carbon::setTestNow('2026-06-15 06:00:00');
+
+        $user = $this->client();
+        $sub = $this->subscription($user);
+
+        // Дневное занятие в этот же день в 18:00 — до начала 12 ч, окно днём 4 ч: можно.
+        $afternoon = $this->makeSession(['starts_at' => '2026-06-15 18:00:00']);
+        $booking = $this->service->book($user, $afternoon);
+        $this->assertSame(1, $sub->fresh()->sessions_used);
+
+        $this->actingAs($user);
+        $cancelled = $this->service->cancelByClient($booking);
+
+        $this->assertSame(BookingStatus::CancelledByClient, $cancelled->status);
+        $this->assertSame(0, $sub->fresh()->sessions_used);
+
+        \Illuminate\Support\Carbon::setTestNow();
+    }
+
     public function test_cancel_class_refunds_all_clients_with_reason(): void
     {
         $session = $this->makeSession(['capacity' => 5]);

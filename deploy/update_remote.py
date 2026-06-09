@@ -96,6 +96,9 @@ set_env TRAINER_PASSWORD StudioTrainer2026!
 
 grep -q '^MAIL_FROM_NAME=' .env && sed -i 's|^MAIL_FROM_NAME=.*|MAIL_FROM_NAME="ЭКО YOGA"|' .env || echo 'MAIL_FROM_NAME="ЭКО YOGA"' >> .env
 grep -q '^MAIL_FROM_ADDRESS=' .env && sed -i 's|^MAIL_FROM_ADDRESS=.*|MAIL_FROM_ADDRESS=ecoyoga-ik@yandex.ru|' .env || echo 'MAIL_FROM_ADDRESS=ecoyoga-ik@yandex.ru' >> .env
+
+# Почта для служебных уведомлений администратору (по умолчанию — ящик рассылки)
+set_env STUDIO_ADMIN_EMAIL ecoyoga-ik@yandex.ru
 """
     if telegram_token:
         script += f"set_env TELEGRAM_BOT_TOKEN {telegram_token}\n"
@@ -116,6 +119,11 @@ php artisan view:cache
 chown -R www-data:www-data {APP_DIR}/storage {APP_DIR}/bootstrap/cache
 chmod -R 775 {APP_DIR}/storage {APP_DIR}/bootstrap/cache
 systemctl restart php8.3-fpm
+
+# Планировщик Laravel: автоотмена недобранных групп и напоминания по абонементам.
+CRON_LINE="* * * * * cd {APP_DIR} && php artisan schedule:run >> /dev/null 2>&1"
+( crontab -l 2>/dev/null | grep -v 'artisan schedule:run' ; echo "$CRON_LINE" ) | crontab -
+echo "Cron schedule:run installed"
 
 curl -sI https://ekoyoga-ik.ru/login | head -3
 curl -sI https://ekoyoga-ik.ru/admin | head -3
