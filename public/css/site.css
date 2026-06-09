@@ -760,6 +760,41 @@ a { color: inherit; text-decoration: none; }
 .auth__alert--error { background: #fdecea; color: #8b3a32; border: 1px solid #f0c5c0; }
 .auth__alert--ok { background: #edf5ee; color: #2f5d3a; border: 1px solid #c8dcc9; }
 .auth__patronymic.is-hidden { display: none; }
+.auth__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.auth__divider::before,
+.auth__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.auth__telegram { display: flex; justify-content: center; margin-bottom: 6px; }
+.auth__readonly {
+  width: 100%;
+  padding: 15px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-family: var(--sans);
+  font-size: 15px;
+  background: #f6f4ef;
+  color: var(--ink-soft);
+}
+.lk__telegram {
+  margin: 22px 0 18px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+.lk__telegram-actions { margin-top: 12px; }
 
 .password-field { position: relative; }
 .password-field input {

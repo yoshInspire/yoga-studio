@@ -20,6 +20,9 @@ use Illuminate\Notifications\Notifiable;
     'patronymic',
     'email',
     'phone',
+    'telegram_id',
+    'telegram_username',
+    'telegram_linked_at',
     'birth_day',
     'birth_month',
     'birth_year',
@@ -36,6 +39,8 @@ class User extends Authenticatable implements FilamentUser
     {
         return [
             'email_verified_at' => 'datetime',
+            'telegram_id' => 'integer',
+            'telegram_linked_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
             'birth_day' => 'integer',
@@ -128,6 +133,24 @@ class User extends Authenticatable implements FilamentUser
     public function isAdmin(): bool
     {
         return $this->role === UserRole::Admin;
+    }
+
+    public function hasTelegram(): bool
+    {
+        return $this->telegram_id !== null;
+    }
+
+    public function telegramDisplayAccount(): ?string
+    {
+        if (! $this->hasTelegram()) {
+            return null;
+        }
+
+        if ($this->telegram_username) {
+            return '@'.$this->telegram_username;
+        }
+
+        return 'Telegram #'.$this->telegram_id;
     }
 
     /**

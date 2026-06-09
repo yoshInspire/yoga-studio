@@ -40,6 +40,9 @@
             @if (session('status'))
               <div class="auth__alert auth__alert--ok" style="margin-bottom: 18px">{{ session('status') }}</div>
             @endif
+            @if ($errors->has('telegram'))
+              <div class="auth__alert auth__alert--error" style="margin-bottom: 18px">{{ $errors->first('telegram') }}</div>
+            @endif
             <dl class="lk__fields">
               <div class="lk__field"><dt>Имя</dt><dd>{{ $user->first_name }}</dd></div>
               <div class="lk__field"><dt>Фамилия</dt><dd>{{ $user->last_name }}</dd></div>
@@ -51,7 +54,32 @@
               @if ($user->email)
                 <div class="lk__field"><dt>Email</dt><dd>{{ $user->email }}</dd></div>
               @endif
+              <div class="lk__field">
+                <dt>Telegram</dt>
+                <dd>{{ $user->telegramDisplayAccount() ?? 'Не привязан' }}</dd>
+              </div>
             </dl>
+
+            <div class="lk__telegram">
+              @if ($user->hasTelegram())
+                <p class="lk__lead">Вход через Telegram доступен для вашего аккаунта.</p>
+                <form action="{{ route('account.telegram.unlink') }}" method="post" class="lk__telegram-actions">
+                  @csrf
+                  @method('DELETE')
+                  <button type="submit" class="btn btn--ghost">Отвязать Telegram</button>
+                </form>
+              @elseif ($telegramEnabled ?? false)
+                <p class="lk__lead">Привяжите Telegram, чтобы входить на сайт без пароля.</p>
+                @include('partials.telegram-login-widget', [
+                  'telegramEnabled' => $telegramEnabled,
+                  'telegramBotUsername' => $telegramBotUsername,
+                  'telegramAuthUrl' => route('account.telegram.callback'),
+                ])
+              @else
+                <p class="lk__lead">Привязка Telegram скоро будет доступна.</p>
+              @endif
+            </div>
+
             <button type="button" class="btn btn--line" data-soon="Редактирование профиля в личном кабинете скоро появится. Пока изменить данные можно через администратора студии — напишите или позвоните нам.">Редактировать профиль</button>
           </div>
 

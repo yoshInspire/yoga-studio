@@ -4,12 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Enums\BookingStatus;
 use App\Services\SubscriptionService;
+use App\Services\TelegramAuthService;
 use App\Support\OfferStorage;
 use Illuminate\View\View;
 
 class AccountController extends Controller
 {
-    public function __invoke(SubscriptionService $subscriptions): View
+    public function __invoke(SubscriptionService $subscriptions, TelegramAuthService $telegram): View
     {
         $user = auth()->user();
 
@@ -60,6 +61,8 @@ class AccountController extends Controller
             'history' => $history,
             'cancelled' => $cancelled,
             'offerAvailable' => OfferStorage::exists(),
+            'telegramEnabled' => $telegram->isEnabled(),
+            'telegramBotUsername' => $telegram->botUsername(),
         ]);
     }
 }

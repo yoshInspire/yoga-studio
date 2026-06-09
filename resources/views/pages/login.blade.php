@@ -5,6 +5,7 @@
 @php
   $months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
   $activeTab = $activeTab ?? session('auth_tab', 'login');
+  $telegramPending = $telegramPending ?? null;
 @endphp
 
 @section('content')
@@ -53,6 +54,16 @@
               <a href="#" class="auth__minor" data-soon="Восстановление пароля скоро появится. Пока, если забыли пароль, напишите или позвоните в студию — администратор поможет восстановить доступ.">Забыли пароль?</a>
             </div>
             <button type="submit" class="btn btn--solid btn--full btn--lg">Войти</button>
+
+            @if ($telegramEnabled ?? false)
+              <div class="auth__divider" aria-hidden="true">или</div>
+              @include('partials.telegram-login-widget', [
+                'telegramEnabled' => $telegramEnabled,
+                'telegramBotUsername' => $telegramBotUsername,
+                'telegramAuthUrl' => route('auth.telegram.callback'),
+              ])
+            @endif
+
             <p class="auth__switch">Нет аккаунта? <button type="button" class="auth__link" data-goto="register">Зарегистрироваться</button></p>
           </form>
 
@@ -68,14 +79,24 @@
               </div>
             @endif
 
+            @if ($telegramPending)
+              <div class="auth__alert auth__alert--ok">
+                Telegram подтверждён: <strong>{{ $telegramPending->displayAccount() }}</strong>. Заполните оставшиеся поля и завершите регистрацию.
+              </div>
+              <div class="form__row">
+                <label class="auth__label" for="reg-telegram">Telegram</label>
+                <input type="text" id="reg-telegram" value="{{ $telegramPending->displayAccount() }}" readonly class="auth__readonly" />
+              </div>
+            @endif
+
             <div class="auth__row2">
               <div class="form__row">
                 <label class="auth__label" for="reg-name">Имя</label>
-                <input type="text" id="reg-name" name="first_name" value="{{ old('first_name') }}" placeholder="Имя" autocomplete="given-name" required />
+                <input type="text" id="reg-name" name="first_name" value="{{ old('first_name', $telegramPending?->first_name) }}" placeholder="Имя" autocomplete="given-name" required />
               </div>
               <div class="form__row">
                 <label class="auth__label" for="reg-surname">Фамилия</label>
-                <input type="text" id="reg-surname" name="last_name" value="{{ old('last_name') }}" placeholder="Фамилия" autocomplete="family-name" required />
+                <input type="text" id="reg-surname" name="last_name" value="{{ old('last_name', $telegramPending?->last_name) }}" placeholder="Фамилия" autocomplete="family-name" required />
               </div>
             </div>
 

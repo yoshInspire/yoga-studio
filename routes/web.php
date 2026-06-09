@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\Account\TelegramLinkController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\TelegramAuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LeadController;
@@ -31,6 +33,9 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->name('login.store');
     Route::post('/register', [RegisterController::class, 'store'])->name('register');
+    Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'])
+        ->middleware('throttle:20,1')
+        ->name('auth.telegram.callback');
 });
 
 Route::post('/logout', LogoutController::class)->name('logout')->middleware('auth');
@@ -39,6 +44,11 @@ Route::get('/oferta', [OfferController::class, 'show'])->middleware('auth')->nam
 
 Route::middleware(['auth', 'role:client'])->group(function () {
     Route::get('/account', AccountController::class)->name('account');
+    Route::get('/account/telegram/callback', [TelegramLinkController::class, 'callback'])
+        ->middleware('throttle:20,1')
+        ->name('account.telegram.callback');
+    Route::delete('/account/telegram', [TelegramLinkController::class, 'destroy'])
+        ->name('account.telegram.unlink');
     Route::get('/purchase', [PurchaseController::class, 'index'])->name('purchase.index');
     Route::post('/purchase', [PurchaseController::class, 'store'])->name('purchase.store');
     Route::get('/payments/{payment}/return', [PaymentController::class, 'return'])->name('payments.return');

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Enums\UserRole;
+use App\Http\Controllers\Auth\Concerns\RedirectsAuthenticatedUsers;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
+use App\Services\TelegramAuthService;
+use App\Support\TelegramAuthData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -13,14 +15,26 @@ use Illuminate\View\View;
 
 class LoginController extends Controller
 {
+    use RedirectsAuthenticatedUsers;
+
+    public function __construct(
+        protected TelegramAuthService $telegram,
+    ) {}
     public function create(): View|RedirectResponse
     {
         if (Auth::check()) {
             return $this->redirectAuthenticated(Auth::user());
         }
 
+        $telegramPending = session('telegram_pending');
+
         return view('pages.login', [
             'activeTab' => session('auth_tab', 'login'),
+            'telegramEnabled' => $this->telegram->isEnabled(),
+            'telegramBotUsername' => $this->telegram->botUsername(),
+            'telegramPending' => is_array($telegramPending)
+                ? TelegramAuthData::fromSession($telegramPending)
+                : null,
         ]);
     }
 
@@ -40,14 +54,5 @@ class LoginController extends Controller
         $request->session()->regenerate();
 
         return $this->redirectAuthenticated($user);
-    }
-
-    protected function redirectAuthenticated(User $user): RedirectResponse
-    {
-        return match ($user->role) {
-            UserRole::Admin => redirect()->intended('/admin'),
-            UserRole::Trainer => redirect()->intended(route('trainer')),
-            default => redirect()->intended(route('account')),
-        };
     }
 }

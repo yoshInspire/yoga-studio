@@ -26,12 +26,25 @@ fi
 export COMPOSER_ALLOW_SUPERUSER=1
 composer install --no-dev --optimize-autoloader --no-interaction
 
-grep -q '^ADMIN_EMAIL=' .env || echo 'ADMIN_EMAIL=admin@ekoyoga-ik.ru' >> .env
-grep -q '^ADMIN_PHONE=' .env || echo 'ADMIN_PHONE=+79000000000' >> .env
-grep -q '^ADMIN_PASSWORD=' .env || echo 'ADMIN_PASSWORD=StudioAdmin2026!' >> .env
-grep -q '^TRAINER_EMAIL=' .env || echo 'TRAINER_EMAIL=trainer@ekoyoga-ik.ru' >> .env
-grep -q '^TRAINER_PHONE=' .env || echo 'TRAINER_PHONE=+79000000001' >> .env
-grep -q '^TRAINER_PASSWORD=' .env || echo 'TRAINER_PASSWORD=StudioTrainer2026!' >> .env
+set_env() {{
+  key="$1"
+  val="$2"
+  if grep -q "^${{key}}=" .env; then
+    sed -i "s|^${{key}}=.*|${{key}}=${{val}}|" .env
+  else
+    echo "${{key}}=${{val}}" >> .env
+  fi
+}}
+
+set_env ADMIN_EMAIL admin@ekoyoga-ik.ru
+set_env ADMIN_PHONE +79000000000
+set_env ADMIN_PASSWORD StudioAdmin2026!
+set_env TRAINER_EMAIL trainer@ekoyoga-ik.ru
+set_env TRAINER_PHONE +79000000001
+set_env TRAINER_PASSWORD StudioTrainer2026!
+set_env TELEGRAM_BOT_TOKEN 8607223838:AAETw2YxBHJB5LIBQCjX1Y-cP30QVXsiTSQ
+set_env TELEGRAM_BOT_USERNAME ekoyogabot
+set_env TELEGRAM_AUTH_MAX_AGE 86400
 
 php artisan migrate --force
 php artisan db:seed --class=AdminUserSeeder --force

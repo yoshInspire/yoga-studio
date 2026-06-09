@@ -6,12 +6,17 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
+use App\Services\TelegramAuthService;
+use App\Support\TelegramAuthData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class RegisterController extends Controller
 {
+    public function __construct(
+        protected TelegramAuthService $telegram,
+    ) {}
     public function create(): View|RedirectResponse
     {
         if (Auth::check()) {
@@ -31,6 +36,18 @@ class RegisterController extends Controller
             $data['patronymic'] = null;
         }
 
+        $telegramPending = session('telegram_pending');
+        $telegramData = is_array($telegramPending)
+            ? TelegramAuthData::fromSession($telegramPending)
+            : null;
+
+        if ($telegramData !== null && $this->telegram->isLinkedToAnotherUser($telegramData)) {
+            return back()
+                ->withInput()
+                ->withErrors(['telegram' => 'Этот Telegram-аккаунт уже привязан к другому пользователю.'], 'register')
+                ->with('auth_tab', 'register');
+        }
+
         $user = User::query()->create([
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
@@ -42,10 +59,14 @@ class RegisterController extends Controller
             'email' => $data['email'] ?? null,
             'password' => $data['password'],
             'role' => UserRole::Client,
+            'telegram_id' => $telegramData?->id,
+            'telegram_username' => $telegramData?->username,
+            'telegram_linked_at' => $telegramData !== null ? now() : null,
         ]);
 
         Auth::login($user);
         $request->session()->regenerate();
+        $request->session()->forget('telegram_pending');
 
         return redirect()
             ->route('account')
