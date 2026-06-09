@@ -113,6 +113,18 @@ DB_PORT=3306
 DB_DATABASE=yoga_studio
 DB_USERNAME=yoga
 DB_PASSWORD=ВАШ_ПАРОЛЬ_БД
+
+# Почта (заявки, коды регистрации и профиля)
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.yandex.ru
+MAIL_PORT=465
+MAIL_SCHEME=smtps
+MAIL_USERNAME=ecoyoga-ik@yandex.ru
+MAIL_PASSWORD=пароль_приложения_яндекса
+MAIL_FROM_ADDRESS=ecoyoga-ik@yandex.ru
+MAIL_FROM_NAME="ЭКО YOGA"
+MAIL_TIMEOUT=10
+STUDIO_LEAD_EMAIL=адрес_для_заявок_с_сайта
 ```
 
 ```bash
