@@ -232,43 +232,46 @@
                     @endforeach
                   </div>
                 @endif
-                <form action="{{ route('account.password.update') }}" method="post">
+                <form id="profilePasswordForm" action="{{ route('account.password.update') }}" method="post" hidden>
                   @csrf
                   @method('PUT')
-                  <div class="lk-profile-form__field">
-                    <label class="lk-profile-form__label" for="profile-current-password">Текущий пароль</label>
-                    @include('partials.password-field', [
-                      'id' => 'profile-current-password',
-                      'name' => 'current_password',
-                      'placeholder' => 'Текущий пароль',
-                      'autocomplete' => 'current-password',
-                      'required' => true,
-                    ])
-                  </div>
-                  <div class="lk-profile-form__field">
-                    <label class="lk-profile-form__label" for="profile-new-password">Новый пароль</label>
-                    @include('partials.password-field', [
-                      'id' => 'profile-new-password',
-                      'name' => 'password',
-                      'placeholder' => 'Не менее 8 символов',
-                      'autocomplete' => 'new-password',
-                      'required' => true,
-                    ])
-                  </div>
-                  <div class="lk-profile-form__field">
-                    <label class="lk-profile-form__label" for="profile-new-password-confirm">Повторите новый пароль</label>
-                    @include('partials.password-field', [
-                      'id' => 'profile-new-password-confirm',
-                      'name' => 'password_confirmation',
-                      'placeholder' => 'Повторите пароль',
-                      'autocomplete' => 'new-password',
-                      'required' => true,
-                    ])
-                  </div>
-                  <div class="lk-profile-form__actions">
-                    <button type="submit" class="btn btn--line">Сохранить пароль</button>
-                  </div>
                 </form>
+                <div class="lk-profile-form__field">
+                  <label class="lk-profile-form__label" for="profile-current-password" form="profilePasswordForm">Текущий пароль</label>
+                  @include('partials.password-field', [
+                    'id' => 'profile-current-password',
+                    'name' => 'current_password',
+                    'form' => 'profilePasswordForm',
+                    'placeholder' => 'Текущий пароль',
+                    'autocomplete' => 'current-password',
+                    'required' => true,
+                  ])
+                </div>
+                <div class="lk-profile-form__field">
+                  <label class="lk-profile-form__label" for="profile-new-password" form="profilePasswordForm">Новый пароль</label>
+                  @include('partials.password-field', [
+                    'id' => 'profile-new-password',
+                    'name' => 'password',
+                    'form' => 'profilePasswordForm',
+                    'placeholder' => 'Не менее 8 символов',
+                    'autocomplete' => 'new-password',
+                    'required' => true,
+                  ])
+                </div>
+                <div class="lk-profile-form__field">
+                  <label class="lk-profile-form__label" for="profile-new-password-confirm" form="profilePasswordForm">Повторите новый пароль</label>
+                  @include('partials.password-field', [
+                    'id' => 'profile-new-password-confirm',
+                    'name' => 'password_confirmation',
+                    'form' => 'profilePasswordForm',
+                    'placeholder' => 'Повторите пароль',
+                    'autocomplete' => 'new-password',
+                    'required' => true,
+                  ])
+                </div>
+                <div class="lk-profile-form__actions">
+                  <button type="submit" form="profilePasswordForm" class="btn btn--line">Сохранить пароль</button>
+                </div>
               </div>
               </div>
 

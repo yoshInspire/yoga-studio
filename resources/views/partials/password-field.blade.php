@@ -5,6 +5,7 @@
     name="{{ $name }}"
     placeholder="{{ $placeholder }}"
     @if(!empty($autocomplete)) autocomplete="{{ $autocomplete }}" @endif
+    @if(!empty($form)) form="{{ $form }}" @endif
     @if(!empty($required)) required @endif
   />
   <button
