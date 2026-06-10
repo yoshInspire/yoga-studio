@@ -21,7 +21,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -86,18 +85,11 @@ class UserResource extends Resource
                             ->required()
                             ->placeholder('+7 (___) ___-__-__')
                             ->maxLength(18)
-                            ->live(onBlur: false)
-                            ->afterStateUpdated(function (Set $set, ?string $state): void {
-                                if ($state === null || $state === '') {
-                                    return;
-                                }
-
-                                $formatted = PhoneNormalizer::formatInput($state);
-
-                                if ($formatted !== $state) {
-                                    $set('phone', $formatted);
-                                }
-                            })
+                            ->extraInputAttributes([
+                                'data-phone-mask' => true,
+                                'inputmode' => 'tel',
+                                'autocomplete' => 'tel',
+                            ])
                             ->mutateStateForValidationUsing(fn (?string $state) => PhoneNormalizer::normalize($state) ?? $state)
                             ->dehydrateStateUsing(fn (?string $state) => PhoneNormalizer::normalize($state))
                             ->formatStateUsing(fn (?string $state) => PhoneNormalizer::format($state) ?? $state)
