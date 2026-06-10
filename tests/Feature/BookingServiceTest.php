@@ -6,6 +6,7 @@ use App\Enums\BookingStatus;
 use App\Enums\ClassSessionStatus;
 use App\Enums\SubscriptionType;
 use App\Enums\UserRole;
+use App\Models\Booking;
 use App\Models\ClassSession;
 use App\Models\Subscription;
 use App\Models\User;
@@ -382,6 +383,55 @@ class BookingServiceTest extends TestCase
         // Отмена второго (последнего) занятия дня возвращает оба занятия.
         $this->service->cancelByClient($second->fresh());
         $this->assertSame(0, $sub->fresh()->sessions_used);
+    }
+
+    public function test_client_can_reschedule_booking_without_extra_charge(): void
+    {
+        $user = $this->client();
+        $sub = $this->subscription($user, ['sessions_total' => 4]);
+
+        $day = now()->addDays(3);
+        $original = $this->makeSession(['starts_at' => $day->copy()->setTime(10, 0)]);
+        $target = $this->makeSession(['starts_at' => $day->copy()->setTime(18, 0)]);
+
+        $booking = $this->service->book($user, $original);
+        $this->assertSame(1, $sub->fresh()->sessions_used);
+
+        $this->actingAs($user);
+        $moved = $this->service->rescheduleByClient($booking, $target);
+
+        $this->assertSame($target->id, $moved->class_session_id);
+        $this->assertSame(BookingStatus::Confirmed, $moved->status);
+        $this->assertSame(1, $sub->fresh()->sessions_used);
+        $this->assertSame(1, Booking::query()->where('user_id', $user->id)->where('status', BookingStatus::Confirmed)->count());
+    }
+
+    public function test_reschedule_is_blocked_within_cancellation_deadline(): void
+    {
+        config([
+            'studio.cancellation.noon_hour' => 12,
+            'studio.cancellation.morning_hours' => 14,
+            'studio.cancellation.day_hours' => 4,
+        ]);
+
+        \Illuminate\Support\Carbon::setTestNow('2026-06-15 06:00:00');
+
+        $user = $this->client();
+        $this->subscription($user);
+
+        $original = $this->makeSession(['starts_at' => '2026-06-15 18:00:00']);
+        $target = $this->makeSession(['starts_at' => '2026-06-16 10:00:00']);
+
+        $booking = $this->service->book($user, $original);
+
+        $this->actingAs($user);
+
+        try {
+            $this->expectException(InvalidArgumentException::class);
+            $this->service->rescheduleByClient($booking, $target);
+        } finally {
+            \Illuminate\Support\Carbon::setTestNow();
+        }
     }
 
     public function test_cancel_class_refunds_all_clients_with_reason(): void

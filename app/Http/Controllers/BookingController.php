@@ -28,6 +28,30 @@ class BookingController extends Controller
         return back()->with('status', 'Вы записаны на занятие «'.$session->title.'».');
     }
 
+    public function reschedule(Request $request, Booking $booking, BookingService $bookings): RedirectResponse
+    {
+        if ($booking->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'class_session_id' => ['required', 'integer', 'exists:class_sessions,id'],
+        ]);
+
+        $session = ClassSession::query()->findOrFail($request->integer('class_session_id'));
+
+        try {
+            $bookings->rescheduleByClient($booking, $session);
+        } catch (InvalidArgumentException $e) {
+            return back()->withErrors(['booking' => $e->getMessage()]);
+        }
+
+        return redirect()
+            ->route('account')
+            ->with('lk_section', 'bookings')
+            ->with('status', 'Запись перенесена на «'.$session->title.'» '.$session->formattedDateTime().'.');
+    }
+
     public function cancel(Booking $booking, BookingService $bookings): RedirectResponse
     {
         if ($booking->user_id !== auth()->id()) {

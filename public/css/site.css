@@ -1178,6 +1178,8 @@ a { color: inherit; text-decoration: none; }
 .lk-row--cancelled { opacity: .9; }
 .lk-row--cancelled .lk-row__main h3 { text-decoration: line-through; text-decoration-color: var(--muted); }
 .lk-row__status { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--clay); background: rgba(184,106,72,.14); padding: 5px 12px; border-radius: 100px; }
+.lk-row__actions { display: flex; flex-direction: column; align-items: stretch; gap: 8px; min-width: 120px; }
+.lk-row__actions form { margin: 0; }
 
 .lk-table { width: 100%; border-collapse: collapse; }
 .lk-table th, .lk-table td { text-align: left; padding: 14px 12px; border-bottom: 1px solid var(--line); font-size: 14.5px; }

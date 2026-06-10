@@ -149,6 +149,58 @@ class BookingService
         $this->subscriptions->refundUsage($usage);
     }
 
+    public function rescheduleByClient(Booking $booking, ClassSession $newSession): Booking
+    {
+        if ($booking->user_id !== auth()->id()) {
+            throw new InvalidArgumentException('Нельзя перенести чужую запись.');
+        }
+
+        if (! $booking->canBeRescheduledByClient()) {
+            throw new InvalidArgumentException($booking->rescheduleBlockedMessage());
+        }
+
+        return DB::transaction(function () use ($booking, $newSession) {
+            $booking = Booking::query()->lockForUpdate()->findOrFail($booking->id);
+            $newSession = ClassSession::query()->lockForUpdate()->findOrFail($newSession->id);
+
+            if (! $booking->isConfirmed()) {
+                throw new InvalidArgumentException('Запись уже отменена.');
+            }
+
+            if ($booking->class_session_id === $newSession->id) {
+                throw new InvalidArgumentException('Вы уже записаны на это занятие.');
+            }
+
+            $subscription = $booking->subscription;
+
+            if ($subscription === null) {
+                throw new InvalidArgumentException('Не удалось определить абонемент записи.');
+            }
+
+            if (! $this->subscriptions->typesMatch($subscription->type, $newSession->type)) {
+                throw new InvalidArgumentException('Тип абонемента не подходит для этого занятия.');
+            }
+
+            $this->assertCanBook($booking->user, $newSession, excludeBookingId: $booking->id);
+
+            if ($newSession->confirmedCount() >= $newSession->capacity) {
+                throw new InvalidArgumentException('На занятии не осталось свободных мест.');
+            }
+
+            $this->releaseBooking($booking);
+
+            $usageId = $this->chargeForBooking($booking->user, $newSession, $subscription);
+
+            $booking->update([
+                'class_session_id' => $newSession->id,
+                'subscription_id' => $subscription->id,
+                'subscription_usage_id' => $usageId,
+            ]);
+
+            return $booking->refresh();
+        });
+    }
+
     public function cancelByClient(Booking $booking): Booking
     {
         if ($booking->user_id !== auth()->id()) {
@@ -236,7 +288,7 @@ class BookingService
         });
     }
 
-    protected function assertCanBook(User $user, ClassSession $session): void
+    protected function assertCanBook(User $user, ClassSession $session, ?int $excludeBookingId = null): void
     {
         if (! $session->isBookable()) {
             throw new InvalidArgumentException('Запись на это занятие недоступна.');
@@ -245,6 +297,8 @@ class BookingService
         if (Booking::query()
             ->where('user_id', $user->id)
             ->where('class_session_id', $session->id)
+            ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId))
+            ->where('status', BookingStatus::Confirmed)
             ->exists()) {
             throw new InvalidArgumentException('Вы уже записаны на это занятие.');
         }
@@ -252,6 +306,7 @@ class BookingService
         $dayBookings = Booking::query()
             ->where('user_id', $user->id)
             ->where('status', BookingStatus::Confirmed)
+            ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId))
             ->whereHas('classSession', fn ($q) => $q->whereDate('starts_at', $session->starts_at->toDateString()))
             ->count();
 
@@ -272,7 +327,7 @@ class BookingService
     /**
      * @return array<int, array{key: string, name: string, date: string, slots: list<array>}>
      */
-    public function buildWeekSchedule(Carbon $weekStart, ?User $viewer = null): array
+    public function buildWeekSchedule(Carbon $weekStart, ?User $viewer = null, ?Booking $rescheduleFrom = null): array
     {
         $sessionsQuery = ClassSession::query()
             ->inWeek($weekStart)
@@ -301,10 +356,19 @@ class BookingService
             $dateKey = $date->toDateString();
             $daySessions = $sessions->get($dateKey, collect());
 
-            $slots = $daySessions->map(function (ClassSession $session) use ($viewer) {
+            $slots = $daySessions->map(function (ClassSession $session) use ($viewer, $rescheduleFrom) {
                 $userBooked = $viewer
                     ? $session->bookings->isNotEmpty()
                     : false;
+
+                $isRescheduleSource = $rescheduleFrom !== null
+                    && $session->id === $rescheduleFrom->class_session_id;
+
+                $canRescheduleHere = $rescheduleFrom !== null
+                    && ! $isRescheduleSource
+                    && $session->slotStatus() === 'open'
+                    && $session->isBookable()
+                    && ! $userBooked;
 
                 return [
                     'id' => $session->id,
@@ -318,8 +382,10 @@ class BookingService
                     'total' => $session->capacity,
                     'status' => $session->slotStatus(),
                     'reason' => $session->cancellation_reason,
-                    'bookable' => $session->isBookable() && ! $userBooked,
-                    'user_booked' => $userBooked,
+                    'bookable' => $session->isBookable() && ! $userBooked && $rescheduleFrom === null,
+                    'user_booked' => $userBooked && ! $isRescheduleSource,
+                    'is_reschedule_source' => $isRescheduleSource,
+                    'can_reschedule_here' => $canRescheduleHere,
                 ];
             })->values()->all();
 

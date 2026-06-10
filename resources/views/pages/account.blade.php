@@ -318,7 +318,7 @@
           {{-- Мои записи --}}
           <div class="lk__panel is-hidden" data-panel="bookings">
             <h1 class="lk__title">Мои записи</h1>
-            <p class="lk__lead">Записи на ближайшую неделю. Отменить без списания занятия можно не позднее чем за 4 часа до начала.</p>
+            <p class="lk__lead">Записи на ближайшую неделю. Отменить или перенести запись без списания можно в те же сроки, что указаны в правилах на странице расписания.</p>
             @if ($errors->has('booking'))
               <div class="auth__alert auth__alert--error" style="margin-bottom: 16px">{{ $errors->first('booking') }}</div>
             @endif
@@ -341,12 +341,15 @@
                     </p>
                   </div>
                   @if($booking->canBeCancelledByClient())
-                    <form action="{{ route('bookings.cancel', $booking) }}" method="post">
-                      @csrf
-                      <button type="submit" class="btn btn--ghost">Отменить</button>
-                    </form>
+                    <div class="lk-row__actions">
+                      <a href="{{ route('schedule', ['reschedule' => $booking->id]) }}" class="btn btn--solid">Перенести</a>
+                      <form action="{{ route('bookings.cancel', $booking) }}" method="post">
+                        @csrf
+                        <button type="submit" class="btn btn--ghost">Отменить</button>
+                      </form>
+                    </div>
                   @else
-                    <button type="button" class="btn btn--ghost" disabled title="Отмена менее чем за 4 часа недоступна">Отменить</button>
+                    <button type="button" class="btn btn--ghost" disabled title="Отмена и перенос недоступны менее чем за установленный срок до начала">Отменить</button>
                   @endif
                 </div>
               @empty

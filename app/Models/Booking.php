@@ -86,9 +86,24 @@ class Booking extends Model
      */
     public function cancellationBlockedMessage(): string
     {
+        return $this->deadlineBlockedMessage('отменить');
+    }
+
+    public function canBeRescheduledByClient(): bool
+    {
+        return $this->canBeCancelledByClient();
+    }
+
+    public function rescheduleBlockedMessage(): string
+    {
+        return $this->deadlineBlockedMessage('перенести');
+    }
+
+    private function deadlineBlockedMessage(string $action): string
+    {
         $hours = $this->cancellationDeadlineHours();
 
-        return 'Вы не можете отменить запись, так как до начала занятия осталось менее '
+        return 'Вы не можете '.$action.' запись, так как до начала занятия осталось менее '
             .$hours.' '.($hours === 1 ? 'часа' : 'часов').'.';
     }
 

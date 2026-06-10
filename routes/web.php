@@ -91,6 +91,7 @@ Route::middleware(['auth', 'role:client'])->group(function () {
         Route::post('/purchase', [PurchaseController::class, 'store'])->name('purchase.store');
         Route::get('/payments/{payment}/return', [PaymentController::class, 'return'])->name('payments.return');
         Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
+        Route::post('/bookings/{booking}/reschedule', [BookingController::class, 'reschedule'])->name('bookings.reschedule');
         Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
     });
 });

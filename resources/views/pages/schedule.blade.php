@@ -15,9 +15,17 @@
           </p>
         </div>
         <div class="sched__week" aria-label="Выбор недели">
-          <a href="{{ route('schedule', ['week' => $prevWeek]) }}" class="sched__weeknav" aria-label="Предыдущая неделя">‹</a>
+          @php
+            $prevQuery = ['week' => $prevWeek];
+            $nextQuery = ['week' => $nextWeek];
+            if ($rescheduleFrom ?? null) {
+                $prevQuery['reschedule'] = $rescheduleFrom->id;
+                $nextQuery['reschedule'] = $rescheduleFrom->id;
+            }
+          @endphp
+          <a href="{{ route('schedule', $prevQuery) }}" class="sched__weeknav" aria-label="Предыдущая неделя">‹</a>
           <span class="sched__weeklabel">{{ $weekLabel }}</span>
-          <a href="{{ route('schedule', ['week' => $nextWeek]) }}" class="sched__weeknav" aria-label="Следующая неделя">›</a>
+          <a href="{{ route('schedule', $nextQuery) }}" class="sched__weeknav" aria-label="Следующая неделя">›</a>
         </div>
       </div>
 
@@ -26,6 +34,15 @@
       @endif
       @if ($errors->has('booking'))
         <div class="auth__alert auth__alert--error reveal" style="margin-bottom: 20px">{{ $errors->first('booking') }}</div>
+      @endif
+
+      @if ($rescheduleFrom ?? null)
+        <div class="auth__alert auth__alert--ok reveal" style="margin-bottom: 20px">
+          Перенос записи с «{{ $rescheduleFrom->classSession->title }}»
+          {{ $rescheduleFrom->classSession->formattedDateTime() }}.
+          Выберите новое занятие и нажмите «Перенести сюда».
+          <a href="{{ route('schedule', ['week' => request('week')]) }}" class="auth__minor" style="margin-left: 8px">Отменить перенос</a>
+        </div>
       @endif
 
       <div class="sched__days reveal" role="tablist" id="schedDays">
@@ -71,7 +88,15 @@
                   @endif
                 </div>
                 <div class="slot__action">
-                  @if($slot['user_booked'] ?? false)
+                  @if($slot['is_reschedule_source'] ?? false)
+                    <span class="btn btn--ghost" style="pointer-events:none">Текущая запись</span>
+                  @elseif($slot['can_reschedule_here'] ?? false)
+                    <form action="{{ route('bookings.reschedule', $rescheduleFrom) }}" method="post">
+                      @csrf
+                      <input type="hidden" name="class_session_id" value="{{ $slot['id'] }}" />
+                      <button type="submit" class="btn btn--solid">Перенести сюда</button>
+                    </form>
+                  @elseif($slot['user_booked'] ?? false)
                     <span class="btn btn--ghost" style="pointer-events:none">Вы записаны</span>
                   @elseif($slot['status'] === 'open' && ($slot['bookable'] ?? false) && auth()->check() && auth()->user()->isClient())
                     <form action="{{ route('bookings.store') }}" method="post">
@@ -104,7 +129,7 @@
           </div>
           <div class="faq__item">
             <button type="button" class="faq__q">Отмена записи<span class="faq__icon">+</span></button>
-            <div class="faq__a"><p>Отменить запись можно заранее, тогда занятие вернётся на абонемент. Для занятий <b>до&nbsp;12:00</b> — не позднее чем за&nbsp;14&nbsp;часов до начала, для занятий <b>с&nbsp;12:00</b> — не позднее чем за&nbsp;4&nbsp;часа. При более поздней отмене занятие списывается.</p></div>
+            <div class="faq__a"><p>Отменить запись можно заранее, тогда занятие вернётся на абонемент. Для занятий <b>до&nbsp;12:00</b> — не позднее чем за&nbsp;14&nbsp;часов до начала, для занятий <b>с&nbsp;12:00</b> — не позднее чем за&nbsp;4&nbsp;часа. При более поздней отмене занятие списывается. В те же сроки можно <b>перенести</b> запись на другое время: в «Мои записи» нажмите «Перенести» и выберите новое занятие в расписании.</p></div>
           </div>
           <div class="faq__item">
             <button type="button" class="faq__q">Сколько человек в группе<span class="faq__icon">+</span></button>
