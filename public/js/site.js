@@ -132,60 +132,6 @@ if (faqList) {
   });
 }
 
-// ===== Маска телефона +7 (___) ___-__-__ =====
-const formatRuPhone = (raw) => {
-  let digits = raw.replace(/\D/g, '');
-  if (digits.startsWith('8')) digits = `7${digits.slice(1)}`;
-  if (digits.startsWith('7')) digits = digits.slice(1);
-  digits = digits.slice(0, 10);
-  if (!digits) return '';
-
-  let out = '+7 (';
-  out += digits.slice(0, 3);
-  if (digits.length <= 3) return out;
-
-  out += `) ${digits.slice(3, 6)}`;
-  if (digits.length <= 6) return out;
-
-  out += `-${digits.slice(6, 8)}`;
-  if (digits.length <= 8) return out;
-
-  return `${out}-${digits.slice(8, 10)}`;
-};
-
-const isLoginText = (value) => /[@a-zA-Zа-яА-ЯёЁ._-]/.test(value);
-
-const shouldFormatAsPhone = (value, mode) => {
-  const trimmed = value.trim();
-  if (!trimmed) return false;
-
-  if (mode === 'login') {
-    if (isLoginText(trimmed)) return false;
-    if (!/^[\d+\s()-]+$/.test(trimmed)) return false;
-    const digits = trimmed.replace(/\D/g, '');
-    // Одна цифра «7» — скорее начало email/логина, не телефон
-    if (digits.length === 1 && digits === '7') return false;
-    return true;
-  }
-
-  return true;
-};
-
-const attachPhoneMask = (input, mode = 'phone') => {
-  const apply = () => {
-    if (!shouldFormatAsPhone(input.value, mode)) return;
-
-    const formatted = formatRuPhone(input.value);
-    if (input.value !== formatted) input.value = formatted;
-  };
-
-  input.addEventListener('input', apply);
-  input.addEventListener('blur', apply);
-  if (input.value && shouldFormatAsPhone(input.value, mode)) {
-    input.value = formatRuPhone(input.value);
-  }
-};
-
 const togglePasswordVisibility = (btn) => {
   const field = btn.closest('.password-field');
   const input = field?.querySelector('input');
@@ -255,10 +201,20 @@ if (authTabs.length) {
     syncPatronymic();
   }
 
-  document.querySelectorAll('[data-phone-mask]').forEach((input) => {
-    const mode = input.dataset.phoneMask === 'login' ? 'login' : 'phone';
-    attachPhoneMask(input, mode);
-  });
+  const loginEmail = document.getElementById('login-email');
+  const loginPhone = document.getElementById('login-phone');
+  if (loginEmail && loginPhone) {
+    loginEmail.addEventListener('input', () => {
+      if (loginEmail.value.trim() !== '') {
+        loginPhone.value = '';
+      }
+    });
+    loginPhone.addEventListener('input', () => {
+      if (loginPhone.value.replace(/\D/g, '') !== '') {
+        loginEmail.value = '';
+      }
+    });
+  }
 
 }
 
@@ -477,11 +433,6 @@ if (profileView && profileEdit && profileEditForm) {
     };
     profilePatronymicToggle.addEventListener('change', syncPatronymic);
     syncPatronymic();
-  }
-
-  const profilePhone = document.getElementById('profile-phone');
-  if (profilePhone) {
-    attachPhoneMask(profilePhone, 'phone');
   }
 
   syncProfileEmailState();

@@ -9,12 +9,12 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'first_name',
@@ -227,26 +227,24 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(ClassSession::class, 'trainer_id');
     }
 
-    public static function findByLogin(string $login): ?self
+    public static function findByEmailOrPhone(?string $email, ?string $phone): ?self
     {
-        $login = trim($login);
-
-        if ($login === '') {
-            return null;
-        }
-
-        if (str_contains($login, '@')) {
+        if (filled($email)) {
             return static::query()
-                ->where('email', mb_strtolower($login))
+                ->where('email', mb_strtolower(trim($email)))
                 ->first();
         }
 
-        $phone = PhoneNormalizer::normalize($login);
+        if (filled($phone)) {
+            $normalized = PhoneNormalizer::normalize($phone);
 
-        if ($phone === null) {
-            return null;
+            if ($normalized === null) {
+                return null;
+            }
+
+            return static::query()->where('phone', $normalized)->first();
         }
 
-        return static::query()->where('phone', $phone)->first();
+        return null;
     }
 }

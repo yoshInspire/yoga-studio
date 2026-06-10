@@ -23,6 +23,7 @@ class LoginController extends Controller
         protected TelegramAuthService $telegram,
         protected RegistrationEmailVerificationService $emailVerification,
     ) {}
+
     public function create(Request $request): View|RedirectResponse
     {
         if (Auth::check()) {
@@ -49,12 +50,15 @@ class LoginController extends Controller
 
     public function store(LoginRequest $request): RedirectResponse
     {
-        $user = User::findByLogin($request->validated('login'));
+        $user = User::findByEmailOrPhone(
+            $request->validated('email'),
+            $request->validated('phone'),
+        );
 
         if ($user === null || ! Hash::check($request->validated('password'), $user->password)) {
             return back()
-                ->withInput($request->only('login', 'remember'))
-                ->withErrors(['login' => 'Неверный email, телефон или пароль.'], 'login')
+                ->withInput($request->only('email', 'phone', 'remember'))
+                ->withErrors(['email' => 'Неверный email, телефон или пароль.'], 'login')
                 ->with('auth_tab', 'login');
         }
 

@@ -60,6 +60,14 @@ class PhoneNormalizer
 
         $digits = preg_replace('/\D+/', '', $phone) ?? '';
 
+        if ($digits === '7' || $digits === '8') {
+            return '+7 (';
+        }
+
+        if (strlen($digits) === 11 && str_starts_with($digits, '8')) {
+            $digits = '7'.substr($digits, 1);
+        }
+
         if (str_starts_with($digits, '8')) {
             $digits = '7'.substr($digits, 1);
         }
@@ -71,7 +79,7 @@ class PhoneNormalizer
         $digits = substr($digits, 0, 10);
 
         if ($digits === '') {
-            return '';
+            return '+7 (';
         }
 
         $out = '+7 ('.$digits;

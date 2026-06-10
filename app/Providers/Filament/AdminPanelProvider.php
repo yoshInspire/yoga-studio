@@ -32,6 +32,7 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
             ])
             ->assets([
+                Js::make('phone-mask', public_path('js/phone-mask.js')),
                 Js::make('admin-phone-mask', public_path('js/admin-phone-mask.js')),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')

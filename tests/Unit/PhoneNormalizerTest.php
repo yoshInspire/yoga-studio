@@ -35,6 +35,10 @@ class PhoneNormalizerTest extends TestCase
     public static function formatInputProvider(): array
     {
         return [
+            ['8', '+7 ('],
+            ['7', '+7 ('],
+            ['88', '+7 (8'],
+            ['888', '+7 (88'],
             ['89995556666', '+7 (999) 555-66-66'],
             ['79995556666', '+7 (999) 555-66-66'],
             ['9995556666', '+7 (999) 555-66-66'],
