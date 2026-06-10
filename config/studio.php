@@ -48,6 +48,21 @@ return [
         'expiring_days_threshold' => 5,
     ],
 
+    /**
+     * Информационные рассылки клиентам (почта/Telegram).
+     */
+    'mailings' => [
+        'studio_address' => env('STUDIO_ADDRESS', 'Москва, ул. Академика Арцимовича, 13 (вход со двора)'),
+        'daily_reminder' => [
+            'enabled' => true,
+            'time' => '20:00',
+        ],
+        'weekly_schedule' => [
+            'enabled' => true,
+            'time' => '14:00',
+        ],
+    ],
+
     /** Лимит мест в группе по умолчанию */
     'default_class_capacity' => 6,
 
