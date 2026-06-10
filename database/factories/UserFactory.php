@@ -31,6 +31,7 @@ class UserFactory extends Factory
             'birth_month' => fake()->numberBetween(1, 12),
             'birth_year' => fake()->optional()->numberBetween(1970, 2000),
             'role' => UserRole::Client,
+            'offer_accepted_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];

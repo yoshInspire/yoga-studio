@@ -36,6 +36,7 @@ use Illuminate\Support\Facades\Storage;
     'show_on_site',
     'site_sort_order',
     'password',
+    'offer_accepted_at',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
@@ -47,6 +48,7 @@ class User extends Authenticatable implements FilamentUser
     {
         return [
             'email_verified_at' => 'datetime',
+            'offer_accepted_at' => 'datetime',
             'telegram_id' => 'integer',
             'telegram_linked_at' => 'datetime',
             'password' => 'hashed',
@@ -173,6 +175,16 @@ class User extends Authenticatable implements FilamentUser
     public function hasTelegram(): bool
     {
         return $this->telegram_id !== null;
+    }
+
+    public function hasAcceptedOffer(): bool
+    {
+        return $this->offer_accepted_at !== null;
+    }
+
+    public function formattedOfferAcceptedAt(): ?string
+    {
+        return $this->offer_accepted_at?->format('d.m.Y H:i');
     }
 
     public function telegramDisplayAccount(): ?string

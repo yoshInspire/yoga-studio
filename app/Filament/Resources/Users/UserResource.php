@@ -12,6 +12,7 @@ use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -87,6 +88,12 @@ class UserResource extends Resource
                             ->rows(4)
                             ->maxLength(5000)
                             ->columnSpanFull(),
+                        DateTimePicker::make('offer_accepted_at')
+                            ->label('Оферта принята')
+                            ->seconds(false)
+                            ->native(false)
+                            ->displayFormat('d.m.Y H:i')
+                            ->helperText('Дата и время согласия с офертой. Для клиентов, заведённых вручную, можно указать здесь.'),
                     ]),
                 Section::make('Контакты и доступ')
                     ->description(fn (Get $get): ?string => in_array($get('role'), [UserRole::Client->value, UserRole::Trainer->value], true)
@@ -198,6 +205,13 @@ class UserResource extends Resource
                     ->formatStateUsing(fn (?string $state) => filled($state) ? 'Есть примечание' : '')
                     ->color(fn (?string $state) => filled($state) ? 'warning' : 'gray')
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('offer_accepted_at')
+                    ->label('Оферта')
+                    ->formatStateUsing(fn (?string $state) => filled($state) ? 'Да' : 'Нет')
+                    ->badge()
+                    ->color(fn (?string $state) => filled($state) ? 'success' : 'warning')
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('created_at')
                     ->label('Регистрация')
                     ->dateTime('d.m.Y')

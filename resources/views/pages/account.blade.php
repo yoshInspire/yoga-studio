@@ -33,6 +33,11 @@
 
         {{-- Контент --}}
         <div class="lk__content">
+          @if (! $user->hasAcceptedOffer())
+            <div class="auth__alert auth__alert--error lk__alert">
+              <p>Чтобы записываться на занятия и покупать абонементы, примите договор-оферту в разделе «Договор-оферта».</p>
+            </div>
+          @endif
           {{-- Профиль --}}
           @php
             $profileMonths = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -385,6 +390,20 @@
           <div class="lk__panel is-hidden" data-panel="oferta">
             <h1 class="lk__title">Договор-оферта</h1>
             <p class="lk__lead">Публичная оферта студии. Документ доступен для просмотра в кабинете.</p>
+
+            @if ($errors->has('offer'))
+              <div class="auth__alert auth__alert--error lk__alert">{{ $errors->first('offer') }}</div>
+            @endif
+            @if ($errors->has('offer_accepted'))
+              <div class="auth__alert auth__alert--error lk__alert">{{ $errors->first('offer_accepted') }}</div>
+            @endif
+
+            @if ($user->hasAcceptedOffer())
+              <div class="auth__alert auth__alert--ok lk__alert">
+                Оферта принята {{ $user->formattedOfferAcceptedAt() }}.
+              </div>
+            @endif
+
             <div class="oferta">
               <span class="oferta__icon">PDF</span>
               <div class="oferta__info">
@@ -397,6 +416,23 @@
                 <button type="button" class="btn btn--solid" data-soon="Договор-оферта появится здесь, как только студия загрузит документ. Загляните чуть позже.">Открыть оферту</button>
               @endif
             </div>
+
+            @if (! $user->hasAcceptedOffer())
+              <form action="{{ route('account.offer.accept') }}" method="post" class="lk-offer-accept" style="margin-top: 24px">
+                @csrf
+                <label class="auth__check auth__check--block">
+                  <input type="checkbox" name="offer_accepted" value="1" @checked(old('offer_accepted')) required />
+                  Соглашаюсь с условиями
+                  @if ($offerAvailable)
+                    <a href="{{ route('offer.show') }}" class="auth__minor" target="_blank" rel="noopener">договора-оферты</a>
+                  @else
+                    договора-оферты
+                  @endif
+                  , правилами абонементов, обработкой персональных данных и информационными уведомлениями студии
+                </label>
+                <button type="submit" class="btn btn--solid" style="margin-top: 16px">Подтвердить согласие</button>
+              </form>
+            @endif
           </div>
         </div>
       </div>

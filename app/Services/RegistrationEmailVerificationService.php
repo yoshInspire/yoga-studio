@@ -60,6 +60,7 @@ class RegistrationEmailVerificationService
                     'phone' => $registrationData['phone'],
                     'email' => $email,
                     'password' => Crypt::encryptString((string) $registrationData['password']),
+                    'offer_accepted' => (bool) ($registrationData['offer_accepted'] ?? false),
                 ],
             ],
             now()->addMinutes($this->ttlMinutes()),

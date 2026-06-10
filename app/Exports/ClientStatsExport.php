@@ -25,7 +25,7 @@ class ClientStatsExport implements FromCollection, ShouldAutoSize, WithHeadings
     public function headings(): array
     {
         return array_merge(
-            ['Фамилия', 'Имя', 'Отчество', 'Телефон', 'Дата регистрации'],
+            ['Фамилия', 'Имя', 'Отчество', 'Телефон', 'Дата регистрации', 'Оферта подтверждена', 'Дата подтверждения оферты'],
             $this->months,
             ['Всего посещений'],
         );
@@ -52,6 +52,8 @@ class ClientStatsExport implements FromCollection, ShouldAutoSize, WithHeadings
                         $client->patronymic ?? '',
                         $client->formattedPhone() ?? $client->phone ?? '',
                         $client->created_at->format('d.m.Y'),
+                        $client->hasAcceptedOffer() ? 'Да' : 'Нет',
+                        $client->formattedOfferAcceptedAt() ?? '',
                     ],
                     $monthCounts,
                     [$total],

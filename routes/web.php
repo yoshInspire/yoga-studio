@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Account\OfferAcceptanceController;
 use App\Http\Controllers\Account\PasswordController;
 use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Account\TelegramLinkController;
@@ -71,6 +72,7 @@ Route::get('/oferta', [OfferController::class, 'show'])
 
 Route::middleware(['auth', 'role:client'])->group(function () {
     Route::get('/account', AccountController::class)->name('account');
+    Route::post('/account/offer/accept', [OfferAcceptanceController::class, 'store'])->name('account.offer.accept');
     Route::put('/account/profile', [ProfileController::class, 'update'])->name('account.profile.update');
     Route::put('/account/password', [PasswordController::class, 'update'])->name('account.password.update');
     Route::post('/account/profile/email/send-code', [ProfileController::class, 'sendEmailCode'])
@@ -84,11 +86,13 @@ Route::middleware(['auth', 'role:client'])->group(function () {
         ->name('account.telegram.callback');
     Route::delete('/account/telegram', [TelegramLinkController::class, 'destroy'])
         ->name('account.telegram.unlink');
-    Route::get('/purchase', [PurchaseController::class, 'index'])->name('purchase.index');
-    Route::post('/purchase', [PurchaseController::class, 'store'])->name('purchase.store');
-    Route::get('/payments/{payment}/return', [PaymentController::class, 'return'])->name('payments.return');
-    Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
-    Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+    Route::middleware('offer.accepted')->group(function () {
+        Route::get('/purchase', [PurchaseController::class, 'index'])->name('purchase.index');
+        Route::post('/purchase', [PurchaseController::class, 'store'])->name('purchase.store');
+        Route::get('/payments/{payment}/return', [PaymentController::class, 'return'])->name('payments.return');
+        Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
+        Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+    });
 });
 
 Route::post('/payments/webhook', [PaymentController::class, 'webhook'])->name('payments.webhook');

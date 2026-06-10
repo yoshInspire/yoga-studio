@@ -73,6 +73,7 @@ class RegistrationEmailVerificationTest extends TestCase
         $this->assertNotNull($user);
         $this->assertSame('maria@example.com', $user->email);
         $this->assertNotNull($user->email_verified_at);
+        $this->assertNotNull($user->offer_accepted_at);
         $this->assertAuthenticatedAs($user);
     }
 

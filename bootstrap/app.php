@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
+            'offer.accepted' => \App\Http\Middleware\EnsureOfferAccepted::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

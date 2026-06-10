@@ -176,6 +176,7 @@ class RegisterController extends Controller
             'email_verified_at' => $verifiedEmail ? now() : null,
             'password' => $data['password'],
             'role' => UserRole::Client,
+            'offer_accepted_at' => now(),
             'telegram_id' => $telegramData?->id,
             'telegram_username' => $telegramData?->username,
             'telegram_linked_at' => $telegramData !== null ? now() : null,
