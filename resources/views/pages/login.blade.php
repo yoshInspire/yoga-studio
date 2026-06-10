@@ -27,7 +27,7 @@
           {{-- Вход --}}
           <form class="auth__form {{ $activeTab === 'login' ? '' : 'is-hidden' }}" data-form="login" action="{{ route('login.store') }}" method="post">
             @csrf
-            <p class="form__sub">Введите email или телефон (одно из полей) и пароль.</p>
+            <p class="form__sub">Введите телефон и пароль.</p>
 
             @if ($errors->getBag('login')->any())
               <div class="auth__alert auth__alert--error">
@@ -38,12 +38,8 @@
             @endif
 
             <div class="form__row">
-              <label class="auth__label" for="login-email">Email</label>
-              <input type="email" id="login-email" name="email" value="{{ old('email') }}" placeholder="email@example.com" autocomplete="username" inputmode="email" />
-            </div>
-            <div class="form__row">
               <label class="auth__label" for="login-phone">Телефон</label>
-              <input type="tel" id="login-phone" name="phone" value="{{ old('phone') }}" placeholder="+7 (___) ___-__-__" autocomplete="tel" inputmode="tel" data-phone-mask />
+              <input type="tel" id="login-phone" name="phone" value="{{ old('phone') }}" placeholder="+7 (___) ___-__-__" autocomplete="username" inputmode="tel" data-phone-mask required />
             </div>
             <div class="form__row">
               <label class="auth__label" for="login-pass">Пароль</label>

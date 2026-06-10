@@ -50,15 +50,12 @@ class LoginController extends Controller
 
     public function store(LoginRequest $request): RedirectResponse
     {
-        $user = User::findByEmailOrPhone(
-            $request->validated('email'),
-            $request->validated('phone'),
-        );
+        $user = User::findByPhone($request->validated('phone'));
 
         if ($user === null || ! Hash::check($request->validated('password'), $user->password)) {
             return back()
-                ->withInput($request->only('email', 'phone', 'remember'))
-                ->withErrors(['email' => 'Неверный email, телефон или пароль.'], 'login')
+                ->withInput($request->only('phone', 'remember'))
+                ->withErrors(['phone' => 'Неверный телефон или пароль.'], 'login')
                 ->with('auth_tab', 'login');
         }
 

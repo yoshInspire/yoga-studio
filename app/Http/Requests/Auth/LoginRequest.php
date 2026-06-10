@@ -21,8 +21,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['nullable', 'string', 'email', 'max:255', 'required_without:phone'],
-            'phone' => ['nullable', 'string', 'max:18', 'required_without:email'],
+            'phone' => ['required', 'string', 'max:18'],
             'password' => ['required', 'string'],
             'remember' => ['sometimes', 'boolean'],
         ];
@@ -31,13 +30,7 @@ class LoginRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if (filled($this->input('email')) && filled($this->input('phone'))) {
-                $message = 'Укажите только email или только телефон.';
-                $validator->errors()->add('email', $message);
-                $validator->errors()->add('phone', $message);
-            }
-
-            if (filled($this->input('phone')) && PhoneNormalizer::normalize($this->input('phone')) === null) {
+            if (PhoneNormalizer::normalize($this->input('phone')) === null) {
                 $validator->errors()->add('phone', 'Введите корректный номер телефона.');
             }
         });
@@ -49,8 +42,7 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.required_without' => 'Укажите email или телефон.',
-            'phone.required_without' => 'Укажите email или телефон.',
+            'phone.required' => 'Укажите телефон.',
             'password.required' => 'Введите пароль.',
         ];
     }

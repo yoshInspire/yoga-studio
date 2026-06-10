@@ -227,24 +227,14 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(ClassSession::class, 'trainer_id');
     }
 
-    public static function findByEmailOrPhone(?string $email, ?string $phone): ?self
+    public static function findByPhone(?string $phone): ?self
     {
-        if (filled($email)) {
-            return static::query()
-                ->where('email', mb_strtolower(trim($email)))
-                ->first();
+        $normalized = PhoneNormalizer::normalize($phone);
+
+        if ($normalized === null) {
+            return null;
         }
 
-        if (filled($phone)) {
-            $normalized = PhoneNormalizer::normalize($phone);
-
-            if ($normalized === null) {
-                return null;
-            }
-
-            return static::query()->where('phone', $normalized)->first();
-        }
-
-        return null;
+        return static::query()->where('phone', $normalized)->first();
     }
 }

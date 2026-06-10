@@ -201,21 +201,6 @@ if (authTabs.length) {
     syncPatronymic();
   }
 
-  const loginEmail = document.getElementById('login-email');
-  const loginPhone = document.getElementById('login-phone');
-  if (loginEmail && loginPhone) {
-    loginEmail.addEventListener('input', () => {
-      if (loginEmail.value.trim() !== '') {
-        loginPhone.value = '';
-      }
-    });
-    loginPhone.addEventListener('input', () => {
-      if (loginPhone.value.replace(/\D/g, '') !== '') {
-        loginEmail.value = '';
-      }
-    });
-  }
-
 }
 
 document.querySelectorAll('[data-password-toggle]').forEach((btn) => {
