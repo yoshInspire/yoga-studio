@@ -58,7 +58,7 @@ class StudioNotificationsTest extends TestCase
         $sub = $this->subscription($user);
 
         $session = ClassSession::create([
-            'title' => 'Хатха-йога',
+            'topic' => 'Хатха-йога',
             'starts_at' => now()->addHours(2),
             'type' => SubscriptionType::Group,
             'capacity' => 6,
@@ -90,7 +90,7 @@ class StudioNotificationsTest extends TestCase
         ]);
 
         $session = ClassSession::create([
-            'title' => 'Хатха-йога',
+            'topic' => 'Хатха-йога',
             'starts_at' => now()->addHours(2),
             'type' => SubscriptionType::Group,
             'capacity' => 6,
@@ -126,7 +126,7 @@ class StudioNotificationsTest extends TestCase
 
         // Старт через 20 часов — контрольная точка (старт-5ч) ещё не наступила.
         $session = ClassSession::create([
-            'title' => 'Хатха-йога',
+            'topic' => 'Хатха-йога',
             'starts_at' => now()->addHours(20),
             'type' => SubscriptionType::Group,
             'capacity' => 6,

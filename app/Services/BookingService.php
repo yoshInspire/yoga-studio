@@ -276,7 +276,7 @@ class BookingService
     {
         $sessionsQuery = ClassSession::query()
             ->inWeek($weekStart)
-            ->with(['trainer'])
+            ->with(['trainer', 'direction'])
             ->withCount(['bookings as taken' => fn ($q) => $q->where('status', BookingStatus::Confirmed)])
             ->orderBy('starts_at');
 
@@ -310,6 +310,8 @@ class BookingService
                     'id' => $session->id,
                     'time' => $session->formattedTime(),
                     'title' => $session->title,
+                    'direction' => $session->direction?->title,
+                    'topic' => $session->topic,
                     'trainer' => $session->trainerName(),
                     'type' => $session->type->badgeClass(),
                     'taken' => (int) $session->taken,

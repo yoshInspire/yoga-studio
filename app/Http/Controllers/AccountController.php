@@ -25,7 +25,7 @@ class AccountController extends Controller
 
         $upcomingBookings = $user->bookings()
             ->upcoming()
-            ->with(['classSession.trainer', 'subscription'])
+            ->with(['classSession.trainer', 'classSession.direction', 'subscription'])
             ->get()
             ->sortBy(fn ($b) => $b->classSession->starts_at)
             ->values();

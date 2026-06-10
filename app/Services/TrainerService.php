@@ -18,6 +18,7 @@ class TrainerService
             ->where('trainer_id', $trainer->id)
             ->inWeek($weekStart)
             ->with([
+                'direction',
                 'bookings' => fn ($q) => $q
                     ->where('status', BookingStatus::Confirmed)
                     ->with('user:id,first_name,last_name'),
@@ -47,6 +48,8 @@ class TrainerService
                 return [
                     'time' => $session->formattedTime(),
                     'title' => $session->title,
+                    'direction' => $session->direction?->title,
+                    'topic' => $session->topic,
                     'type' => $session->type->badgeClass(),
                     'type_label' => $session->type->shortLabel(),
                     'taken' => (int) $session->taken,

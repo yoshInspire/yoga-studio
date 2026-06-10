@@ -49,11 +49,22 @@ class ClassSessionResource extends Resource
             ->components([
                 Section::make('Занятие')
                     ->schema([
-                        TextInput::make('title')
-                            ->label('Название / тема')
+                        Select::make('direction_id')
+                            ->label('Направление')
+                            ->relationship(
+                                name: 'direction',
+                                titleAttribute: 'title',
+                                modifyQueryUsing: fn ($query) => $query->ordered(),
+                            )
+                            ->searchable()
+                            ->preload()
+                            ->nullable()
+                            ->helperText('Направление студии, например Power Pilates. Для мероприятий можно не указывать.'),
+                        TextInput::make('topic')
+                            ->label('Тема занятия')
                             ->required()
                             ->maxLength((int) config('studio.class_title_max_length', 120))
-                            ->helperText('Максимум '.(int) config('studio.class_title_max_length', 120).' символов'),
+                            ->helperText('Тема на этот день, например «Создание рельефа» или «Мобильность плеч».'),
                         Textarea::make('description')
                             ->label('Описание')
                             ->rows(3)
@@ -112,10 +123,18 @@ class ClassSessionResource extends Resource
                     ->label('Когда')
                     ->dateTime('d.m.Y H:i')
                     ->sortable(),
-                TextColumn::make('title')
-                    ->label('Занятие')
+                TextColumn::make('direction.title')
+                    ->label('Направление')
+                    ->placeholder('—')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('topic')
+                    ->label('Тема')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('title')
+                    ->label('В расписании')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('type')
                     ->label('Тип')
                     ->badge()

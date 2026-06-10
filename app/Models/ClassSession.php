@@ -14,6 +14,8 @@ use Illuminate\Support\Carbon;
 
 #[Fillable([
     'title',
+    'direction_id',
+    'topic',
     'description',
     'starts_at',
     'type',
@@ -25,6 +27,13 @@ use Illuminate\Support\Carbon;
 ])]
 class ClassSession extends Model
 {
+    protected static function booted(): void
+    {
+        static::saving(function (ClassSession $session) {
+            $session->title = $session->composeTitle();
+        });
+    }
+
     protected function casts(): array
     {
         return [
@@ -36,9 +45,37 @@ class ClassSession extends Model
         ];
     }
 
+    public function direction(): BelongsTo
+    {
+        return $this->belongsTo(Direction::class);
+    }
+
     public function trainer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'trainer_id');
+    }
+
+    public function composeTitle(): string
+    {
+        $directionTitle = $this->direction_id
+            ? ($this->relationLoaded('direction')
+                ? $this->direction?->title
+                : Direction::query()->whereKey($this->direction_id)->value('title'))
+            : null;
+
+        $parts = array_values(array_filter([
+            filled($directionTitle) ? $directionTitle : null,
+            filled($this->topic) ? $this->topic : null,
+        ]));
+
+        if ($parts !== []) {
+            return implode(' · ', $parts);
+        }
+
+        return $this->topic
+            ?? $this->attributes['title']
+            ?? $this->getRawOriginal('title')
+            ?? 'Занятие';
     }
 
     public function bookings(): HasMany

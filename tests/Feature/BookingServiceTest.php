@@ -40,7 +40,7 @@ class BookingServiceTest extends TestCase
     private function makeSession(array $overrides = []): ClassSession
     {
         return ClassSession::create(array_merge([
-            'title' => 'Хатха-йога',
+            'topic' => 'Хатха-йога',
             'starts_at' => now()->addDay()->setTime(10, 0),
             'type' => SubscriptionType::Group,
             'capacity' => 6,
@@ -92,6 +92,102 @@ class BookingServiceTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->service->book($user, $session, $group);
+    }
+
+    public function test_group_booking_uses_group_subscription_when_event_was_purchased_first(): void
+    {
+        $user = $this->client();
+
+        $event = $this->subscription($user, [
+            'type' => SubscriptionType::SpecialEvent,
+            'sessions_total' => 1,
+            'purchased_at' => now()->subHours(2),
+            'starts_at' => now()->addDays(2),
+            'ends_at' => now()->addDays(32),
+        ]);
+
+        $group = $this->subscription($user, [
+            'type' => SubscriptionType::Group,
+            'sessions_total' => 4,
+            'purchased_at' => now()->subHour(),
+            'starts_at' => now(),
+            'ends_at' => now()->addDays(30),
+        ]);
+
+        $saturdayGroup = $this->makeSession([
+            'topic' => 'Хатха-йога',
+            'type' => SubscriptionType::Group,
+            'starts_at' => now()->addDays(1)->setTime(10, 0),
+        ]);
+
+        $booking = $this->service->book($user, $saturdayGroup);
+
+        $this->assertSame($group->id, $booking->subscription_id);
+        $this->assertSame(1, $group->fresh()->sessions_used);
+        $this->assertSame(0, $event->fresh()->sessions_used);
+    }
+
+    public function test_event_booking_uses_event_subscription_when_group_was_purchased_later(): void
+    {
+        $user = $this->client();
+
+        $event = $this->subscription($user, [
+            'type' => SubscriptionType::SpecialEvent,
+            'sessions_total' => 1,
+            'purchased_at' => now()->subHours(2),
+            'starts_at' => now(),
+            'ends_at' => now()->addDays(30),
+        ]);
+
+        $group = $this->subscription($user, [
+            'type' => SubscriptionType::Group,
+            'sessions_total' => 4,
+            'purchased_at' => now()->subHour(),
+            'starts_at' => now(),
+            'ends_at' => now()->addDays(30),
+        ]);
+
+        $sundayEvent = $this->makeSession([
+            'topic' => 'Йога-нидра',
+            'type' => SubscriptionType::SpecialEvent,
+            'starts_at' => now()->addDays(2)->setTime(18, 0),
+        ]);
+
+        $booking = $this->service->book($user, $sundayEvent);
+
+        $this->assertSame($event->id, $booking->subscription_id);
+        $this->assertSame(1, $event->fresh()->sessions_used);
+        $this->assertSame(0, $group->fresh()->sessions_used);
+    }
+
+    public function test_cannot_force_event_subscription_for_group_class(): void
+    {
+        $user = $this->client();
+
+        $event = $this->subscription($user, [
+            'type' => SubscriptionType::SpecialEvent,
+            'sessions_total' => 1,
+        ]);
+
+        $session = $this->makeSession(['type' => SubscriptionType::Group]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->service->book($user, $session, $event);
+    }
+
+    public function test_cannot_book_group_class_with_only_event_subscription(): void
+    {
+        $user = $this->client();
+
+        $this->subscription($user, [
+            'type' => SubscriptionType::SpecialEvent,
+            'sessions_total' => 1,
+        ]);
+
+        $session = $this->makeSession(['type' => SubscriptionType::Group]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->service->book($user, $session);
     }
 
     public function test_cannot_book_full_session(): void

@@ -6,6 +6,7 @@ use App\Support\DirectionMedia;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'slug',
@@ -31,6 +32,11 @@ class Direction extends Model
             'is_published' => 'boolean',
             'sort_order' => 'integer',
         ];
+    }
+
+    public function classSessions(): HasMany
+    {
+        return $this->hasMany(ClassSession::class);
     }
 
     public function coverUrl(): ?string

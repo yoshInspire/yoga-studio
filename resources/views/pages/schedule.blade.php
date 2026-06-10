@@ -49,7 +49,10 @@
               <div class="slot {{ $cls }}">
                 <div class="slot__time">{{ $slot['time'] }}</div>
                 <div class="slot__main">
-                  <h3 class="slot__title">{{ $slot['title'] }}</h3>
+                  <h3 class="slot__title">{{ $slot['direction'] ?: $slot['topic'] ?: $slot['title'] }}</h3>
+                  @if(!empty($slot['direction']) && !empty($slot['topic']))
+                    <p class="slot__topic">{{ $slot['topic'] }}</p>
+                  @endif
                   <p class="slot__meta">
                     <span class="badge badge--{{ $slot['type'] }}">{{ $typeLabels[$slot['type']] ?? $slot['type'] }}</span>
                     <span class="slot__trainer">{{ $slot['trainer'] }}</span>

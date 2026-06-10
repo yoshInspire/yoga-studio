@@ -274,7 +274,10 @@
                     <span>{{ $session->starts_at->translatedFormat('D, j F') }}</span>
                   </div>
                   <div class="lk-row__main">
-                    <h3>{{ $session->title }}</h3>
+                    <h3>{{ $session->direction?->title ?: $session->topic ?: $session->title }}</h3>
+                    @if($session->direction && $session->topic)
+                      <p class="lk-row__topic">{{ $session->topic }}</p>
+                    @endif
                     <p>
                       <span class="badge badge--{{ $session->type->badgeClass() }}">{{ $session->type->shortLabel() }}</span>
                       {{ $session->trainerName() }}
