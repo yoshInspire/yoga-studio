@@ -56,6 +56,13 @@ class EditUser extends EditRecord
                         return;
                     }
 
+                    $record->refresh();
+
+                    $this->form->fill([
+                        ...$this->form->getState(),
+                        'password' => $result['password'],
+                    ]);
+
                     $channels = array_filter([
                         $result['email'] ? 'email' : null,
                         $result['telegram'] ? 'Telegram' : null,
@@ -64,7 +71,7 @@ class EditUser extends EditRecord
                     if ($channels === []) {
                         Notification::make()
                             ->title('Пароль обновлён, но доставка не удалась')
-                            ->body('Проверьте настройки почты и Telegram на сервере.')
+                            ->body('Новый пароль: '.$result['password'].'. Проверьте настройки почты и Telegram на сервере.')
                             ->warning()
                             ->send();
 
@@ -73,7 +80,7 @@ class EditUser extends EditRecord
 
                     Notification::make()
                         ->title('Временный пароль отправлен')
-                        ->body('Доставлено: '.implode(' и ', $channels).'.')
+                        ->body('Доставлено: '.implode(' и ', $channels).'. Пароль: '.$result['password'])
                         ->success()
                         ->send();
                 }),

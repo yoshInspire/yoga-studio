@@ -23,7 +23,7 @@ class PasswordResetController extends Controller
     public function request(ForgotPasswordRequest $request): RedirectResponse
     {
         try {
-            $this->passwordReset->start($request->session(), $request->validated('phone'));
+            $delivery = $this->passwordReset->start($request->session(), $request->validated('phone'));
         } catch (RuntimeException $e) {
             return back()
                 ->withInput($request->only('phone'))
@@ -32,7 +32,7 @@ class PasswordResetController extends Controller
 
         return back()
             ->with('auth_tab', 'reset-verify')
-            ->with('status', 'Код отправлен. Проверьте почту (и Telegram, если он привязан в личном кабинете).');
+            ->with('status', $this->deliveryStatusMessage($delivery));
     }
 
     public function verify(PasswordResetVerifyRequest $request): RedirectResponse
@@ -60,7 +60,7 @@ class PasswordResetController extends Controller
     public function resend(Request $request): RedirectResponse
     {
         try {
-            $this->passwordReset->resend($request->session());
+            $delivery = $this->passwordReset->resend($request->session());
         } catch (RuntimeException $e) {
             return back()
                 ->withErrors(['code' => $e->getMessage()], 'reset-verify')
@@ -69,7 +69,7 @@ class PasswordResetController extends Controller
 
         return back()
             ->with('auth_tab', 'reset-verify')
-            ->with('status', 'Новый код отправлен на email (и в Telegram, если привязан).');
+            ->with('status', $this->deliveryStatusMessage($delivery, resent: true));
     }
 
     public function cancel(Request $request): RedirectResponse
@@ -79,5 +79,26 @@ class PasswordResetController extends Controller
         return back()
             ->with('auth_tab', 'login')
             ->with('status', 'Сброс пароля отменён.');
+    }
+
+    /**
+     * @param  array{email: bool, telegram: bool}  $delivery
+     */
+    private function deliveryStatusMessage(array $delivery, bool $resent = false): string
+    {
+        $channels = array_filter([
+            $delivery['email'] ? 'почту' : null,
+            $delivery['telegram'] ? 'Telegram' : null,
+        ]);
+
+        if ($channels === []) {
+            return $resent
+                ? 'Не удалось отправить новый код. Попробуйте позже или обратитесь в студию.'
+                : 'Не удалось отправить код. Попробуйте позже или обратитесь в студию.';
+        }
+
+        $prefix = $resent ? 'Новый код отправлен' : 'Код отправлен';
+
+        return $prefix.' на '.implode(' и ', $channels).'.';
     }
 }

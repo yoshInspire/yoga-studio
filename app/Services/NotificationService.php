@@ -47,6 +47,23 @@ class NotificationService
     }
 
     /**
+     * Отправить клиенту сообщение только в Telegram.
+     *
+     * @param  list<string>  $lines
+     */
+    public function notifyUserTelegram(User $user, string $heading, array $lines): bool
+    {
+        if ($user->telegram_id === null) {
+            return false;
+        }
+
+        return $this->telegram->send(
+            (int) $user->telegram_id,
+            $this->formatTelegram($heading, $lines),
+        );
+    }
+
+    /**
      * Уведомить администратора (почта рассылки).
      *
      * @param  list<string>  $lines

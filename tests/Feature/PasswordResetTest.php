@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\PasswordResetService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -46,6 +47,32 @@ class PasswordResetTest extends TestCase
             ->assertOk()
             ->assertSee('Забыли пароль?')
             ->assertSee('Отправить код', false);
+    }
+
+    public function test_password_reset_sends_code_to_telegram_when_linked(): void
+    {
+        Mail::fake();
+        Http::fake([
+            'api.telegram.org/*' => Http::response(['ok' => true], 200),
+        ]);
+
+        User::factory()->create([
+            'role' => UserRole::Client,
+            'phone' => '+79991112233',
+            'email' => 'client@example.com',
+            'telegram_id' => 123456789,
+            'password' => 'old-password-1',
+        ]);
+
+        $service = app(PasswordResetService::class);
+        $session = $this->app['session']->driver();
+
+        $delivery = $service->start($session, '+7 (999) 111-22-33');
+
+        $this->assertTrue($delivery['email']);
+        $this->assertTrue($delivery['telegram']);
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'api.telegram.org')
+            && str_contains(urldecode($request->body()), 'Сброс пароля'));
     }
 
     public function test_unknown_phone_shows_error(): void

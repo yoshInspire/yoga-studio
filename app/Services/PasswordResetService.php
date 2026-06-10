@@ -17,7 +17,7 @@ class PasswordResetService
     public const SESSION_KEY = 'password_reset_hint';
 
     public function __construct(
-        private TelegramNotifier $telegram,
+        private NotificationService $notifications,
     ) {}
 
     public function ttlMinutes(): int
@@ -42,7 +42,10 @@ class PasswordResetService
         return is_array($pending) ? ($pending['hint'] ?? null) : null;
     }
 
-    public function start(Session $session, string $phone): User
+    /**
+     * @return array{email: bool, telegram: bool}
+     */
+    public function start(Session $session, string $phone): array
     {
         $normalized = PhoneNormalizer::normalize($phone);
 
@@ -78,12 +81,13 @@ class PasswordResetService
 
         $session->put(self::SESSION_KEY, $this->buildDeliveryHint($user));
 
-        $this->deliverCode($user, $code);
-
-        return $user;
+        return $this->deliverCode($user, $code);
     }
 
-    public function resend(Session $session): void
+    /**
+     * @return array{email: bool, telegram: bool}
+     */
+    public function resend(Session $session): array
     {
         $pending = Cache::get($this->cacheKey($session));
 
@@ -106,7 +110,7 @@ class PasswordResetService
         Cache::put($this->cacheKey($session), $pending, now()->addMinutes($this->ttlMinutes()));
         $session->put(self::SESSION_KEY, $pending['hint'] ?? null);
 
-        $this->deliverCode($user, $code);
+        return $this->deliverCode($user, $code);
     }
 
     public function reset(Session $session, string $code, string $password): User
@@ -153,13 +157,19 @@ class PasswordResetService
         $session->forget(self::SESSION_KEY);
     }
 
-    private function deliverCode(User $user, string $code): void
+    /**
+     * @return array{email: bool, telegram: bool}
+     */
+    private function deliverCode(User $user, string $code): array
     {
+        $delivery = ['email' => false, 'telegram' => false];
+
         if (filled($user->email)) {
             try {
                 Mail::to($user->email)->send(
                     new RegistrationVerificationMail($code, $this->ttlMinutes(), 'password-reset'),
                 );
+                $delivery['email'] = true;
             } catch (\Throwable $e) {
                 Log::error('Не удалось отправить код сброса пароля на email', [
                     'user_id' => $user->id,
@@ -171,17 +181,29 @@ class PasswordResetService
         }
 
         if ($user->telegram_id !== null) {
-            $sent = $this->telegram->send(
-                (int) $user->telegram_id,
-                '<b>Сброс пароля · ЭКО YOGA</b>'."\n\n"
-                .'Код: <code>'.e($code).'</code>'."\n"
-                .'Действует '.$this->ttlMinutes().' минут.',
+            $delivery['telegram'] = $this->notifications->notifyUserTelegram(
+                $user,
+                'Сброс пароля · ЭКО YOGA',
+                [
+                    'Вы запросили сброс пароля на сайте.',
+                    'Код: '.$code,
+                    'Действует '.$this->ttlMinutes().' минут.',
+                ],
             );
 
-            if (! $sent && blank($user->email)) {
-                throw new RuntimeException('Не удалось отправить код в Telegram. Попробуйте позже или обратитесь в студию.');
+            if (! $delivery['telegram']) {
+                Log::warning('Не удалось отправить код сброса пароля в Telegram', [
+                    'user_id' => $user->id,
+                    'telegram_id' => $user->telegram_id,
+                ]);
             }
         }
+
+        if (! $delivery['email'] && ! $delivery['telegram']) {
+            throw new RuntimeException('Не удалось отправить код. Попробуйте позже или обратитесь в студию.');
+        }
+
+        return $delivery;
     }
 
     private function buildDeliveryHint(User $user): string
