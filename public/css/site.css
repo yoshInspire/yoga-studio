@@ -963,6 +963,35 @@ a { color: inherit; text-decoration: none; }
 
 .lk-profile-edit { max-width: 640px; }
 .lk-profile-form { display: flex; flex-direction: column; gap: 28px; }
+.lk-profile-form > form {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.lk-profile-form__section > form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.lk-profile-form .password-field input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 0 48px 0 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.2;
+  background: var(--paper);
+  color: var(--ink);
+  transition: border-color .25s var(--ease), box-shadow .25s var(--ease);
+}
+.lk-profile-form .password-field input:focus {
+  outline: none;
+  border-color: var(--sage);
+  box-shadow: 0 0 0 3px rgba(124,139,107,.16);
+}
 .lk-profile-form__section {
   padding: 22px 24px;
   background: var(--bg);
