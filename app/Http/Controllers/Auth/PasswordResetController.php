@@ -32,7 +32,7 @@ class PasswordResetController extends Controller
 
         return back()
             ->with('auth_tab', 'reset-verify')
-            ->with('status', 'Код отправлен. Проверьте почту и Telegram.');
+            ->with('status', 'Код отправлен. Проверьте почту (и Telegram, если он привязан в личном кабинете).');
     }
 
     public function verify(PasswordResetVerifyRequest $request): RedirectResponse
@@ -69,7 +69,7 @@ class PasswordResetController extends Controller
 
         return back()
             ->with('auth_tab', 'reset-verify')
-            ->with('status', 'Новый код отправлен.');
+            ->with('status', 'Новый код отправлен на email (и в Telegram, если привязан).');
     }
 
     public function cancel(Request $request): RedirectResponse

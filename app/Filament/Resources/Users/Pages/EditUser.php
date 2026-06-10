@@ -33,10 +33,14 @@ class EditUser extends EditRecord
                     ]);
 
                     if ($channels === []) {
-                        return 'У клиента не указаны email и Telegram. Добавьте контакты в карточке, сохраните и повторите отправку.';
+                        return 'Укажите email в карточке клиента и сохраните запись. Telegram администратор не привязывает — клиент может сделать это сам в личном кабинете после входа.';
                     }
 
-                    return 'Система сгенерирует новый временный пароль, сохранит его и отправит клиенту: '.implode('; ', $channels).'.';
+                    $telegramNote = $record->hasTelegram()
+                        ? ''
+                        : ' Telegram пока не привязан — после входа клиент может привязать его в личном кабинете.';
+
+                    return 'Система сгенерирует новый временный пароль, сохранит его и отправит: '.implode('; ', $channels).'.'.$telegramNote;
                 })
                 ->disabled(fn (User $record): bool => blank($record->email) && ! $record->hasTelegram())
                 ->action(function (User $record, ClientAccessService $access): void {

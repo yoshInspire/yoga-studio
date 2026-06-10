@@ -228,7 +228,7 @@
           {{-- Запрос сброса пароля --}}
           <form class="auth__form {{ $activeTab === 'reset-request' ? '' : 'is-hidden' }}" data-form="reset-request" action="{{ route('password.forgot') }}" method="post">
             @csrf
-            <p class="form__sub">Введите телефон, указанный при регистрации. Мы отправим код на email и в Telegram, если они привязаны к аккаунту.</p>
+            <p class="form__sub">Введите телефон, указанный при регистрации. Код придёт на email из вашего профиля. Если вы привязали Telegram в личном кабинете — код придёт и туда.</p>
 
             @if ($errors->getBag('reset')->any())
               <div class="auth__alert auth__alert--error">
@@ -254,7 +254,7 @@
               @if ($passwordResetHint ?? null)
                 Введите 6-значный код, отправленный на <strong>{{ $passwordResetHint }}</strong>, и задайте новый пароль.
               @else
-                Введите код из письма или Telegram и задайте новый пароль.
+                Введите код из письма (или из Telegram, если аккаунт привязан) и задайте новый пароль.
               @endif
             </p>
 

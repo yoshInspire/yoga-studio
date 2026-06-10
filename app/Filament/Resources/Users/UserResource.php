@@ -113,7 +113,8 @@ class UserResource extends Resource
                             ->label('Email')
                             ->email()
                             ->maxLength(255)
-                            ->unique(ignoreRecord: true),
+                            ->unique(ignoreRecord: true)
+                            ->helperText('Нужен для отправки временного пароля и уведомлений. Telegram администратор не привязывает — клиент может сделать это сам в личном кабинете после входа.'),
                         Select::make('role')
                             ->label('Роль')
                             ->options(collect(UserRole::cases())->mapWithKeys(
@@ -129,7 +130,9 @@ class UserResource extends Resource
                             ->required(fn (string $operation): bool => $operation === 'create')
                             ->dehydrated(fn (?string $state): bool => filled($state))
                             ->minLength(8)
-                            ->helperText('При создании задайте пароль вручную или оставьте любой — после сохранения нажмите «Отправить доступ», чтобы выслать клиенту новый временный пароль на email и в Telegram.'),
+                            ->helperText(fn (string $operation): string => $operation === 'create'
+                                ? 'Задайте любой пароль — после сохранения нажмите «Отправить доступ»: пароль уйдёт на email. В Telegram отправится только если клиент уже привязал его в личном кабинете.'
+                                : 'Оставьте пустым, если менять не нужно. «Отправить доступ» шлёт новый пароль на email и в Telegram (если привязан).'),
                     ]),
                 Section::make('Профиль на сайте')
                     ->description('Для пользователей с ролью «Тренер»: фото и описание на главной странице.')

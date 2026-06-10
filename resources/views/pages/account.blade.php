@@ -87,7 +87,7 @@
                     @endif
                     @if ($telegramEnabled ?? false)
                       <p class="lk-tg-hint">
-                        Чтобы получать уведомления в Telegram, откройте бота
+                        После привязки вы будете получать уведомления и коды сброса пароля в Telegram. Сначала откройте бота
                         @if (!empty($telegramBotUsername))
                           <a href="https://t.me/{{ $telegramBotUsername }}" target="_blank" rel="noopener">@<span>{{ $telegramBotUsername }}</span></a>
                         @else

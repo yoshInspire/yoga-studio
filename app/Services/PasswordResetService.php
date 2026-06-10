@@ -60,7 +60,7 @@ class PasswordResetService
         }
 
         if (blank($user->email) && $user->telegram_id === null) {
-            throw new RuntimeException('Для восстановления пароля нужен email или Telegram в профиле. Обратитесь в студию.');
+            throw new RuntimeException('Для восстановления пароля в профиле должен быть email или привязанный Telegram. Обратитесь в студию — администратор укажет email, Telegram клиент привязывает сам в личном кабинете.');
         }
 
         $code = (string) random_int(100000, 999999);

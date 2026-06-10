@@ -25,7 +25,7 @@ class ClientAccessService
         }
 
         if (blank($user->email) && $user->telegram_id === null) {
-            throw new InvalidArgumentException('У клиента не указаны email и Telegram — некуда отправить пароль.');
+            throw new InvalidArgumentException('У клиента нет email, а Telegram не привязан. Укажите email в карточке или дождитесь, пока клиент привяжет Telegram в личном кабинете.');
         }
 
         $password = Str::password(10, letters: true, numbers: true, symbols: false);
