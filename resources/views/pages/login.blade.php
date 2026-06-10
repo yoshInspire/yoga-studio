@@ -27,7 +27,6 @@
           {{-- Вход --}}
           <form class="auth__form {{ $activeTab === 'login' ? '' : 'is-hidden' }}" data-form="login" action="{{ route('login.store') }}" method="post">
             @csrf
-            <p class="form__sub">Введите телефон и пароль.</p>
 
             @if ($errors->getBag('login')->any())
               <div class="auth__alert auth__alert--error">
