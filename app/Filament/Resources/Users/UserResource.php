@@ -17,15 +17,17 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
@@ -81,11 +83,30 @@ class UserResource extends Resource
                     ->schema([
                         TextInput::make('phone')
                             ->label('Телефон')
-                            ->tel()
                             ->required()
-                            ->maxLength(20)
+                            ->placeholder('+7 (___) ___-__-__')
+                            ->maxLength(18)
+                            ->live(onBlur: false)
+                            ->afterStateUpdated(function (Set $set, ?string $state): void {
+                                if ($state === null || $state === '') {
+                                    return;
+                                }
+
+                                $formatted = PhoneNormalizer::formatInput($state);
+
+                                if ($formatted !== $state) {
+                                    $set('phone', $formatted);
+                                }
+                            })
+                            ->mutateStateForValidationUsing(fn (?string $state) => PhoneNormalizer::normalize($state) ?? $state)
                             ->dehydrateStateUsing(fn (?string $state) => PhoneNormalizer::normalize($state))
-                            ->formatStateUsing(fn (?string $state) => PhoneNormalizer::format($state) ?? $state),
+                            ->formatStateUsing(fn (?string $state) => PhoneNormalizer::format($state) ?? $state)
+                            ->rule(fn () => function (string $attribute, mixed $value, \Closure $fail): void {
+                                if (! is_string($value) || strlen($value) !== 11 || PhoneNormalizer::normalize($value) === null) {
+                                    $fail('Введите корректный номер телефона.');
+                                }
+                            })
+                            ->unique(ignoreRecord: true),
                         TextInput::make('email')
                             ->label('Email')
                             ->email()

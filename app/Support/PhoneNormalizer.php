@@ -48,4 +48,50 @@ class PhoneNormalizer
             substr($normalized, 9, 2),
         );
     }
+
+    /**
+     * Форматирует ввод по мере набора: +7 (999) 555-66-66.
+     */
+    public static function formatInput(?string $phone): string
+    {
+        if ($phone === null || trim($phone) === '') {
+            return '';
+        }
+
+        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+
+        if (str_starts_with($digits, '8')) {
+            $digits = '7'.substr($digits, 1);
+        }
+
+        if (str_starts_with($digits, '7')) {
+            $digits = substr($digits, 1);
+        }
+
+        $digits = substr($digits, 0, 10);
+
+        if ($digits === '') {
+            return '';
+        }
+
+        $out = '+7 ('.$digits;
+
+        if (strlen($digits) <= 3) {
+            return $out;
+        }
+
+        $out = '+7 ('.substr($digits, 0, 3).') '.substr($digits, 3, 3);
+
+        if (strlen($digits) <= 6) {
+            return $out;
+        }
+
+        $out .= '-'.substr($digits, 6, 2);
+
+        if (strlen($digits) <= 8) {
+            return $out;
+        }
+
+        return $out.'-'.substr($digits, 8, 2);
+    }
 }
