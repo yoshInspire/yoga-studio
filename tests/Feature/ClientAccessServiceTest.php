@@ -35,6 +35,22 @@ class ClientAccessServiceTest extends TestCase
         Mail::assertSent(\App\Mail\StudioNotificationMail::class);
     }
 
+    public function test_send_temporary_password_works_for_trainer(): void
+    {
+        Mail::fake();
+
+        $user = User::factory()->create([
+            'role' => UserRole::Trainer,
+            'email' => 'trainer@example.com',
+            'password' => 'old-password-1',
+        ]);
+
+        $result = app(ClientAccessService::class)->sendTemporaryPassword($user);
+
+        $this->assertTrue($result['email']);
+        Mail::assertSent(\App\Mail\StudioNotificationMail::class);
+    }
+
     public function test_send_temporary_password_requires_delivery_channel(): void
     {
         $user = User::factory()->create([

@@ -23,7 +23,7 @@ class EditUser extends EditRecord
                 ->label('Отправить доступ')
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
-                ->visible(fn (User $record): bool => $record->role === UserRole::Client)
+                ->visible(fn (User $record): bool => in_array($record->role, [UserRole::Client, UserRole::Trainer], true))
                 ->requiresConfirmation()
                 ->modalHeading('Отправить временный пароль')
                 ->modalDescription(function (User $record): string {
@@ -33,12 +33,12 @@ class EditUser extends EditRecord
                     ]);
 
                     if ($channels === []) {
-                        return 'Укажите email в карточке клиента и сохраните запись. Telegram администратор не привязывает — клиент может сделать это сам в личном кабинете после входа.';
+                        return 'Укажите email в карточке и сохраните запись. Telegram администратор не привязывает — пользователь может сделать это сам после входа на сайт.';
                     }
 
                     $telegramNote = $record->hasTelegram()
                         ? ''
-                        : ' Telegram пока не привязан — после входа клиент может привязать его в личном кабинете.';
+                        : ' Telegram пока не привязан — после входа пользователь может привязать его на сайте.';
 
                     return 'Система сгенерирует новый временный пароль, сохранит его и отправит: '.implode('; ', $channels).'.'.$telegramNote;
                 })
@@ -55,13 +55,6 @@ class EditUser extends EditRecord
 
                         return;
                     }
-
-                    $record->refresh();
-
-                    $this->form->fill([
-                        ...$this->form->getState(),
-                        'password' => $result['password'],
-                    ]);
 
                     $channels = array_filter([
                         $result['email'] ? 'email' : null,

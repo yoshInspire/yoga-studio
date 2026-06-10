@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Account\PasswordController;
 use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Account\TelegramLinkController;
 use App\Http\Controllers\AccountController;
@@ -71,6 +72,7 @@ Route::get('/oferta', [OfferController::class, 'show'])
 Route::middleware(['auth', 'role:client'])->group(function () {
     Route::get('/account', AccountController::class)->name('account');
     Route::put('/account/profile', [ProfileController::class, 'update'])->name('account.profile.update');
+    Route::put('/account/password', [PasswordController::class, 'update'])->name('account.password.update');
     Route::post('/account/profile/email/send-code', [ProfileController::class, 'sendEmailCode'])
         ->middleware('throttle:3,1')
         ->name('account.profile.email.send');

@@ -89,6 +89,9 @@ class UserResource extends Resource
                             ->columnSpanFull(),
                     ]),
                 Section::make('Контакты и доступ')
+                    ->description(fn (Get $get): ?string => in_array($get('role'), [UserRole::Client->value, UserRole::Trainer->value], true)
+                        ? 'После сохранения нажмите «Отправить доступ» — система сгенерирует пароль и отправит его на email (и в Telegram, если привязан).'
+                        : null)
                     ->schema([
                         TextInput::make('phone')
                             ->label('Телефон')
@@ -127,12 +130,11 @@ class UserResource extends Resource
                             ->label('Пароль')
                             ->password()
                             ->revealable()
-                            ->required(fn (string $operation): bool => $operation === 'create')
-                            ->dehydrated(fn (?string $state): bool => filled($state))
+                            ->visible(fn (Get $get): bool => $get('role') === UserRole::Admin->value)
+                            ->required(fn (string $operation, Get $get): bool => $operation === 'create' && $get('role') === UserRole::Admin->value)
+                            ->dehydrated(fn (?string $state, Get $get): bool => $get('role') === UserRole::Admin->value && filled($state))
                             ->minLength(8)
-                            ->helperText(fn (string $operation): string => $operation === 'create'
-                                ? 'Задайте любой пароль — после сохранения нажмите «Отправить доступ»: пароль уйдёт на email. В Telegram отправится только если клиент уже привязал его в личном кабинете.'
-                                : 'Оставьте пустым, если менять не нужно. После «Отправить доступ» новый пароль появится здесь — в базе он хранится в зашифрованном виде, поэтому без отправки поле пустое.'),
+                            ->helperText('Только для администраторов. Клиентам и тренерам пароль высылается кнопкой «Отправить доступ».'),
                     ]),
                 Section::make('Профиль на сайте')
                     ->description('Для пользователей с ролью «Тренер»: фото и описание на главной странице.')

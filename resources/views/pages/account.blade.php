@@ -101,6 +101,52 @@
               </dl>
 
               <button type="button" class="btn btn--line" id="profileEditBtn">Редактировать профиль</button>
+
+              <div class="lk-profile-form__section lk-profile-password">
+                <h2 class="lk-profile-form__heading">Смена пароля</h2>
+                @if ($errors->getBag('password')->any())
+                  <div class="auth__alert auth__alert--error lk__alert">
+                    @foreach ($errors->getBag('password')->all() as $error)
+                      <p>{{ $error }}</p>
+                    @endforeach
+                  </div>
+                @endif
+                <form class="lk-profile-form" action="{{ route('account.password.update') }}" method="post">
+                  @csrf
+                  @method('PUT')
+                  <div class="lk-profile-form__field">
+                    <label class="lk-profile-form__label" for="profile-current-password">Текущий пароль</label>
+                    @include('partials.password-field', [
+                      'id' => 'profile-current-password',
+                      'name' => 'current_password',
+                      'placeholder' => 'Текущий пароль',
+                      'autocomplete' => 'current-password',
+                      'required' => true,
+                    ])
+                  </div>
+                  <div class="lk-profile-form__field">
+                    <label class="lk-profile-form__label" for="profile-new-password">Новый пароль</label>
+                    @include('partials.password-field', [
+                      'id' => 'profile-new-password',
+                      'name' => 'password',
+                      'placeholder' => 'Не менее 8 символов',
+                      'autocomplete' => 'new-password',
+                      'required' => true,
+                    ])
+                  </div>
+                  <div class="lk-profile-form__field">
+                    <label class="lk-profile-form__label" for="profile-new-password-confirm">Повторите новый пароль</label>
+                    @include('partials.password-field', [
+                      'id' => 'profile-new-password-confirm',
+                      'name' => 'password_confirmation',
+                      'placeholder' => 'Повторите пароль',
+                      'autocomplete' => 'new-password',
+                      'required' => true,
+                    ])
+                  </div>
+                  <button type="submit" class="btn btn--line">Сохранить пароль</button>
+                </form>
+              </div>
             </div>
 
             <div id="profileEdit" class="lk-profile-pane lk-profile-edit {{ $profileEditing ? '' : 'is-hidden' }}">
