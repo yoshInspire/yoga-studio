@@ -67,6 +67,10 @@ return [
     'registration_email_verification_ttl_minutes' => 15,
     'registration_email_verification_max_attempts' => 5,
 
+    /** Сброс пароля на сайте */
+    'password_reset_ttl_minutes' => 15,
+    'password_reset_max_attempts' => 5,
+
     /** Карточка организации на Яндекс.Картах (виджет отзывов) */
     'yandex_maps_org_id' => env('YANDEX_MAPS_ORG_ID', '175639395221'),
     'yandex_profile_url' => env('YANDEX_PROFILE_URL', 'https://yandex.ru/profile/175639395221'),

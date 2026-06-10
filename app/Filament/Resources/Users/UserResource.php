@@ -129,7 +129,7 @@ class UserResource extends Resource
                             ->required(fn (string $operation): bool => $operation === 'create')
                             ->dehydrated(fn (?string $state): bool => filled($state))
                             ->minLength(8)
-                            ->helperText('Оставьте пустым при редактировании, если менять пароль не нужно.'),
+                            ->helperText('При создании задайте пароль вручную или оставьте любой — после сохранения нажмите «Отправить доступ», чтобы выслать клиенту новый временный пароль на email и в Telegram.'),
                     ]),
                 Section::make('Профиль на сайте')
                     ->description('Для пользователей с ролью «Тренер»: фото и описание на главной странице.')

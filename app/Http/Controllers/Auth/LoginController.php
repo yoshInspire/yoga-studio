@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\Concerns\RedirectsAuthenticatedUsers;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
+use App\Services\PasswordResetService;
 use App\Services\RegistrationEmailVerificationService;
 use App\Services\TelegramAuthService;
 use App\Support\TelegramAuthData;
@@ -22,6 +23,7 @@ class LoginController extends Controller
     public function __construct(
         protected TelegramAuthService $telegram,
         protected RegistrationEmailVerificationService $emailVerification,
+        protected PasswordResetService $passwordReset,
     ) {}
 
     public function create(Request $request): View|RedirectResponse
@@ -36,6 +38,10 @@ class LoginController extends Controller
         if ($activeTab !== 'verify-email' && $this->emailVerification->hasPending($request->session())) {
             $activeTab = 'verify-email';
         }
+        if (! in_array($activeTab, ['reset-request', 'reset-verify'], true)
+            && $this->passwordReset->hasPending($request->session())) {
+            $activeTab = 'reset-verify';
+        }
 
         return view('pages.login', [
             'activeTab' => $activeTab,
@@ -45,6 +51,8 @@ class LoginController extends Controller
                 ? TelegramAuthData::fromSession($telegramPending)
                 : null,
             'verificationEmail' => $this->emailVerification->pendingEmail($request->session()),
+            'passwordResetHint' => $this->passwordReset->deliveryHint($request->session())
+                ?? $request->session()->get(PasswordResetService::SESSION_KEY),
         ]);
     }
 

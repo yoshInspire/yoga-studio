@@ -20,9 +20,11 @@ class RegistrationVerificationMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $subject = $this->context === 'profile'
-            ? 'Код подтверждения email · ЭКО YOGA'
-            : 'Код подтверждения регистрации · ЭКО YOGA';
+        $subject = match ($this->context) {
+            'profile' => 'Код подтверждения email · ЭКО YOGA',
+            'password-reset' => 'Код для сброса пароля · ЭКО YOGA',
+            default => 'Код подтверждения регистрации · ЭКО YOGA',
+        };
 
         return new Envelope(
             subject: $subject,

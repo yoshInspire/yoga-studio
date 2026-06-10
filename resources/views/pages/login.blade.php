@@ -19,7 +19,7 @@
             <div class="auth__alert auth__alert--ok" data-auto-dismiss="3000">{{ session('status') }}</div>
           @endif
 
-          <div class="auth__tabs {{ $activeTab === 'verify-email' ? 'is-hidden' : '' }}" role="tablist" data-auth-tabs>
+          <div class="auth__tabs {{ in_array($activeTab, ['verify-email', 'reset-request', 'reset-verify'], true) ? 'is-hidden' : '' }}" role="tablist" data-auth-tabs>
             <button type="button" class="auth__tab {{ $activeTab === 'login' ? 'is-active' : '' }}" data-tab="login" role="tab" aria-selected="{{ $activeTab === 'login' ? 'true' : 'false' }}">Вход</button>
             <button type="button" class="auth__tab {{ $activeTab === 'register' ? 'is-active' : '' }}" data-tab="register" role="tab" aria-selected="{{ $activeTab === 'register' ? 'true' : 'false' }}">Регистрация</button>
           </div>
@@ -52,7 +52,7 @@
             </div>
             <div class="auth__row-between">
               <label class="auth__check"><input type="checkbox" name="remember" value="1" @checked(old('remember')) /> Запомнить меня</label>
-              <a href="#" class="auth__minor" data-soon="Восстановление пароля скоро появится. Пока, если забыли пароль, напишите или позвоните в студию — администратор поможет восстановить доступ.">Забыли пароль?</a>
+              <button type="button" class="auth__minor auth__link--btn" data-goto="reset-request">Забыли пароль?</button>
             </div>
             <button type="submit" class="btn btn--solid btn--full btn--lg">Войти</button>
 
@@ -222,6 +222,98 @@
             <form action="{{ route('register.cancel') }}" method="post">
               @csrf
               <button type="submit" class="auth__link auth__link--btn">Отменить регистрацию</button>
+            </form>
+          </div>
+
+          {{-- Запрос сброса пароля --}}
+          <form class="auth__form {{ $activeTab === 'reset-request' ? '' : 'is-hidden' }}" data-form="reset-request" action="{{ route('password.forgot') }}" method="post">
+            @csrf
+            <p class="form__sub">Введите телефон, указанный при регистрации. Мы отправим код на email и в Telegram, если они привязаны к аккаунту.</p>
+
+            @if ($errors->getBag('reset')->any())
+              <div class="auth__alert auth__alert--error">
+                @foreach ($errors->getBag('reset')->all() as $error)
+                  <p>{{ $error }}</p>
+                @endforeach
+              </div>
+            @endif
+
+            <div class="form__row">
+              <label class="auth__label" for="reset-phone">Телефон</label>
+              <input type="tel" id="reset-phone" name="phone" value="{{ old('phone') }}" placeholder="+7 (___) ___-__-__" autocomplete="username" inputmode="tel" data-phone-mask required />
+            </div>
+
+            <button type="submit" class="btn btn--solid btn--full btn--lg">Отправить код</button>
+            <p class="auth__switch">Вспомнили пароль? <button type="button" class="auth__link" data-goto="login">Войти</button></p>
+          </form>
+
+          {{-- Подтверждение сброса пароля --}}
+          <form class="auth__form {{ $activeTab === 'reset-verify' ? '' : 'is-hidden' }}" data-form="reset-verify" data-auth-panel="reset-verify" action="{{ route('password.reset') }}" method="post">
+            @csrf
+            <p class="form__sub">
+              @if ($passwordResetHint ?? null)
+                Введите 6-значный код, отправленный на <strong>{{ $passwordResetHint }}</strong>, и задайте новый пароль.
+              @else
+                Введите код из письма или Telegram и задайте новый пароль.
+              @endif
+            </p>
+
+            @if ($errors->getBag('reset-verify')->any())
+              <div class="auth__alert auth__alert--error">
+                @foreach ($errors->getBag('reset-verify')->all() as $error)
+                  <p>{{ $error }}</p>
+                @endforeach
+              </div>
+            @endif
+
+            <div class="form__row">
+              <label class="auth__label" for="reset-code">Код</label>
+              <input
+                type="text"
+                id="reset-code"
+                name="code"
+                value="{{ old('code') }}"
+                placeholder="000000"
+                inputmode="numeric"
+                pattern="\d{6}"
+                maxlength="6"
+                autocomplete="one-time-code"
+                class="auth__code-input"
+                required
+              />
+            </div>
+            <div class="form__row">
+              <label class="auth__label" for="reset-pass">Новый пароль</label>
+              @include('partials.password-field', [
+                'id' => 'reset-pass',
+                'name' => 'password',
+                'placeholder' => 'Не менее 8 символов',
+                'autocomplete' => 'new-password',
+                'required' => true,
+              ])
+            </div>
+            <div class="form__row">
+              <label class="auth__label" for="reset-pass-confirm">Повторите пароль</label>
+              @include('partials.password-field', [
+                'id' => 'reset-pass-confirm',
+                'name' => 'password_confirmation',
+                'placeholder' => 'Повторите пароль',
+                'autocomplete' => 'new-password',
+                'required' => true,
+              ])
+            </div>
+
+            <button type="submit" class="btn btn--solid btn--full btn--lg">Сохранить пароль и войти</button>
+          </form>
+
+          <div class="auth__verify-actions {{ $activeTab === 'reset-verify' ? '' : 'is-hidden' }}" data-auth-panel="reset-verify">
+            <form action="{{ route('password.resend') }}" method="post">
+              @csrf
+              <button type="submit" class="auth__link auth__link--btn">Отправить код ещё раз</button>
+            </form>
+            <form action="{{ route('password.cancel') }}" method="post">
+              @csrf
+              <button type="submit" class="auth__link auth__link--btn">Отменить сброс</button>
             </form>
           </div>
         </div>

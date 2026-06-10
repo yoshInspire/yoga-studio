@@ -176,15 +176,18 @@ if (authTabs.length) {
       panel.classList.toggle('is-hidden', panel.dataset.authPanel !== name);
     });
     if (authTabsWrap) {
-      authTabsWrap.classList.toggle('is-hidden', name === 'verify-email');
+      authTabsWrap.classList.toggle(
+        'is-hidden',
+        ['verify-email', 'reset-request', 'reset-verify'].includes(name),
+      );
     }
   };
   authTabs.forEach((t) => t.addEventListener('click', () => switchAuth(t.dataset.tab)));
   document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => switchAuth(b.dataset.goto)));
 
   const initialAuthTab = document.querySelector('.auth__form:not(.is-hidden)')?.dataset.form;
-  if (initialAuthTab === 'verify-email') {
-    switchAuth('verify-email');
+  if (['verify-email', 'reset-request', 'reset-verify'].includes(initialAuthTab)) {
+    switchAuth(initialAuthTab);
   }
 
   const patronymicToggle = document.getElementById('patronymic-toggle');

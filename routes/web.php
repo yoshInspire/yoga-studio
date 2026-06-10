@@ -5,6 +5,7 @@ use App\Http\Controllers\Account\TelegramLinkController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\TelegramAuthController;
 use App\Http\Controllers\BookingController;
@@ -48,6 +49,17 @@ Route::middleware('guest')->group(function () {
     Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'])
         ->middleware('throttle:20,1')
         ->name('auth.telegram.callback');
+    Route::post('/password/forgot', [PasswordResetController::class, 'request'])
+        ->middleware('throttle:3,1')
+        ->name('password.forgot');
+    Route::post('/password/reset', [PasswordResetController::class, 'verify'])
+        ->middleware('throttle:12,1')
+        ->name('password.reset');
+    Route::post('/password/resend', [PasswordResetController::class, 'resend'])
+        ->middleware('throttle:3,1')
+        ->name('password.resend');
+    Route::post('/password/cancel', [PasswordResetController::class, 'cancel'])
+        ->name('password.cancel');
 });
 
 Route::post('/logout', LogoutController::class)->name('logout')->middleware('auth');
