@@ -13,6 +13,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -56,7 +57,23 @@ class SubscriptionResource extends Resource
                             ->getOptionLabelFromRecordUsing(fn (User $record) => $record->fullName().($record->formattedPhone() ? ' · '.$record->formattedPhone() : ''))
                             ->searchable(['last_name', 'first_name', 'phone', 'email'])
                             ->preload()
-                            ->required(),
+                            ->required()
+                            ->live(),
+                        Placeholder::make('client_health_note')
+                            ->label('Ограничения по здоровью')
+                            ->content(function (Get $get, ?Subscription $record): string {
+                                $userId = $get('user_id') ?? $record?->user_id;
+
+                                if (! $userId) {
+                                    return '—';
+                                }
+
+                                $note = User::query()->whereKey($userId)->value('health_note');
+
+                                return filled($note) ? $note : 'Не указано';
+                            })
+                            ->visible(fn (Get $get, ?Subscription $record): bool => filled($get('user_id') ?? $record?->user_id))
+                            ->columnSpanFull(),
                         Select::make('type')
                             ->label('Тип абонемента')
                             ->options(collect(SubscriptionType::cases())->mapWithKeys(

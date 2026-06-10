@@ -15,7 +15,9 @@ use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -57,6 +59,22 @@ class BookingResource extends Resource
                             ->required()
                             ->live()
                             ->afterStateUpdated(fn ($set) => $set('subscription_id', null))
+                            ->visibleOn('create'),
+                        Placeholder::make('client_health_note')
+                            ->label('Ограничения по здоровью')
+                            ->content(function (Get $get, ?Booking $record): string {
+                                $userId = $get('user_id') ?? $record?->user_id;
+
+                                if (! $userId) {
+                                    return '—';
+                                }
+
+                                $note = User::query()->whereKey($userId)->value('health_note');
+
+                                return filled($note) ? $note : 'Не указано';
+                            })
+                            ->visible(fn (Get $get, ?Booking $record): bool => filled($get('user_id') ?? $record?->user_id))
+                            ->columnSpanFull()
                             ->visibleOn('create'),
                         Select::make('class_session_id')
                             ->label('Занятие')

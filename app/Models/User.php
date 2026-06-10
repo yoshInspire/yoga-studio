@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Storage;
     'birth_day',
     'birth_month',
     'birth_year',
+    'health_note',
     'role',
     'trainer_photo_path',
     'trainer_title',

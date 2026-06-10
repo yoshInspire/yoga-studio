@@ -78,6 +78,16 @@ class UserResource extends Resource
                                 ->maxValue(2026),
                         ]),
                     ]),
+                Section::make('Ограничения по здоровью')
+                    ->description('Видит только администратор. Хранится в карточке клиента и не привязано к абонементу.')
+                    ->visible(fn (Get $get): bool => $get('role') === UserRole::Client->value)
+                    ->schema([
+                        Textarea::make('health_note')
+                            ->label('Примечание')
+                            ->rows(4)
+                            ->maxLength(5000)
+                            ->columnSpanFull(),
+                    ]),
                 Section::make('Контакты и доступ')
                     ->schema([
                         TextInput::make('phone')
@@ -177,6 +187,12 @@ class UserResource extends Resource
                     ->label('Роль')
                     ->badge()
                     ->formatStateUsing(fn (UserRole $state) => $state->label()),
+                TextColumn::make('health_note')
+                    ->label('Здоровье')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state) => filled($state) ? 'Есть примечание' : '')
+                    ->color(fn (?string $state) => filled($state) ? 'warning' : 'gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->label('Регистрация')
                     ->dateTime('d.m.Y')
