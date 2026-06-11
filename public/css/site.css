@@ -1696,6 +1696,7 @@ a { color: inherit; text-decoration: none; }
 }
 .news-reactions--compact {
   margin-top: 12px;
+  margin-bottom: 20px;
   padding-top: 0;
   border-top: 0;
 }
