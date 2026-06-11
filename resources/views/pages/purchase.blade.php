@@ -34,6 +34,17 @@
                     <span>Дата начала абонемента</span>
                     <input type="date" name="starts_at" value="{{ old('starts_at', now()->format('Y-m-d')) }}" min="{{ now()->format('Y-m-d') }}" max="{{ now()->addMonths(3)->format('Y-m-d') }}" required>
                   </label>
+                  <fieldset class="purchase-card__methods">
+                    <legend class="purchase-card__methods-label">Способ оплаты</legend>
+                    <label class="purchase-card__method">
+                      <input type="radio" name="payment_method" value="smart" @checked(old('payment_method', 'smart') === 'smart')>
+                      <span>Карта, ЮMoney и другие способы</span>
+                    </label>
+                    <label class="purchase-card__method">
+                      <input type="radio" name="payment_method" value="sbp" @checked(old('payment_method') === 'sbp')>
+                      <span>СБП — любой банк</span>
+                    </label>
+                  </fieldset>
                   <button type="submit" class="btn btn--solid btn--full">Оплатить</button>
                 </form>
               @endforeach
@@ -41,7 +52,7 @@
           </div>
         @endforeach
 
-        <p class="purchase-note">Оплата проходит через защищённую форму ЮKassa. После оплаты вы вернётесь на сайт — абонемент активируется автоматически. Оплачивая абонемент, вы принимаете условия <a href="{{ route('offer.show') }}" target="_blank" rel="noopener">договора-оферты</a>.</p>
+        <p class="purchase-note">Оплата проходит через защищённую форму ЮKassa. Для оплаты через СБП выберите «СБП — любой банк» — откроется список банков. После оплаты вы вернётесь на сайт — абонемент активируется автоматически. Оплачивая абонемент, вы принимаете условия <a href="{{ route('offer.show') }}" target="_blank" rel="noopener">договора-оферты</a>.</p>
 
         <a href="{{ route('account') }}" class="btn btn--line" style="margin-top: 8px">Вернуться в личный кабинет</a>
       </div>

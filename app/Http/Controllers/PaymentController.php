@@ -15,13 +15,17 @@ class PaymentController extends Controller
 {
     public function return(Payment $payment, PaymentService $payments): View|RedirectResponse
     {
-        abort_unless($payment->user_id === auth()->id(), 403);
+        if (auth()->check() && auth()->id() !== $payment->user_id) {
+            abort(403);
+        }
 
         $payment = $payments->syncFromRemote($payment);
+        $returnUrl = $payments->signedReturnUrl($payment);
 
         if ($payment->status->isPaid() && $payment->isFulfilled()) {
             return view('pages.payment-result', [
                 'payment' => $payment,
+                'returnUrl' => $returnUrl,
                 'success' => true,
             ]);
         }
@@ -29,12 +33,14 @@ class PaymentController extends Controller
         if ($payment->status === PaymentStatus::Canceled) {
             return view('pages.payment-result', [
                 'payment' => $payment,
+                'returnUrl' => $returnUrl,
                 'success' => false,
             ]);
         }
 
         return view('pages.payment-result', [
             'payment' => $payment,
+            'returnUrl' => $returnUrl,
             'success' => false,
             'pending' => true,
         ]);

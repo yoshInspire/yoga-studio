@@ -14,4 +14,9 @@ return [
 
     /** 2 = УСН «доходы». См. https://yookassa.ru/developers/54fz/parameters-values#tax-systems */
     'tax_system_code' => env('YOOKASSA_TAX_SYSTEM_CODE', 2),
+
+    /**
+     * Способ «СБП — любой банк» на странице покупки работает только если СБП
+     * подключён в личном кабинете ЮKassa (отдельно от SberPay и T-Pay).
+     */
 ];

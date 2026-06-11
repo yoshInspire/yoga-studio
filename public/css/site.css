@@ -1202,6 +1202,10 @@ a { color: inherit; text-decoration: none; }
 .purchase-card__price { font-family: var(--serif); font-size: 28px; color: var(--clay); font-weight: 600; }
 .purchase-card__field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
 .purchase-card__field input { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; font: inherit; background: var(--paper); color: var(--ink); }
+.purchase-card__methods { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.purchase-card__methods-label { font-size: 13px; color: var(--muted); margin-bottom: 2px; padding: 0; }
+.purchase-card__method { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; color: var(--ink); cursor: pointer; }
+.purchase-card__method input { margin-top: 3px; accent-color: var(--sage-deep); }
 .purchase-note { margin-top: 8px; font-size: 14px; color: var(--muted); max-width: 640px; line-height: 1.6; }
 
 .payment-result { text-align: center; }

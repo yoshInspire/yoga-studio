@@ -70,6 +70,10 @@ Route::get('/oferta', [OfferController::class, 'show'])
     ->middleware('throttle:30,1')
     ->name('offer.show');
 
+Route::get('/payments/{payment}/return', [PaymentController::class, 'return'])
+    ->middleware('signed')
+    ->name('payments.return');
+
 Route::middleware(['auth', 'role:client'])->group(function () {
     Route::get('/account', AccountController::class)->name('account');
     Route::post('/account/offer/accept', [OfferAcceptanceController::class, 'store'])->name('account.offer.accept');
@@ -89,7 +93,6 @@ Route::middleware(['auth', 'role:client'])->group(function () {
     Route::middleware('offer.accepted')->group(function () {
         Route::get('/purchase', [PurchaseController::class, 'index'])->name('purchase.index');
         Route::post('/purchase', [PurchaseController::class, 'store'])->name('purchase.store');
-        Route::get('/payments/{payment}/return', [PaymentController::class, 'return'])->name('payments.return');
         Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
         Route::post('/bookings/{booking}/reschedule', [BookingController::class, 'reschedule'])->name('bookings.reschedule');
         Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');

@@ -11,6 +11,7 @@ use App\Support\PaymentReceiptBuilder;
 use App\Support\PurchaseCatalog;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use YooKassa\Common\Exceptions\ApiException;
@@ -25,7 +26,7 @@ class PaymentService
         private SubscriptionService $subscriptions,
     ) {}
 
-    public function initiate(User $user, string $productKey, Carbon $startsAt): Payment
+    public function initiate(User $user, string $productKey, Carbon $startsAt, ?string $paymentMethod = null): Payment
     {
         if (! $this->yookassa->isConfigured()) {
             throw new InvalidArgumentException('Онлайн-оплата временно недоступна. Обратитесь в студию.');
@@ -54,14 +55,14 @@ class PaymentService
         ]);
 
         try {
-            $response = $this->yookassa->createPayment([
+            $payload = [
                 'amount' => [
                     'value' => $this->formatAmount($product['price']),
                     'currency' => config('yookassa.currency', 'RUB'),
                 ],
                 'confirmation' => [
                     'type' => 'redirect',
-                    'return_url' => route('payments.return', ['payment' => $payment->id]),
+                    'return_url' => $this->signedReturnUrl($payment),
                 ],
                 'capture' => true,
                 'description' => $this->paymentDescription($user, $product['name']),
@@ -71,7 +72,13 @@ class PaymentService
                     'product_key' => $productKey,
                 ],
                 'receipt' => PaymentReceiptBuilder::build($user, $product),
-            ], $payment->idempotence_key);
+            ];
+
+            if ($paymentMethod === 'sbp') {
+                $payload['payment_method_data'] = ['type' => 'sbp'];
+            }
+
+            $response = $this->yookassa->createPayment($payload, $payment->idempotence_key);
         } catch (ApiException $e) {
             $payment->delete();
 
@@ -88,6 +95,16 @@ class PaymentService
         ]);
 
         return $payment->refresh();
+    }
+
+    public function signedReturnUrl(Payment $payment): string
+    {
+        return URL::temporarySignedRoute(
+            'payments.return',
+            now()->addDays(7),
+            ['payment' => $payment],
+            absolute: true,
+        );
     }
 
     public function syncFromRemote(Payment $payment): Payment
@@ -227,6 +244,10 @@ class PaymentService
 
         if (str_contains($message, 'Receipt is missing')) {
             return 'не настроена фискализация в ЮKassa. Обратитесь в студию.';
+        }
+
+        if (str_contains($message, 'Payment method is not available') || str_contains($message, 'payment_method')) {
+            return 'выбранный способ оплаты недоступен. Попробуйте другой или обратитесь в студию.';
         }
 
         return $message !== '' ? $message : 'ошибка платёжного сервиса.';

@@ -19,7 +19,7 @@
           <h1 class="lk__title">Платёж обрабатывается</h1>
           <p class="lk__lead">Если оплата прошла, абонемент появится в кабинете в течение нескольких минут. Обновите страницу или вернитесь позже.</p>
           <div class="payment-result__actions">
-            <a href="{{ route('payments.return', $payment) }}" class="btn btn--solid">Обновить статус</a>
+            <a href="{{ $returnUrl }}" class="btn btn--solid">Обновить статус</a>
             <a href="{{ route('account') }}" class="btn btn--line">В личный кабинет</a>
           </div>
         @else

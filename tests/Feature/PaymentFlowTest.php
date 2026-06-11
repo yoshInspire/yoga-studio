@@ -12,6 +12,7 @@ use App\Services\SubscriptionService;
 use App\Support\PaymentReceiptBuilder;
 use App\Support\PurchaseCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\URL;
 use Mockery;
 use Tests\TestCase;
 use YooKassa\Model\Payment\PaymentInterface;
@@ -135,5 +136,88 @@ class PaymentFlowTest extends TestCase
             'id' => $payment->id,
             'subscription_id' => $first->id,
         ]);
+    }
+
+    public function test_signed_return_url_is_absolute(): void
+    {
+        $user = User::create([
+            'first_name' => 'Анна',
+            'last_name' => 'Смирнова',
+            'phone' => '+79991112236',
+            'role' => UserRole::Client,
+            'password' => 'secret123',
+        ]);
+
+        $payment = Payment::create([
+            'user_id' => $user->id,
+            'product_key' => 'group_4',
+            'amount' => 6000,
+            'currency' => 'RUB',
+            'status' => PaymentStatus::Pending,
+            'starts_at' => now(),
+            'description' => 'Абонемент · 4 занятия',
+            'idempotence_key' => '22222222-2222-2222-2222-222222222222',
+        ]);
+
+        $url = app(PaymentService::class)->signedReturnUrl($payment);
+
+        $this->assertStringStartsWith('http', $url);
+        $this->assertStringContainsString('/payments/'.$payment->id.'/return', $url);
+        $this->assertStringContainsString('signature=', $url);
+    }
+
+    public function test_payment_return_works_without_auth_via_signed_url(): void
+    {
+        URL::forceRootUrl('https://ekoyoga-ik.ru');
+
+        $user = User::create([
+            'first_name' => 'Анна',
+            'last_name' => 'Смирнова',
+            'phone' => '+79991112237',
+            'role' => UserRole::Client,
+            'password' => 'secret123',
+        ]);
+
+        $payment = Payment::create([
+            'user_id' => $user->id,
+            'product_key' => 'group_4',
+            'amount' => 6000,
+            'currency' => 'RUB',
+            'status' => PaymentStatus::Pending,
+            'starts_at' => now(),
+            'description' => 'Абонемент · 4 занятия',
+            'idempotence_key' => '33333333-3333-3333-3333-333333333333',
+        ]);
+
+        $returnUrl = app(PaymentService::class)->signedReturnUrl($payment);
+
+        $this->get($returnUrl)
+            ->assertOk()
+            ->assertSee('Платёж обрабатывается');
+    }
+
+    public function test_payment_return_rejects_unsigned_url(): void
+    {
+        $user = User::create([
+            'first_name' => 'Анна',
+            'last_name' => 'Смирнова',
+            'phone' => '+79991112238',
+            'role' => UserRole::Client,
+            'password' => 'secret123',
+        ]);
+
+        $payment = Payment::create([
+            'user_id' => $user->id,
+            'product_key' => 'group_4',
+            'amount' => 6000,
+            'currency' => 'RUB',
+            'status' => PaymentStatus::Pending,
+            'starts_at' => now(),
+            'description' => 'Абонемент · 4 занятия',
+            'idempotence_key' => '44444444-4444-4444-4444-444444444444',
+        ]);
+
+        $this->get(route('payments.return', $payment))
+            ->assertForbidden();
     }
 }
