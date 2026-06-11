@@ -384,6 +384,7 @@ class BookingService
 
         $sessionsQuery = ClassSession::query()
             ->inDateRange($rangeStart, $rangeEnd)
+            ->where('status', ClassSessionStatus::Scheduled)
             ->with(['trainer', 'direction'])
             ->withCount(['bookings as taken' => fn ($q) => $q->where('status', BookingStatus::Confirmed)])
             ->orderBy('starts_at');
