@@ -371,7 +371,7 @@ a { color: inherit; text-decoration: none; }
 }
 .price-table:hover { transform: translateY(-4px); box-shadow: 0 24px 48px -28px rgba(47,53,43,.28); }
 .price-table--accent {
-  background: #6d7d5c; border-color: #657556; color: #f0ede4;
+  background: #434f3a; border-color: #3d4835; color: #ece7da;
 }
 .price-table__title {
   font-family: var(--serif); font-size: clamp(26px, 3vw, 32px); font-weight: 600;
