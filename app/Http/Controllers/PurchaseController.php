@@ -7,7 +7,6 @@ use App\Support\PurchaseCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use InvalidArgumentException;
 
@@ -25,17 +24,13 @@ class PurchaseController extends Controller
         $validated = $request->validate([
             'product_key' => ['required', 'string', 'max:64'],
             'starts_at' => ['required', 'date'],
-            'payment_method' => ['nullable', 'string', Rule::in(['smart', 'sbp'])],
         ]);
-
-        $paymentMethod = $validated['payment_method'] ?? 'smart';
 
         try {
             $payment = $payments->initiate(
                 $request->user(),
                 $validated['product_key'],
                 Carbon::parse($validated['starts_at']),
-                $paymentMethod === 'smart' ? null : $paymentMethod,
             );
         } catch (InvalidArgumentException $e) {
             return back()

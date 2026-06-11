@@ -26,7 +26,7 @@ class PaymentService
         private SubscriptionService $subscriptions,
     ) {}
 
-    public function initiate(User $user, string $productKey, Carbon $startsAt, ?string $paymentMethod = null): Payment
+    public function initiate(User $user, string $productKey, Carbon $startsAt): Payment
     {
         if (! $this->yookassa->isConfigured()) {
             throw new InvalidArgumentException('Онлайн-оплата временно недоступна. Обратитесь в студию.');
@@ -55,7 +55,7 @@ class PaymentService
         ]);
 
         try {
-            $payload = [
+            $response = $this->yookassa->createPayment([
                 'amount' => [
                     'value' => $this->formatAmount($product['price']),
                     'currency' => config('yookassa.currency', 'RUB'),
@@ -72,13 +72,7 @@ class PaymentService
                     'product_key' => $productKey,
                 ],
                 'receipt' => PaymentReceiptBuilder::build($user, $product),
-            ];
-
-            if ($paymentMethod === 'sbp') {
-                $payload['payment_method_data'] = ['type' => 'sbp'];
-            }
-
-            $response = $this->yookassa->createPayment($payload, $payment->idempotence_key);
+            ], $payment->idempotence_key);
         } catch (ApiException $e) {
             $payment->delete();
 
@@ -244,10 +238,6 @@ class PaymentService
 
         if (str_contains($message, 'Receipt is missing')) {
             return 'не настроена фискализация в ЮKassa. Обратитесь в студию.';
-        }
-
-        if (str_contains($message, 'Payment method is not available') || str_contains($message, 'payment_method')) {
-            return 'выбранный способ оплаты недоступен. Попробуйте другой или обратитесь в студию.';
         }
 
         return $message !== '' ? $message : 'ошибка платёжного сервиса.';
