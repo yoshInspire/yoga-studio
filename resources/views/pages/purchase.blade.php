@@ -26,8 +26,8 @@
                     <h3 class="purchase-card__name">{{ $product['name'] }}</h3>
                   </div>
                   <p class="purchase-card__meta">
-                    {{ $product['sessions'] }} {{ trans_choice('занятие|занятия|занятий', $product['sessions']) }}
-                    · срок {{ $product['validity_days'] }} {{ trans_choice('день|дня|дней', $product['validity_days']) }}
+                    {{ $product['sessions'] }} {{ \App\Support\RussianPlural::sessions($product['sessions']) }}
+                    · срок {{ $product['validity_days'] }} {{ \App\Support\RussianPlural::days($product['validity_days']) }}
                   </p>
                   <div class="purchase-card__price">{{ number_format($product['price'], 0, '', ' ') }} ₽</div>
                   <label class="purchase-card__field">
