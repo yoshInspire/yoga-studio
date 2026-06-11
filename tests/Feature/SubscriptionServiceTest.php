@@ -204,4 +204,24 @@ class SubscriptionServiceTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->service->extendByDays($sub, 0);
     }
+
+    public function test_create_from_purchase_counts_start_day_as_first_valid_day(): void
+    {
+        $user = $this->user();
+        $startsAt = Carbon::create(2026, 6, 13)->startOfDay();
+
+        $subscription = $this->service->createFromPurchase(
+            $user,
+            SubscriptionType::Group,
+            4,
+            $startsAt,
+            $startsAt,
+            30,
+        );
+
+        $this->assertSame('2026-06-13', $subscription->starts_at->toDateString());
+        $this->assertSame('2026-07-12', $subscription->ends_at->toDateString());
+        $this->assertTrue($subscription->isActive(Carbon::create(2026, 7, 12)->startOfDay()));
+        $this->assertFalse($subscription->isActive(Carbon::create(2026, 7, 13)->startOfDay()));
+    }
 }

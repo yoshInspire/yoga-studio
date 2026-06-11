@@ -216,7 +216,8 @@ class SubscriptionService
         }
 
         $startsAt = $startsAt->copy()->startOfDay();
-        $endsAt = $startsAt->copy()->addDays($validityDays);
+        // validity_days — число календарных дней действия, день начала считается первым.
+        $endsAt = $startsAt->copy()->addDays($validityDays - 1);
 
         return Subscription::query()->create([
             'user_id' => $user->id,

@@ -53,7 +53,7 @@ class PaymentFlowTest extends TestCase
 
         $this->assertSame(4, $subscription->sessions_total);
         $this->assertTrue($subscription->starts_at->equalTo(now()->startOfDay()));
-        $this->assertTrue($subscription->ends_at->equalTo(now()->startOfDay()->addDays(30)));
+        $this->assertTrue($subscription->ends_at->equalTo(now()->startOfDay()->addDays(29)));
     }
 
     public function test_purchase_page_requires_auth(): void
