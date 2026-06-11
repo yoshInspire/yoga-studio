@@ -217,7 +217,7 @@
           <li><span>Часы работы</span> ежедневно · 07:00 — 22:00</li>
         </ul>
         <div class="contacts__socials reveal">
-          <a href="https://t.me/yogAvLife" target="_blank" rel="noopener">Telegram</a>
+          <a href="https://t.me/irinikayoga" target="_blank" rel="noopener">Telegram</a>
           <a href="tel:+79647834353">Позвонить</a>
         </div>
       </div>
