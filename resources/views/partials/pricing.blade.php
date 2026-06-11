@@ -24,12 +24,11 @@
         @endforeach
       </ul>
 
-      <a href="{{ route('login') }}" class="btn {{ $key === 'individual' ? 'btn--solid' : 'btn--line' }} btn--full">Записаться в кабинете</a>
-      @auth
-        @if(auth()->user()->role === \App\Enums\UserRole::Client)
-          <a href="{{ route('purchase.index') }}" class="btn btn--ghost btn--full" style="margin-top: 10px">Купить абонемент</a>
-        @endif
-      @endauth
+      <div class="price-table__actions">
+        @php($btnClass = $key === 'individual' ? 'btn--solid' : 'btn--line')
+        <a href="{{ route('schedule') }}" class="btn {{ $btnClass }} btn--full">Записаться</a>
+        <a href="{{ route('purchase.index') }}" class="btn {{ $btnClass }} btn--full">Купить абонемент</a>
+      </div>
     </article>
   @endforeach
 </div>
