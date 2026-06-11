@@ -96,7 +96,6 @@ class NewsReactionTest extends TestCase
 
         $this->get(route('news.show', $news))
             ->assertOk()
-            ->assertSee('data-news-reactions', false)
-            ->assertSee('Ваша реакция');
+            ->assertSee('data-news-reactions', false);
     }
 }

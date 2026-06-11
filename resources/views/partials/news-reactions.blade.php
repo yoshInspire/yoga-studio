@@ -15,11 +15,7 @@
   data-can-react="{{ $canReact ? '1' : '0' }}"
   data-login-url="{{ $loginUrl }}"
 >
-  @unless ($compact)
-    <p class="news-reactions__label">Ваша реакция</p>
-  @endunless
-
-  <div class="news-reactions__buttons" role="group" @unless($compact) aria-label="Реакции на новость" @endunless>
+  <div class="news-reactions__buttons" role="group" aria-label="Реакции на новость">
     @foreach (NewsReactionType::cases() as $type)
       @php
         $count = (int) ($summary['counts'][$type->value] ?? 0);
@@ -38,14 +34,4 @@
       </button>
     @endforeach
   </div>
-
-  @unless ($compact)
-    <p class="news-reactions__hint">
-      @if ($canReact)
-        Нажмите, чтобы поставить реакцию. Повторное нажатие снимет её.
-      @else
-        <a href="{{ $loginUrl }}">Войдите в личный кабинет</a>, чтобы поставить реакцию.
-      @endif
-    </p>
-  @endunless
 </div>
