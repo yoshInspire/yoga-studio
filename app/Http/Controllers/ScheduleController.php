@@ -13,8 +13,9 @@ class ScheduleController extends Controller
 {
     public function __invoke(Request $request, BookingService $bookings): View|RedirectResponse
     {
-        $weekStart = $bookings->weekStart($request->query('week'));
-        $weekEnd = $weekStart->copy()->addDays(6);
+        $offset = $bookings->scheduleOffset($request->query('offset'));
+        $startDate = $bookings->scheduleStart($offset);
+        $endDate = $startDate->copy()->addDays(6);
         $viewer = auth()->user();
         $rescheduleFrom = null;
 
@@ -36,11 +37,17 @@ class ScheduleController extends Controller
             }
         }
 
+        $days = $bookings->buildRollingSchedule($startDate, $viewer, $rescheduleFrom);
+        $grid = $bookings->buildGridMeta($days);
+
         return view('pages.schedule', [
-            'week' => $bookings->buildWeekSchedule($weekStart, $viewer, $rescheduleFrom),
-            'weekLabel' => $weekStart->translatedFormat('j F').' – '.$weekEnd->translatedFormat('j F'),
-            'prevWeek' => $weekStart->copy()->subWeek()->toDateString(),
-            'nextWeek' => $weekStart->copy()->addWeek()->toDateString(),
+            'days' => $days,
+            'grid' => $grid,
+            'offset' => $offset,
+            'canGoPrev' => $offset > 0,
+            'prevOffset' => max(0, $offset - 1),
+            'nextOffset' => $offset + 1,
+            'rangeLabel' => $startDate->translatedFormat('j F').' – '.$endDate->translatedFormat('j F'),
             'rescheduleFrom' => $rescheduleFrom,
             'typeLabels' => [
                 'group' => 'Групповое',

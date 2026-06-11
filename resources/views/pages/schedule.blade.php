@@ -3,6 +3,18 @@
 @section('title', 'Расписание занятий — Студия йоги Ирины Коленцевой')
 
 @section('content')
+  @php
+    $gridStartMinutes = $grid['start_hour'] * 60;
+    $gridHours = $grid['end_hour'] - $grid['start_hour'];
+    $hourHeight = $grid['hour_height'];
+    $gridHeight = $gridHours * $hourHeight;
+
+    $navQuery = fn (int $targetOffset) => array_filter([
+        'offset' => $targetOffset > 0 ? $targetOffset : null,
+        'reschedule' => ($rescheduleFrom ?? null)?->id,
+    ], fn ($value) => $value !== null);
+  @endphp
+
   <section class="section sched">
     <div class="container">
       <div class="sched__head reveal">
@@ -14,18 +26,8 @@
             чтобы записаться, войдите в <a href="{{ route('login') }}">личный кабинет</a>.
           </p>
         </div>
-        <div class="sched__week" aria-label="Выбор недели">
-          @php
-            $prevQuery = ['week' => $prevWeek];
-            $nextQuery = ['week' => $nextWeek];
-            if ($rescheduleFrom ?? null) {
-                $prevQuery['reschedule'] = $rescheduleFrom->id;
-                $nextQuery['reschedule'] = $rescheduleFrom->id;
-            }
-          @endphp
-          <a href="{{ route('schedule', $prevQuery) }}" class="sched__weeknav" aria-label="Предыдущая неделя">‹</a>
-          <span class="sched__weeklabel">{{ $weekLabel }}</span>
-          <a href="{{ route('schedule', $nextQuery) }}" class="sched__weeknav" aria-label="Следующая неделя">›</a>
+        <div class="sched__range" aria-label="Период расписания">
+          <span class="sched__range-label">{{ $rangeLabel }}</span>
         </div>
       </div>
 
@@ -41,83 +43,106 @@
           Перенос записи с «{{ $rescheduleFrom->classSession->title }}»
           {{ $rescheduleFrom->classSession->formattedDateTime() }}.
           Выберите новое занятие и нажмите «Перенести сюда».
-          <a href="{{ route('schedule', ['week' => request('week')]) }}" class="auth__minor" style="margin-left: 8px">Отменить перенос</a>
+          <a href="{{ route('schedule', $navQuery($offset)) }}" class="auth__minor" style="margin-left: 8px">Отменить перенос</a>
         </div>
       @endif
 
-      <div class="sched__days reveal" role="tablist" id="schedDays">
-        @foreach($week as $i => $day)
-          <button type="button" class="sched__day {{ $i === 0 ? 'is-active' : '' }}"
-                  data-day="{{ $day['key'] }}" role="tab" aria-selected="{{ $i === 0 ? 'true' : 'false' }}">
-            <span class="sched__day-name">{{ $day['name'] }}</span>
-            <span class="sched__day-date">{{ $day['date'] }}</span>
-          </button>
-        @endforeach
-      </div>
+      <div class="gridsched reveal"
+           id="gridSchedule"
+           style="--grid-hour-height: {{ $hourHeight }}px; --grid-hours: {{ $gridHours }}; --grid-start-hour: {{ $grid['start_hour'] }};">
 
-      <div class="sched__board reveal">
-        @foreach($week as $i => $day)
-          <div class="sched__panel {{ $i === 0 ? '' : 'is-hidden' }}" data-panel="{{ $day['key'] }}">
-            @forelse($day['slots'] as $slot)
-              @php
-                $free = $slot['total'] - $slot['taken'];
-                $cls = $slot['status'] === 'full' ? 'slot--full' : ($slot['status'] === 'cancelled' ? 'slot--cancelled' : '');
-              @endphp
-              <div class="slot {{ $cls }}">
-                <div class="slot__time">{{ $slot['time'] }}</div>
-                <div class="slot__main">
-                  <h3 class="slot__title">{{ $slot['direction'] ?: $slot['topic'] ?: $slot['title'] }}</h3>
-                  @if(!empty($slot['direction']) && !empty($slot['topic']))
-                    <p class="slot__topic">{{ $slot['topic'] }}</p>
-                  @endif
-                  <p class="slot__meta">
-                    <span class="badge badge--{{ $slot['type'] }}">{{ $typeLabels[$slot['type']] ?? $slot['type'] }}</span>
-                    <span class="slot__trainer">{{ $slot['trainer'] }}</span>
-                  </p>
-                </div>
-                <div class="slot__seats">
-                  @if($slot['status'] === 'cancelled')
-                    <span class="slot__seats-num slot__seats-num--off">Отменено</span>
-                    <span class="slot__seats-label">{{ $slot['reason'] }}</span>
-                  @elseif($slot['status'] === 'full')
-                    <span class="slot__seats-num slot__seats-num--off">Мест нет</span>
-                    <span class="slot__seats-label">{{ $slot['total'] }} из {{ $slot['total'] }} занято</span>
-                  @else
-                    <span class="slot__seats-num">{{ $free }}</span>
-                    <span class="slot__seats-label">свободно из {{ $slot['total'] }}</span>
-                  @endif
-                </div>
-                <div class="slot__action">
-                  @if($slot['is_reschedule_source'] ?? false)
-                    <span class="btn btn--ghost" style="pointer-events:none">Текущая запись</span>
-                  @elseif($slot['can_reschedule_here'] ?? false)
-                    <form action="{{ route('bookings.reschedule', $rescheduleFrom) }}" method="post">
-                      @csrf
-                      <input type="hidden" name="class_session_id" value="{{ $slot['id'] }}" />
-                      <button type="submit" class="btn btn--solid">Перенести сюда</button>
-                    </form>
-                  @elseif($slot['user_booked'] ?? false)
-                    <span class="btn btn--ghost" style="pointer-events:none">Вы записаны</span>
-                  @elseif($slot['status'] === 'open' && ($slot['bookable'] ?? false) && auth()->check() && auth()->user()->isClient())
-                    <form action="{{ route('bookings.store') }}" method="post">
-                      @csrf
-                      <input type="hidden" name="class_session_id" value="{{ $slot['id'] }}" />
-                      <button type="submit" class="btn btn--solid">Записаться</button>
-                    </form>
-                  @elseif($slot['status'] === 'open' && ($slot['bookable'] ?? false))
-                    <a href="{{ route('login') }}" class="btn btn--solid">Записаться</a>
-                  @elseif($slot['status'] === 'full')
-                    <button type="button" class="btn btn--ghost" disabled>Мест нет</button>
-                  @else
-                    <button type="button" class="btn btn--ghost" disabled>Отменено</button>
-                  @endif
-                </div>
+        <div class="gridsched__header">
+          @if ($canGoPrev)
+            <a href="{{ route('schedule', $navQuery($prevOffset)) }}" class="gridsched__arrow gridsched__arrow--prev" aria-label="На день назад">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          @else
+            <span class="gridsched__arrow gridsched__arrow--prev is-disabled" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          @endif
+
+          <div class="gridsched__days">
+            @foreach($days as $day)
+              <div class="gridsched__dayhead {{ $day['is_today'] ? 'gridsched__dayhead--today' : '' }}">
+                @if($day['is_today'])
+                  <span class="gridsched__daytoday">Сегодня</span>
+                @else
+                  <span class="gridsched__daylabel">{{ $day['label'] }}</span>
+                @endif
               </div>
-            @empty
-              <p class="sched__empty">В этот день занятий нет.</p>
-            @endforelse
+            @endforeach
           </div>
-        @endforeach
+
+          <a href="{{ route('schedule', $navQuery($nextOffset)) }}" class="gridsched__arrow gridsched__arrow--next" aria-label="На день вперёд">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </div>
+
+        <div class="gridsched__scroll">
+          <div class="gridsched__canvas" style="height: {{ $gridHeight }}px">
+            <div class="gridsched__times gridsched__times--left" aria-hidden="true">
+              @for($hour = $grid['start_hour']; $hour <= $grid['end_hour']; $hour++)
+                <span class="gridsched__time" style="top: {{ ($hour - $grid['start_hour']) * $hourHeight }}px">{{ sprintf('%02d:00', $hour) }}</span>
+              @endfor
+            </div>
+
+            <div class="gridsched__grid">
+              @for($hour = $grid['start_hour']; $hour <= $grid['end_hour']; $hour++)
+                <div class="gridsched__hourline" style="top: {{ ($hour - $grid['start_hour']) * $hourHeight }}px"></div>
+              @endfor
+
+              @foreach($days as $day)
+                <div class="gridsched__col">
+                  @foreach($day['slots'] as $slot)
+                    @php
+                      $top = (($slot['start_minutes'] - $gridStartMinutes) / 60) * $hourHeight;
+                      $height = max(56, ($slot['duration_minutes'] / 60) * $hourHeight - 6);
+                      $cardClass = match ($slot['status']) {
+                          'full' => 'gridsched__card--full',
+                          'cancelled' => 'gridsched__card--cancelled',
+                          default => '',
+                      };
+                      if ($slot['user_booked'] ?? false) {
+                          $cardClass .= ' gridsched__card--booked';
+                      }
+                    @endphp
+                    <button type="button"
+                            class="gridsched__card {{ trim($cardClass) }}"
+                            style="top: {{ $top }}px; height: {{ $height }}px"
+                            data-session='@json($slot, JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT)'
+                            aria-label="{{ $slot['title'] }}, {{ $slot['time_range'] }}">
+                      <span class="gridsched__card-time">
+                        {{ $slot['time_range'] }}
+                        <span class="gridsched__card-duration">{{ $slot['duration_minutes'] }} мин</span>
+                      </span>
+                      <span class="gridsched__card-title">{{ $slot['direction'] ?: $slot['topic'] ?: $slot['title'] }}</span>
+                      @if(!empty($slot['direction']) && !empty($slot['topic']))
+                        <span class="gridsched__card-topic">{{ $slot['topic'] }}</span>
+                      @endif
+                      <span class="gridsched__card-trainer">{{ $slot['trainer'] }}</span>
+                      <span class="gridsched__card-seats">
+                        @if($slot['status'] === 'cancelled')
+                          <strong>Отменено</strong>
+                        @elseif($slot['status'] === 'full')
+                          <strong>Мест нет</strong>
+                        @else
+                          <strong>Свободно: {{ $slot['free'] }}</strong> из {{ $slot['total'] }}
+                        @endif
+                      </span>
+                    </button>
+                  @endforeach
+                </div>
+              @endforeach
+            </div>
+
+            <div class="gridsched__times gridsched__times--right" aria-hidden="true">
+              @for($hour = $grid['start_hour']; $hour <= $grid['end_hour']; $hour++)
+                <span class="gridsched__time" style="top: {{ ($hour - $grid['start_hour']) * $hourHeight }}px">{{ sprintf('%02d:00', $hour) }}</span>
+              @endfor
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="faq reveal">
@@ -147,4 +172,52 @@
       </div>
     </div>
   </section>
+
+  <div class="sched-modal" id="schedModal" aria-hidden="true">
+    <div class="sched-modal__backdrop" data-sched-close></div>
+    <div class="sched-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="schedModalTitle">
+      <button type="button" class="sched-modal__close" data-sched-close aria-label="Закрыть">&times;</button>
+
+      <div class="sched-modal__head">
+        <span class="badge" id="schedModalType"></span>
+        <p class="sched-modal__datetime" id="schedModalDatetime"></p>
+        <h2 class="sched-modal__title" id="schedModalTitle"></h2>
+        <p class="sched-modal__topic" id="schedModalTopic" hidden></p>
+      </div>
+
+      <div class="sched-modal__meta">
+        <div class="sched-modal__row">
+          <span class="sched-modal__label">Преподаватель</span>
+          <span class="sched-modal__value" id="schedModalTrainer"></span>
+        </div>
+        <div class="sched-modal__row">
+          <span class="sched-modal__label">Длительность</span>
+          <span class="sched-modal__value" id="schedModalDuration"></span>
+        </div>
+        <div class="sched-modal__row">
+          <span class="sched-modal__label">Места</span>
+          <span class="sched-modal__value" id="schedModalSeats"></span>
+        </div>
+      </div>
+
+      <p class="sched-modal__desc" id="schedModalDesc" hidden></p>
+
+      <div class="sched-modal__action" id="schedModalAction"></div>
+    </div>
+  </div>
+
+  @php
+    $schedConfig = [
+        'bookUrl' => route('bookings.store'),
+        'loginUrl' => route('login'),
+        'csrf' => csrf_token(),
+        'typeLabels' => $typeLabels,
+        'rescheduleFrom' => ($rescheduleFrom ?? null)?->id,
+        'rescheduleUrl' => ($rescheduleFrom ?? null) ? route('bookings.reschedule', $rescheduleFrom) : null,
+        'isClient' => auth()->check() && auth()->user()->isClient(),
+    ];
+  @endphp
+  <script>
+    window.__schedConfig = @json($schedConfig, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG);
+  </script>
 @endsection

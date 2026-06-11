@@ -324,6 +324,103 @@ class BookingService
         return now()->startOfWeek(Carbon::MONDAY);
     }
 
+    public function scheduleOffset(?string $offsetParam = null): int
+    {
+        if ($offsetParam === null || $offsetParam === '') {
+            return 0;
+        }
+
+        return max(0, (int) $offsetParam);
+    }
+
+    public function scheduleStart(int $offset = 0): Carbon
+    {
+        return now()->startOfDay()->addDays($offset);
+    }
+
+    /**
+     * @return array{start_hour: int, end_hour: int, hour_height: int}
+     */
+    public function buildGridMeta(array $days): array
+    {
+        $config = config('studio.schedule_grid_hours', []);
+        $startHour = (int) ($config['start'] ?? 6);
+        $endHour = (int) ($config['end'] ?? 22);
+
+        $slots = collect($days)->flatMap(fn (array $day) => $day['slots']);
+
+        if ($slots->isNotEmpty()) {
+            $earliest = $slots->min('start_minutes');
+            $latest = $slots->max(fn (array $slot) => $slot['start_minutes'] + $slot['duration_minutes']);
+
+            $startHour = min($startHour, max(0, (int) floor($earliest / 60)));
+            $endHour = max($endHour, min(24, (int) ceil($latest / 60)));
+        }
+
+        return [
+            'start_hour' => $startHour,
+            'end_hour' => max($startHour + 1, $endHour),
+            'hour_height' => 72,
+        ];
+    }
+
+    /**
+     * @return array<int, array{key: string, name: string, date: string, label: string, is_today: bool, slots: list<array>}>
+     */
+    public function buildRollingSchedule(Carbon $startDate, ?User $viewer = null, ?Booking $rescheduleFrom = null): array
+    {
+        $rangeStart = $startDate->copy()->startOfDay();
+        $rangeEnd = $startDate->copy()->addDays(6)->endOfDay();
+
+        $sessionsQuery = ClassSession::query()
+            ->inDateRange($rangeStart, $rangeEnd)
+            ->with(['trainer', 'direction'])
+            ->withCount(['bookings as taken' => fn ($q) => $q->where('status', BookingStatus::Confirmed)])
+            ->orderBy('starts_at');
+
+        if ($viewer) {
+            $sessionsQuery->with([
+                'bookings' => fn ($q) => $q
+                    ->where('user_id', $viewer->id)
+                    ->where('status', BookingStatus::Confirmed),
+            ]);
+        }
+
+        $sessions = $sessionsQuery
+            ->get()
+            ->groupBy(fn (ClassSession $s) => $s->starts_at->toDateString());
+
+        $today = now()->startOfDay();
+        $dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+        $dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+        $days = [];
+
+        for ($i = 0; $i < 7; $i++) {
+            $date = $startDate->copy()->addDays($i);
+            $dateKey = $date->toDateString();
+            $daySessions = $sessions->get($dateKey, collect());
+            $isToday = $date->equalTo($today);
+
+            $slots = $daySessions
+                ->map(fn (ClassSession $session) => $this->mapSessionToSlot($session, $viewer, $rescheduleFrom))
+                ->values()
+                ->all();
+
+            $days[] = [
+                'key' => $dayKeys[$date->dayOfWeekIso - 1],
+                'name' => $dayNames[$date->dayOfWeekIso - 1],
+                'date' => $date->translatedFormat('j F'),
+                'label' => $isToday
+                    ? 'Сегодня'
+                    : mb_strtoupper($date->translatedFormat('j F')).' '.mb_strtoupper($dayNames[$date->dayOfWeekIso - 1]),
+                'is_today' => $isToday,
+                'slots' => $slots,
+            ];
+        }
+
+        return $days;
+    }
+
     /**
      * @return array<int, array{key: string, name: string, date: string, slots: list<array>}>
      */
@@ -357,36 +454,7 @@ class BookingService
             $daySessions = $sessions->get($dateKey, collect());
 
             $slots = $daySessions->map(function (ClassSession $session) use ($viewer, $rescheduleFrom) {
-                $userBooked = $viewer
-                    ? $session->bookings->isNotEmpty()
-                    : false;
-
-                $isRescheduleSource = $rescheduleFrom !== null
-                    && $session->id === $rescheduleFrom->class_session_id;
-
-                $canRescheduleHere = $rescheduleFrom !== null
-                    && ! $isRescheduleSource
-                    && $session->slotStatus() === 'open'
-                    && $session->isBookable()
-                    && ! $userBooked;
-
-                return [
-                    'id' => $session->id,
-                    'time' => $session->formattedTime(),
-                    'title' => $session->title,
-                    'direction' => $session->direction?->title,
-                    'topic' => $session->topic,
-                    'trainer' => $session->trainerName(),
-                    'type' => $session->type->badgeClass(),
-                    'taken' => (int) $session->taken,
-                    'total' => $session->capacity,
-                    'status' => $session->slotStatus(),
-                    'reason' => $session->cancellation_reason,
-                    'bookable' => $session->isBookable() && ! $userBooked && $rescheduleFrom === null,
-                    'user_booked' => $userBooked && ! $isRescheduleSource,
-                    'is_reschedule_source' => $isRescheduleSource,
-                    'can_reschedule_here' => $canRescheduleHere,
-                ];
+                return $this->mapSessionToSlot($session, $viewer, $rescheduleFrom);
             })->values()->all();
 
             $week[] = [
@@ -398,5 +466,53 @@ class BookingService
         }
 
         return $week;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapSessionToSlot(ClassSession $session, ?User $viewer, ?Booking $rescheduleFrom): array
+    {
+        $userBooked = $viewer
+            ? $session->bookings->isNotEmpty()
+            : false;
+
+        $isRescheduleSource = $rescheduleFrom !== null
+            && $session->id === $rescheduleFrom->class_session_id;
+
+        $canRescheduleHere = $rescheduleFrom !== null
+            && ! $isRescheduleSource
+            && $session->slotStatus() === 'open'
+            && $session->isBookable()
+            && ! $userBooked;
+
+        $durationMinutes = $session->durationMinutes();
+        $startMinutes = ((int) $session->starts_at->format('H')) * 60 + (int) $session->starts_at->format('i');
+        $free = max(0, $session->capacity - (int) $session->taken);
+
+        return [
+            'id' => $session->id,
+            'time' => $session->formattedTime(),
+            'time_range' => $session->formattedTimeRange(),
+            'duration_minutes' => $durationMinutes,
+            'start_minutes' => $startMinutes,
+            'title' => $session->title,
+            'direction' => $session->direction?->title,
+            'topic' => $session->topic,
+            'description' => $session->description,
+            'trainer' => $session->trainerName(),
+            'type' => $session->type->badgeClass(),
+            'type_label' => $session->type->shortLabel(),
+            'date_time' => $session->formattedDateTime(),
+            'taken' => (int) $session->taken,
+            'total' => $session->capacity,
+            'free' => $free,
+            'status' => $session->slotStatus(),
+            'reason' => $session->cancellation_reason,
+            'bookable' => $session->isBookable() && ! $userBooked && $rescheduleFrom === null,
+            'user_booked' => $userBooked && ! $isRescheduleSource,
+            'is_reschedule_source' => $isRescheduleSource,
+            'can_reschedule_here' => $canRescheduleHere,
+        ];
     }
 }

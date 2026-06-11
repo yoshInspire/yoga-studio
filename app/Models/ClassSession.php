@@ -143,6 +143,23 @@ class ClassSession extends Model
         return $this->starts_at->format('H:i');
     }
 
+    public function durationMinutes(): int
+    {
+        $defaults = config('studio.default_class_duration_minutes', []);
+
+        return (int) ($defaults[$this->type->value] ?? $defaults['default'] ?? 90);
+    }
+
+    public function endsAt(): Carbon
+    {
+        return $this->starts_at->copy()->addMinutes($this->durationMinutes());
+    }
+
+    public function formattedTimeRange(): string
+    {
+        return $this->formattedTime().'–'.$this->endsAt()->format('H:i');
+    }
+
     public function formattedDateTime(): string
     {
         return $this->starts_at->translatedFormat('d.m.Y, H:i');
@@ -180,10 +197,18 @@ class ClassSession extends Model
      */
     public function scopeInWeek(Builder $query, Carbon $weekStart): Builder
     {
-        $start = $weekStart->copy()->startOfDay();
-        $end = $weekStart->copy()->addDays(6)->endOfDay();
+        return $query->inDateRange(
+            $weekStart->copy()->startOfDay(),
+            $weekStart->copy()->addDays(6)->endOfDay(),
+        );
+    }
 
-        return $query->whereBetween('starts_at', [$start, $end]);
+    /**
+     * @param  Builder<self>  $query
+     */
+    public function scopeInDateRange(Builder $query, Carbon $from, Carbon $to): Builder
+    {
+        return $query->whereBetween('starts_at', [$from, $to]);
     }
 
     /**

@@ -102,20 +102,115 @@ if (dirModal) {
   });
 }
 
-// ===== Вкладки дней расписания =====
-const schedDays = document.getElementById('schedDays');
-if (schedDays) {
-  const tabs = schedDays.querySelectorAll('.sched__day');
-  const panels = document.querySelectorAll('.sched__panel');
-  tabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
-      tabs.forEach((t) => {
-        const on = t === tab;
-        t.classList.toggle('is-active', on);
-        t.setAttribute('aria-selected', on ? 'true' : 'false');
-      });
-      panels.forEach((p) => p.classList.toggle('is-hidden', p.dataset.panel !== tab.dataset.day));
+// ===== Модальное окно расписания =====
+const schedModal = document.getElementById('schedModal');
+const gridSchedule = document.getElementById('gridSchedule');
+
+if (schedModal && gridSchedule && window.__schedConfig) {
+  const cfg = window.__schedConfig;
+  const typeEl = document.getElementById('schedModalType');
+  const datetimeEl = document.getElementById('schedModalDatetime');
+  const titleEl = document.getElementById('schedModalTitle');
+  const topicEl = document.getElementById('schedModalTopic');
+  const trainerEl = document.getElementById('schedModalTrainer');
+  const durationEl = document.getElementById('schedModalDuration');
+  const seatsEl = document.getElementById('schedModalSeats');
+  const descEl = document.getElementById('schedModalDesc');
+  const actionEl = document.getElementById('schedModalAction');
+
+  const closeSchedModal = () => {
+    schedModal.classList.remove('is-open');
+    schedModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  };
+
+  const openSchedModal = (slot) => {
+    const title = slot.direction || slot.topic || slot.title;
+    const typeLabel = cfg.typeLabels[slot.type] || slot.type_label || slot.type;
+
+    typeEl.textContent = typeLabel;
+    typeEl.className = `badge badge--${slot.type}`;
+    datetimeEl.textContent = slot.date_time;
+    titleEl.textContent = title;
+
+    if (slot.direction && slot.topic) {
+      topicEl.textContent = slot.topic;
+      topicEl.hidden = false;
+    } else {
+      topicEl.textContent = '';
+      topicEl.hidden = true;
+    }
+
+    trainerEl.textContent = slot.trainer;
+    durationEl.textContent = `${slot.time_range} · ${slot.duration_minutes} мин`;
+
+    if (slot.status === 'cancelled') {
+      seatsEl.textContent = `Отменено${slot.reason ? `: ${slot.reason}` : ''}`;
+    } else if (slot.status === 'full') {
+      seatsEl.textContent = `Мест нет · ${slot.total} из ${slot.total} занято`;
+    } else {
+      seatsEl.textContent = `Свободно ${slot.free} из ${slot.total}`;
+    }
+
+    if (slot.description) {
+      descEl.textContent = slot.description;
+      descEl.hidden = false;
+    } else {
+      descEl.textContent = '';
+      descEl.hidden = true;
+    }
+
+    actionEl.innerHTML = '';
+
+    if (slot.is_reschedule_source) {
+      actionEl.innerHTML = '<span class="btn btn--ghost" style="pointer-events:none;width:100%">Текущая запись</span>';
+    } else if (slot.can_reschedule_here && cfg.rescheduleUrl) {
+      actionEl.innerHTML = `
+        <form action="${cfg.rescheduleUrl}" method="post">
+          <input type="hidden" name="_token" value="${cfg.csrf}" />
+          <input type="hidden" name="class_session_id" value="${slot.id}" />
+          <button type="submit" class="btn btn--solid">Перенести сюда</button>
+        </form>`;
+    } else if (slot.user_booked) {
+      actionEl.innerHTML = '<span class="btn btn--ghost" style="pointer-events:none;width:100%">Вы записаны</span>';
+    } else if (slot.status === 'open' && slot.bookable && cfg.isClient) {
+      actionEl.innerHTML = `
+        <form action="${cfg.bookUrl}" method="post">
+          <input type="hidden" name="_token" value="${cfg.csrf}" />
+          <input type="hidden" name="class_session_id" value="${slot.id}" />
+          <button type="submit" class="btn btn--solid">Записаться</button>
+        </form>`;
+    } else if (slot.status === 'open' && slot.bookable) {
+      actionEl.innerHTML = `<a href="${cfg.loginUrl}" class="btn btn--solid">Войти и записаться</a>`;
+    } else if (slot.status === 'full') {
+      actionEl.innerHTML = '<button type="button" class="btn btn--ghost" disabled style="width:100%">Мест нет</button>';
+    } else {
+      actionEl.innerHTML = '<button type="button" class="btn btn--ghost" disabled style="width:100%">Отменено</button>';
+    }
+
+    schedModal.classList.add('is-open');
+    schedModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  };
+
+  gridSchedule.querySelectorAll('.gridsched__card').forEach((card) => {
+    card.addEventListener('click', () => {
+      try {
+        openSchedModal(JSON.parse(card.dataset.session));
+      } catch (e) {
+        console.error('Schedule card data parse error', e);
+      }
     });
+  });
+
+  schedModal.querySelectorAll('[data-sched-close]').forEach((el) => {
+    el.addEventListener('click', closeSchedModal);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && schedModal.classList.contains('is-open')) {
+      closeSchedModal();
+    }
   });
 }
 
