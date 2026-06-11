@@ -7,8 +7,8 @@
     <div class="hero__content">
       <p class="hero__eyebrow reveal">Студия йоги, Москва, Коньково</p>
       <h1 class="hero__title">
-        <span class="reveal hero__title--bold" style="--d:.05s">Каждому — своё внимание,</span>
-        <span class="reveal hero__title--bold" style="--d:.15s">каждому — своё дыхание</span>
+        <span class="reveal hero__title--bold" style="--d:.05s">Каждому - своё внимание,</span>
+        <span class="reveal hero__title--bold" style="--d:.15s">каждому - своё дыхание</span>
       </h1>
       <p class="hero__lead reveal" style="--d:.3s">
         Студия йоги Ирины Коленцевой. Камерный формат до 6 человек, деликатная индивидуальная работа и атмосфера, в которой внимание становится основой практики.
