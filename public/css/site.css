@@ -680,19 +680,19 @@ a { color: inherit; text-decoration: none; }
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  overflow: hidden;
   box-shadow: 0 28px 60px -40px rgba(47,53,43,.35);
 }
 
 .gridsched__header {
-  display: grid;
-  grid-template-columns: 52px 1fr 52px;
+  display: flex;
   align-items: stretch;
-  border-bottom: 1px solid var(--line);
+  gap: 0;
+  padding: 0;
   background: linear-gradient(180deg, #fffdf8 0%, #f7f4ec 100%);
 }
 
 .gridsched__arrow {
+  flex: 0 0 52px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -709,21 +709,24 @@ a { color: inherit; text-decoration: none; }
 .gridsched__arrow.is-disabled { opacity: .35; cursor: default; background: var(--bg); color: var(--muted); }
 
 .gridsched__days {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 6px;
+  padding: 0 8px;
   min-width: 0;
 }
 .gridsched__dayhead {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 64px;
-  padding: 10px 8px;
-  border-left: 1px solid var(--line);
+  padding: 10px 6px;
   text-align: center;
 }
-.gridsched__dayhead:first-child { border-left: none; }
-.gridsched__dayhead--today { background: rgba(124,139,107,.08); }
+.gridsched__dayhead--today { background: rgba(124,139,107,.08); border-radius: 10px; }
 .gridsched__daytoday {
   font-weight: 800;
   font-size: 13px;
@@ -739,73 +742,65 @@ a { color: inherit; text-decoration: none; }
   color: var(--ink-soft);
 }
 
-.gridsched__scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.gridsched__canvas {
-  position: relative;
-  display: grid;
-  grid-template-columns: 56px minmax(640px, 1fr) 56px;
-  min-width: 760px;
+.gridsched__body {
   background: #f8f6ef;
+  padding: 14px 0 18px;
 }
 
-.gridsched__times { position: relative; pointer-events: none; }
+.gridsched__row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 52px;
+  align-items: stretch;
+  margin-bottom: 10px;
+}
+.gridsched__row:last-child { margin-bottom: 0; }
+
 .gridsched__time {
-  position: absolute;
-  left: 0;
-  right: 0;
-  transform: translateY(-8px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 14px;
   font-size: 11px;
   font-weight: 600;
   color: var(--muted);
-  text-align: center;
   font-variant-numeric: tabular-nums;
 }
-.gridsched__times--left .gridsched__time { padding-right: 8px; }
-.gridsched__times--right .gridsched__time { padding-left: 8px; }
 
-.gridsched__grid {
-  position: relative;
+.gridsched__cells {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  border-left: 1px solid var(--line);
-  border-right: 1px solid var(--line);
-  min-height: 100%;
+  gap: 8px;
+  padding: 0 4px;
+  align-items: stretch;
 }
 
-.gridsched__hourline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: rgba(220,222,203,.95);
-  pointer-events: none;
-  z-index: 0;
+.gridsched__cell {
+  min-height: 158px;
 }
 
-.gridsched__col {
-  position: relative;
-  border-left: 1px solid rgba(220,222,203,.85);
-  z-index: 1;
+.gridsched__empty {
+  padding: 48px 28px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 16px;
 }
-.gridsched__col:first-child { border-left: none; }
 
 .gridsched__card {
-  position: absolute;
-  left: 5px;
-  right: 5px;
+  width: 100%;
+  height: 100%;
+  min-height: 158px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
-  padding: 10px 11px 9px 13px;
-  border: 1px solid rgba(220,222,203,.9);
+  gap: 3px;
+  padding: 12px 12px 11px 14px;
+  border: 1px solid rgba(220,222,203,.75);
   border-left: 3px solid var(--sage-deep);
   border-radius: 10px;
   background: #fff;
   box-shadow: 0 10px 24px -18px rgba(47,53,43,.55);
   text-align: left;
   cursor: pointer;
-  overflow: hidden;
   transition: transform .25s var(--ease), box-shadow .25s var(--ease), border-color .25s var(--ease);
 }
 .gridsched__card:hover {
@@ -1471,10 +1466,13 @@ a { color: inherit; text-decoration: none; }
   .lk__navlink--exit { border-top: none; padding-top: 9px; margin-top: 0; }
 }
 @media (max-width: 720px) {
-  .gridsched__header { grid-template-columns: 44px 1fr 44px; }
+  .gridsched__arrow { flex-basis: 44px; }
   .gridsched__dayhead { min-height: 56px; padding: 8px 4px; }
   .gridsched__daylabel { font-size: 10px; }
-  .gridsched__canvas { grid-template-columns: 44px minmax(560px, 1fr) 44px; min-width: 648px; }
+  .gridsched__row { grid-template-columns: 44px minmax(0, 1fr) 44px; }
+  .gridsched__cells { gap: 6px; }
+  .gridsched__cell,
+  .gridsched__card { min-height: 148px; }
   .slot { grid-template-columns: 64px 1fr; gap: 8px 16px; }
   .slot__time { font-size: 20px; }
   .slot__seats { grid-column: 2; text-align: left; align-items: flex-start; margin-top: 6px; }

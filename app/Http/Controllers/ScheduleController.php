@@ -38,11 +38,11 @@ class ScheduleController extends Controller
         }
 
         $days = $bookings->buildRollingSchedule($startDate, $viewer, $rescheduleFrom);
-        $grid = $bookings->buildGridMeta($days);
+        $rows = $bookings->buildScheduleRows($days);
 
         return view('pages.schedule', [
             'days' => $days,
-            'grid' => $grid,
+            'rows' => $rows,
             'offset' => $offset,
             'canGoPrev' => $offset > 0,
             'prevOffset' => max(0, $offset - 1),

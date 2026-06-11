@@ -339,33 +339,42 @@ class BookingService
     }
 
     /**
-     * @return array{start_hour: int, end_hour: int, hour_height: int}
+     * Строки расписания: одно время — одна строка, в ячейках карточки по дням.
+     *
+     * @param  array<int, array{slots: list<array>}>  $days
+     * @return list<array{start_minutes: int, time: string, cells: list<array|null>}>
      */
-    public function buildGridMeta(array $days): array
+    public function buildScheduleRows(array $days): array
     {
-        $config = config('studio.schedule_grid_hours', []);
-        $startHour = (int) ($config['start'] ?? 6);
-        $endHour = (int) ($config['end'] ?? 22);
+        $startTimes = collect($days)
+            ->flatMap(fn (array $day) => $day['slots'])
+            ->pluck('start_minutes')
+            ->unique()
+            ->sort()
+            ->values();
 
-        $slots = collect($days)->flatMap(fn (array $day) => $day['slots']);
-
-        if ($slots->isNotEmpty()) {
-            $earliest = $slots->min('start_minutes');
-            $latest = $slots->max(fn (array $slot) => $slot['start_minutes'] + $slot['duration_minutes']);
-
-            $startHour = min($startHour, max(0, (int) floor($earliest / 60)));
-            $endHour = max($endHour, min(24, (int) ceil($latest / 60)));
+        if ($startTimes->isEmpty()) {
+            return [];
         }
 
-        return [
-            'start_hour' => $startHour,
-            'end_hour' => max($startHour + 1, $endHour),
-            'hour_height' => 72,
-        ];
+        return $startTimes->map(function (int $startMinutes) use ($days) {
+            $cells = [];
+
+            foreach ($days as $day) {
+                $slot = collect($day['slots'])->firstWhere('start_minutes', $startMinutes);
+                $cells[] = $slot ?: null;
+            }
+
+            return [
+                'start_minutes' => $startMinutes,
+                'time' => sprintf('%02d:%02d', intdiv($startMinutes, 60), $startMinutes % 60),
+                'cells' => $cells,
+            ];
+        })->all();
     }
 
     /**
-     * @return array<int, array{key: string, name: string, date: string, label: string, is_today: bool, slots: list<array>}>
+     * @param  array<int, array{key: string, name: string, date: string, label: string, is_today: bool, slots: list<array>}>
      */
     public function buildRollingSchedule(Carbon $startDate, ?User $viewer = null, ?Booking $rescheduleFrom = null): array
     {

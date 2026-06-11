@@ -4,11 +4,6 @@
 
 @section('content')
   @php
-    $gridStartMinutes = $grid['start_hour'] * 60;
-    $gridHours = $grid['end_hour'] - $grid['start_hour'];
-    $hourHeight = $grid['hour_height'];
-    $gridHeight = $gridHours * $hourHeight;
-
     $navQuery = fn (int $targetOffset) => array_filter([
         'offset' => $targetOffset > 0 ? $targetOffset : null,
         'reschedule' => ($rescheduleFrom ?? null)?->id,
@@ -47,10 +42,7 @@
         </div>
       @endif
 
-      <div class="gridsched reveal"
-           id="gridSchedule"
-           style="--grid-hour-height: {{ $hourHeight }}px; --grid-hours: {{ $gridHours }}; --grid-start-hour: {{ $grid['start_hour'] }};">
-
+      <div class="gridsched reveal" id="gridSchedule">
         <div class="gridsched__header">
           @if ($canGoPrev)
             <a href="{{ route('schedule', $navQuery($prevOffset)) }}" class="gridsched__arrow gridsched__arrow--prev" aria-label="На день назад">
@@ -79,69 +71,58 @@
           </a>
         </div>
 
-        <div class="gridsched__scroll">
-          <div class="gridsched__canvas" style="height: {{ $gridHeight }}px">
-            <div class="gridsched__times gridsched__times--left" aria-hidden="true">
-              @for($hour = $grid['start_hour']; $hour <= $grid['end_hour']; $hour++)
-                <span class="gridsched__time" style="top: {{ ($hour - $grid['start_hour']) * $hourHeight }}px">{{ sprintf('%02d:00', $hour) }}</span>
-              @endfor
-            </div>
+        <div class="gridsched__body">
+          @forelse($rows as $row)
+            <div class="gridsched__row">
+              <div class="gridsched__time" aria-hidden="true">{{ $row['time'] }}</div>
 
-            <div class="gridsched__grid">
-              @for($hour = $grid['start_hour']; $hour <= $grid['end_hour']; $hour++)
-                <div class="gridsched__hourline" style="top: {{ ($hour - $grid['start_hour']) * $hourHeight }}px"></div>
-              @endfor
-
-              @foreach($days as $day)
-                <div class="gridsched__col">
-                  @foreach($day['slots'] as $slot)
-                    @php
-                      $top = (($slot['start_minutes'] - $gridStartMinutes) / 60) * $hourHeight;
-                      $height = max(56, ($slot['duration_minutes'] / 60) * $hourHeight - 6);
-                      $cardClass = match ($slot['status']) {
-                          'full' => 'gridsched__card--full',
-                          'cancelled' => 'gridsched__card--cancelled',
-                          default => '',
-                      };
-                      if ($slot['user_booked'] ?? false) {
-                          $cardClass .= ' gridsched__card--booked';
-                      }
-                    @endphp
-                    <button type="button"
-                            class="gridsched__card {{ trim($cardClass) }}"
-                            style="top: {{ $top }}px; height: {{ $height }}px"
-                            data-session='@json($slot, JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT)'
-                            aria-label="{{ $slot['title'] }}, {{ $slot['time_range'] }}">
-                      <span class="gridsched__card-time">
-                        {{ $slot['time_range'] }}
-                        <span class="gridsched__card-duration">{{ $slot['duration_minutes'] }} мин</span>
-                      </span>
-                      <span class="gridsched__card-title">{{ $slot['direction'] ?: $slot['topic'] ?: $slot['title'] }}</span>
-                      @if(!empty($slot['direction']) && !empty($slot['topic']))
-                        <span class="gridsched__card-topic">{{ $slot['topic'] }}</span>
-                      @endif
-                      <span class="gridsched__card-trainer">{{ $slot['trainer'] }}</span>
-                      <span class="gridsched__card-seats">
-                        @if($slot['status'] === 'cancelled')
-                          <strong>Отменено</strong>
-                        @elseif($slot['status'] === 'full')
-                          <strong>Мест нет</strong>
-                        @else
-                          <strong>Свободно: {{ $slot['free'] }}</strong> из {{ $slot['total'] }}
+              <div class="gridsched__cells">
+                @foreach($row['cells'] as $slot)
+                  <div class="gridsched__cell">
+                    @if($slot)
+                      @php
+                        $cardClass = match ($slot['status']) {
+                            'full' => 'gridsched__card--full',
+                            'cancelled' => 'gridsched__card--cancelled',
+                            default => '',
+                        };
+                        if ($slot['user_booked'] ?? false) {
+                            $cardClass .= ' gridsched__card--booked';
+                        }
+                      @endphp
+                      <button type="button"
+                              class="gridsched__card {{ trim($cardClass) }}"
+                              data-session='@json($slot, JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT)'
+                              aria-label="{{ $slot['title'] }}, {{ $slot['time_range'] }}">
+                        <span class="gridsched__card-time">
+                          {{ $slot['time_range'] }}
+                          <span class="gridsched__card-duration">{{ $slot['duration_minutes'] }} мин</span>
+                        </span>
+                        <span class="gridsched__card-title">{{ $slot['direction'] ?: $slot['topic'] ?: $slot['title'] }}</span>
+                        @if(!empty($slot['direction']) && !empty($slot['topic']))
+                          <span class="gridsched__card-topic">{{ $slot['topic'] }}</span>
                         @endif
-                      </span>
-                    </button>
-                  @endforeach
-                </div>
-              @endforeach
-            </div>
+                        <span class="gridsched__card-trainer">{{ $slot['trainer'] }}</span>
+                        <span class="gridsched__card-seats">
+                          @if($slot['status'] === 'cancelled')
+                            <strong>Отменено</strong>
+                          @elseif($slot['status'] === 'full')
+                            <strong>Мест нет</strong>
+                          @else
+                            <strong>Свободно: {{ $slot['free'] }}</strong> из {{ $slot['total'] }}
+                          @endif
+                        </span>
+                      </button>
+                    @endif
+                  </div>
+                @endforeach
+              </div>
 
-            <div class="gridsched__times gridsched__times--right" aria-hidden="true">
-              @for($hour = $grid['start_hour']; $hour <= $grid['end_hour']; $hour++)
-                <span class="gridsched__time" style="top: {{ ($hour - $grid['start_hour']) * $hourHeight }}px">{{ sprintf('%02d:00', $hour) }}</span>
-              @endfor
+              <div class="gridsched__time" aria-hidden="true">{{ $row['time'] }}</div>
             </div>
-          </div>
+          @empty
+            <p class="gridsched__empty">В выбранном периоде занятий пока нет.</p>
+          @endforelse
         </div>
       </div>
 
