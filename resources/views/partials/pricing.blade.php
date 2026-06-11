@@ -1,5 +1,5 @@
 <div class="pricing pricing--tables">
-  @foreach(config('pricing') as $key => $block)
+  @foreach(\App\Support\PricingDisplay::blocks() as $key => $block)
     <article class="price-table reveal {{ $key === 'individual' ? 'price-table--accent' : '' }}" style="--d:{{ $loop->index * 0.1 + 0.05 }}s">
       <h3 class="price-table__title">{{ $block['title'] }}</h3>
 

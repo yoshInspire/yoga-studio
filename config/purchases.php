@@ -21,6 +21,9 @@ return [
      *     validity_days?: int,
      *     online: bool,
      * }>
+     *
+     * price — значение по умолчанию; актуальная цена хранится в БД (product_prices)
+     * и редактируется в админке.
      */
     'products' => [
         'group_trial' => [

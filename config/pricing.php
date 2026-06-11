@@ -6,16 +6,16 @@ return [
         'sections' => [
             [
                 'items' => [
-                    ['name' => 'Пробное занятие', 'price' => 1400, 'highlight' => true],
-                    ['name' => 'Разовое занятие', 'price' => 1600],
+                    ['product_key' => 'group_trial', 'name' => 'Пробное занятие', 'highlight' => true],
+                    ['product_key' => 'group_single', 'name' => 'Разовое занятие'],
                 ],
             ],
             [
                 'title' => 'Абонементы',
                 'items' => [
-                    ['name' => '4 занятия', 'price' => 6000],
-                    ['name' => '6 занятий', 'price' => 8400],
-                    ['name' => '8 занятий', 'price' => 10400],
+                    ['product_key' => 'group_4', 'name' => '4 занятия'],
+                    ['product_key' => 'group_6', 'name' => '6 занятий'],
+                    ['product_key' => 'group_8', 'name' => '8 занятий'],
                 ],
             ],
         ],
@@ -30,14 +30,14 @@ return [
         'sections' => [
             [
                 'items' => [
-                    ['name' => 'Разовое занятие', 'price' => 3500],
-                    ['name' => 'Абонемент · 4 занятия', 'price' => 13200],
+                    ['product_key' => 'individual_single', 'name' => 'Разовое занятие'],
+                    ['product_key' => 'individual_4', 'name' => 'Абонемент · 4 занятия'],
                 ],
             ],
             [
                 'title' => 'Парные (взрослые)',
                 'items' => [
-                    ['name' => 'Разовое занятие', 'price' => 6000],
+                    ['product_key' => 'individual_pair_single', 'name' => 'Разовое занятие'],
                 ],
             ],
         ],
