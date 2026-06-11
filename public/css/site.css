@@ -204,6 +204,7 @@ a { color: inherit; text-decoration: none; }
 }
 .hero__title span { display: block; }
 .hero__title--italic { font-style: italic; color: var(--sage-deep); font-weight: 400; }
+.hero__title--bold { color: var(--ink); font-weight: 700; font-style: normal; }
 .hero__lead {
   color: var(--ink-soft); max-width: 540px; font-size: 18px; margin-top: 28px; line-height: 1.7;
   font-weight: 400;

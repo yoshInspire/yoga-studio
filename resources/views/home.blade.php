@@ -7,12 +7,11 @@
     <div class="hero__content">
       <p class="hero__eyebrow reveal">Студия йоги, Москва, Коньково</p>
       <h1 class="hero__title">
-        <span class="reveal" style="--d:.05s">Уютная студия</span>
-        <span class="reveal hero__title--italic" style="--d:.15s">со вниманием к каждому</span>
+        <span class="reveal hero__title--bold" style="--d:.05s">Каждому - своё внимание,</span>
+        <span class="reveal hero__title--bold" style="--d:.15s">каждому- своё дыхание</span>
       </h1>
       <p class="hero__lead reveal" style="--d:.3s">
-        Домашняя студия Ирины Коленцевой. Маленькие группы до 6 человек,
-        бережный индивидуальный подход и атмосфера, в которую хочется возвращаться.
+        Студия йоги Ирины Коленцевой. Камерный формат до 6 человек, деликатная индивидуальная работа и атмосфера, в которой внимание становится основой практики.
       </p>
       <div class="hero__cta reveal" style="--d:.45s">
         <a href="{{ route('login') }}" class="btn btn--solid btn--lg">Личный кабинет</a>
