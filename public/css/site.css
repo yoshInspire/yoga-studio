@@ -1689,6 +1689,78 @@ a { color: inherit; text-decoration: none; }
 .news-article__body { font-size: 17px; line-height: 1.8; color: var(--ink-soft); }
 .news-article__body p { margin-bottom: 16px; }
 
+.news-reactions {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(74, 93, 74, .12);
+}
+.news-reactions--compact {
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: 0;
+}
+.news-reactions__label {
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.news-reactions__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.news-reactions__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 12px;
+  border: 1px solid rgba(74, 93, 74, .18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .72);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  transition: transform .15s ease, border-color .15s ease, background .15s ease, box-shadow .15s ease;
+}
+.news-reactions__btn:hover {
+  border-color: rgba(74, 93, 74, .34);
+  background: #fff;
+  transform: translateY(-1px);
+}
+.news-reactions__btn.is-active {
+  border-color: var(--sage-deep);
+  background: rgba(183, 201, 183, .28);
+  box-shadow: inset 0 0 0 1px rgba(74, 93, 74, .08);
+}
+.news-reactions__btn.is-busy {
+  opacity: .65;
+  pointer-events: none;
+}
+.news-reactions__emoji { font-size: 18px; line-height: 1; }
+.news-reactions__count {
+  min-width: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sage-deep);
+}
+.news-reactions__hint {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.news-reactions__hint a {
+  color: var(--sage-deep);
+  font-weight: 600;
+}
+.news-reactions--compact .news-reactions__btn {
+  min-height: 34px;
+  padding: 4px 10px;
+}
+.news-reactions--compact .news-reactions__emoji { font-size: 16px; }
+
 .news__pagination { display: flex; justify-content: center; }
 .news__pagination nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
 .news__pagination a,

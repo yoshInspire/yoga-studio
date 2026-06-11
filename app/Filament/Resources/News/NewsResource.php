@@ -104,6 +104,10 @@ class NewsResource extends Resource
                     ->label('Дата публикации')
                     ->dateTime('d.m.Y H:i')
                     ->sortable(),
+                TextColumn::make('reactions_count')
+                    ->label('Реакции')
+                    ->counts('reactions')
+                    ->sortable(),
             ])
             ->defaultSort('published_at', 'desc')
             ->filters([

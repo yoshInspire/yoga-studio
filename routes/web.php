@@ -15,6 +15,7 @@ use App\Http\Controllers\DirectionController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\NewsController;
+use App\Http\Controllers\NewsReactionController;
 use App\Http\Controllers\OfferController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PurchaseController;
@@ -29,6 +30,10 @@ Route::get('/directions', DirectionController::class)->name('directions');
 
 Route::get('/news', [NewsController::class, 'index'])->name('news.index');
 Route::get('/news/{news}', [NewsController::class, 'show'])->name('news.show');
+
+Route::post('/news/{news}/reactions', [NewsReactionController::class, 'store'])
+    ->middleware(['auth', 'role:client', 'throttle:60,1'])
+    ->name('news.reactions.store');
 
 Route::post('/lead', [LeadController::class, 'store'])
     ->middleware('throttle:6,1')

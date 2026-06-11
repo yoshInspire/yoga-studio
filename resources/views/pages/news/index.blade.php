@@ -27,6 +27,11 @@
                 <span class="card__num">{{ $item->formattedDate() }}</span>
                 <h3 class="card__title">{{ $item->title }}</h3>
                 <p class="card__text">{{ $item->readableExcerpt() }}</p>
+                @include('partials.news-reactions', [
+                  'news' => $item,
+                  'summary' => $reactionSummaries[$item->getKey()] ?? null,
+                  'compact' => true,
+                ])
                 <a href="{{ route('news.show', $item) }}" class="card__more">Читать</a>
               </div>
             </article>
@@ -40,3 +45,7 @@
     </div>
   </section>
 @endsection
+
+@push('scripts')
+  <script src="{{ asset('js/news-reactions.js') }}?v=1"></script>
+@endpush

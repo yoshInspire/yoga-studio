@@ -17,6 +17,11 @@
       <div class="news-article__body reveal">
         {!! nl2br(e($item->body)) !!}
       </div>
+
+      @include('partials.news-reactions', [
+        'news' => $item,
+        'summary' => $reactionSummary,
+      ])
     </div>
 
     @if ($more->isNotEmpty())
@@ -39,3 +44,7 @@
     @endif
   </article>
 @endsection
+
+@push('scripts')
+  <script src="{{ asset('js/news-reactions.js') }}?v=1"></script>
+@endpush
