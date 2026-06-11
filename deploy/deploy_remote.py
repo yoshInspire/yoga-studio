@@ -71,6 +71,7 @@ php artisan key:generate --force
 grep -q '^APP_ENV=' .env && sed -i 's/^APP_ENV=.*/APP_ENV=production/' .env || echo 'APP_ENV=production' >> .env
 grep -q '^APP_DEBUG=' .env && sed -i 's/^APP_DEBUG=.*/APP_DEBUG=false/' .env || echo 'APP_DEBUG=false' >> .env
 grep -q '^APP_URL=' .env && sed -i 's|^APP_URL=.*|APP_URL=https://{DOMAIN}|' .env || echo 'APP_URL=https://{DOMAIN}' >> .env
+grep -q '^APP_TIMEZONE=' .env && sed -i 's/^APP_TIMEZONE=.*/APP_TIMEZONE=Europe\/Moscow/' .env || echo 'APP_TIMEZONE=Europe/Moscow' >> .env
 grep -q '^DB_CONNECTION=' .env && sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env || echo 'DB_CONNECTION=mysql' >> .env
 grep -q '^DB_HOST=' .env && sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/' .env || echo 'DB_HOST=127.0.0.1' >> .env
 grep -q '^DB_DATABASE=' .env && sed -i 's/^DB_DATABASE=.*/DB_DATABASE={DB_NAME}/' .env || echo 'DB_DATABASE={DB_NAME}' >> .env

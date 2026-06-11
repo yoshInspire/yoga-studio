@@ -79,6 +79,7 @@ grep -q '^MAIL_FROM_ADDRESS=' .env && sed -i 's|^MAIL_FROM_ADDRESS=.*|MAIL_FROM_
 
 # Почта для служебных уведомлений администратору (по умолчанию — ящик рассылки)
 set_env STUDIO_ADMIN_EMAIL ecoyoga-ik@yandex.ru
+set_env APP_TIMEZONE Europe/Moscow
 """
     if telegram_token:
         script += f"set_env TELEGRAM_BOT_TOKEN {telegram_token}\n"

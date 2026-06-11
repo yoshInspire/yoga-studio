@@ -141,6 +141,38 @@ class StudioNotificationsTest extends TestCase
         Mail::assertNothingSent();
     }
 
+    public function test_morning_auto_cancel_checkpoint_is_fifteen_hours_before_start(): void
+    {
+        $session = ClassSession::create([
+            'topic' => 'Хатха-йога',
+            'starts_at' => \Illuminate\Support\Carbon::parse('2026-06-11 10:00:00', config('app.timezone')),
+            'type' => SubscriptionType::Group,
+            'capacity' => 6,
+            'status' => ClassSessionStatus::Scheduled,
+        ]);
+
+        $checkpoint = $session->autoCancelCheckpoint();
+
+        $this->assertSame('2026-06-10 19:00:00', $checkpoint->format('Y-m-d H:i:s'));
+        $this->assertSame(15, $session->autoCancelDeadlineHours());
+    }
+
+    public function test_afternoon_auto_cancel_checkpoint_is_five_hours_before_start(): void
+    {
+        $session = ClassSession::create([
+            'topic' => 'Хатха-йога',
+            'starts_at' => \Illuminate\Support\Carbon::parse('2026-06-11 18:00:00', config('app.timezone')),
+            'type' => SubscriptionType::Group,
+            'capacity' => 6,
+            'status' => ClassSessionStatus::Scheduled,
+        ]);
+
+        $checkpoint = $session->autoCancelCheckpoint();
+
+        $this->assertSame('2026-06-11 13:00:00', $checkpoint->format('Y-m-d H:i:s'));
+        $this->assertSame(5, $session->autoCancelDeadlineHours());
+    }
+
     public function test_low_sessions_reminder_is_sent_once(): void
     {
         Mail::fake();
