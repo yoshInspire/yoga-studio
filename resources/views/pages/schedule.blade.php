@@ -54,16 +54,35 @@
             </span>
           @endif
 
-          <div class="gridsched__days">
-            @foreach($days as $day)
-              <div class="gridsched__dayhead {{ $day['is_today'] ? 'gridsched__dayhead--today' : '' }}">
-                @if($day['is_today'])
-                  <span class="gridsched__daytoday">Сегодня</span>
-                @else
-                  <span class="gridsched__daylabel">{{ $day['label'] }}</span>
-                @endif
-              </div>
-            @endforeach
+          <div class="gridsched__head-main">
+            <div class="gridsched__days" aria-hidden="true">
+              @foreach($days as $day)
+                <div class="gridsched__dayhead {{ $day['is_today'] ? 'gridsched__dayhead--today' : '' }}">
+                  @if($day['is_today'])
+                    <span class="gridsched__daytoday">Сегодня</span>
+                  @else
+                    <span class="gridsched__daylabel">{{ $day['label'] }}</span>
+                  @endif
+                </div>
+              @endforeach
+            </div>
+
+            <div class="gridsched__mobnav" role="tablist" id="gridschedMobnav" aria-label="Выбор дня">
+              @foreach($days as $i => $day)
+                <button type="button"
+                        class="gridsched__mobtab {{ $i === 0 ? 'is-active' : '' }}"
+                        data-day-tab="{{ $i }}"
+                        role="tab"
+                        aria-selected="{{ $i === 0 ? 'true' : 'false' }}">
+                  @if($day['is_today'])
+                    <span class="gridsched__mobtab-main">Сегодня</span>
+                  @else
+                    <span class="gridsched__mobtab-main">{{ $day['name'] }}</span>
+                    <span class="gridsched__mobtab-sub">{{ $day['date'] }}</span>
+                  @endif
+                </button>
+              @endforeach
+            </div>
           </div>
 
           <a href="{{ route('schedule', $navQuery($nextOffset)) }}" class="gridsched__arrow gridsched__arrow--next" aria-label="На день вперёд">
@@ -80,49 +99,31 @@
                 @foreach($row['cells'] as $slot)
                   <div class="gridsched__cell">
                     @if($slot)
-                      @php
-                        $cardClass = match ($slot['status']) {
-                            'full' => 'gridsched__card--full',
-                            'cancelled' => 'gridsched__card--cancelled',
-                            default => '',
-                        };
-                        if ($slot['user_booked'] ?? false) {
-                            $cardClass .= ' gridsched__card--booked';
-                        }
-                      @endphp
-                      <button type="button"
-                              class="gridsched__card {{ trim($cardClass) }}"
-                              data-session='@json($slot, JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT)'
-                              aria-label="{{ $slot['title'] }}, {{ $slot['time_range'] }}">
-                        <span class="gridsched__card-time">
-                          {{ $slot['time_range'] }}
-                          <span class="gridsched__card-duration">{{ $slot['duration_minutes'] }} мин</span>
-                        </span>
-                        <span class="gridsched__card-title">{{ $slot['direction'] ?: $slot['topic'] ?: $slot['title'] }}</span>
-                        @if(!empty($slot['direction']) && !empty($slot['topic']))
-                          <span class="gridsched__card-topic">{{ $slot['topic'] }}</span>
-                        @endif
-                        <span class="gridsched__card-trainer">{{ $slot['trainer'] }}</span>
-                        <span class="gridsched__card-seats">
-                          @if($slot['status'] === 'cancelled')
-                            <strong>Отменено</strong>
-                          @elseif($slot['status'] === 'full')
-                            <strong>Мест нет</strong>
-                          @else
-                            <strong>Свободно: {{ $slot['free'] }}</strong> из {{ $slot['total'] }}
-                          @endif
-                        </span>
-                      </button>
+                      @include('partials.schedule-card', ['slot' => $slot])
                     @endif
                   </div>
                 @endforeach
               </div>
 
-              <div class="gridsched__time" aria-hidden="true">{{ $row['time'] }}</div>
+              <div class="gridsched__time gridsched__time--right" aria-hidden="true">{{ $row['time'] }}</div>
             </div>
           @empty
             <p class="gridsched__empty">В выбранном периоде занятий пока нет.</p>
           @endforelse
+        </div>
+
+        <div class="gridsched__mobile" id="gridschedMobile">
+          @foreach($days as $i => $day)
+            <div class="gridsched__mobile-panel {{ $i === 0 ? '' : 'is-hidden' }}"
+                 data-day-panel="{{ $i }}"
+                 role="tabpanel">
+              @forelse($day['slots'] as $slot)
+                @include('partials.schedule-card', ['slot' => $slot])
+              @empty
+                <p class="gridsched__mobile-empty">В этот день занятий нет.</p>
+              @endforelse
+            </div>
+          @endforeach
         </div>
       </div>
 

@@ -203,6 +203,24 @@ if (schedModal && gridSchedule && window.__schedConfig) {
     });
   });
 
+  const mobnav = document.getElementById('gridschedMobnav');
+  const mobPanels = gridSchedule.querySelectorAll('[data-day-panel]');
+  if (mobnav) {
+    mobnav.querySelectorAll('[data-day-tab]').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const index = tab.dataset.dayTab;
+        mobnav.querySelectorAll('[data-day-tab]').forEach((t) => {
+          const active = t === tab;
+          t.classList.toggle('is-active', active);
+          t.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        mobPanels.forEach((panel) => {
+          panel.classList.toggle('is-hidden', panel.dataset.dayPanel !== index);
+        });
+      });
+    });
+  }
+
   schedModal.querySelectorAll('[data-sched-close]').forEach((el) => {
     el.addEventListener('click', closeSchedModal);
   });
