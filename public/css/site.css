@@ -683,6 +683,31 @@ a { color: inherit; text-decoration: none; }
   box-shadow: 0 28px 60px -40px rgba(47,53,43,.35);
 }
 
+.gridsched__stage {
+  transition: opacity .38s var(--ease), transform .38s var(--ease);
+  will-change: opacity, transform;
+}
+.gridsched__stage.is-leaving-left {
+  opacity: 0;
+  transform: translateX(-28px);
+}
+.gridsched__stage.is-leaving-right {
+  opacity: 0;
+  transform: translateX(28px);
+}
+.gridsched__stage.is-entering-left {
+  opacity: 0;
+  transform: translateX(28px);
+}
+.gridsched__stage.is-entering-right {
+  opacity: 0;
+  transform: translateX(-28px);
+}
+.gridsched.is-loading .gridsched__arrow:not(.is-disabled) {
+  opacity: .55;
+  pointer-events: none;
+}
+
 .gridsched__header {
   display: flex;
   align-items: stretch;
@@ -700,7 +725,9 @@ a { color: inherit; text-decoration: none; }
   background: var(--bg-soft);
   color: var(--sage-deep);
   text-decoration: none;
-  transition: background .3s var(--ease), color .3s var(--ease), transform .3s var(--ease);
+  font: inherit;
+  cursor: pointer;
+  transition: background .3s var(--ease), color .3s var(--ease), transform .3s var(--ease), opacity .3s var(--ease);
 }
 .gridsched__arrow--next { background: var(--sage-deep); color: #fff; }
 .gridsched__arrow:hover:not(.is-disabled) { transform: scale(1.03); }

@@ -333,9 +333,10 @@ class BookingService
         return max(0, (int) $offsetParam);
     }
 
-    public function scheduleStart(int $offset = 0): Carbon
+    /** Начало видимого окна: сегодня + N недель (по 7 дней). */
+    public function scheduleStart(int $weekOffset = 0): Carbon
     {
-        return now()->startOfDay()->addDays($offset);
+        return now()->startOfDay()->addDays($weekOffset * 7);
     }
 
     /**

@@ -5,13 +5,39 @@ namespace App\Http\Controllers;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Services\BookingService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ScheduleController extends Controller
 {
-    public function __invoke(Request $request, BookingService $bookings): View|RedirectResponse
+    public function __invoke(Request $request, BookingService $bookings): View|RedirectResponse|JsonResponse
+    {
+        $data = $this->buildScheduleData($request, $bookings);
+
+        if ($data instanceof RedirectResponse) {
+            return $data;
+        }
+
+        if ($request->ajax() || $request->wantsJson() || $request->boolean('ajax')) {
+            return response()->json([
+                'offset' => $data['offset'],
+                'canGoPrev' => $data['canGoPrev'],
+                'prevOffset' => $data['prevOffset'],
+                'nextOffset' => $data['nextOffset'],
+                'rangeLabel' => $data['rangeLabel'],
+                'html' => view('partials.schedule-grid', $data)->render(),
+            ]);
+        }
+
+        return view('pages.schedule', $data);
+    }
+
+    /**
+     * @return array<string, mixed>|RedirectResponse
+     */
+    private function buildScheduleData(Request $request, BookingService $bookings): array|RedirectResponse
     {
         $offset = $bookings->scheduleOffset($request->query('offset'));
         $startDate = $bookings->scheduleStart($offset);
@@ -40,7 +66,7 @@ class ScheduleController extends Controller
         $days = $bookings->buildRollingSchedule($startDate, $viewer, $rescheduleFrom);
         $rows = $bookings->buildScheduleRows($days);
 
-        return view('pages.schedule', [
+        return [
             'days' => $days,
             'rows' => $rows,
             'offset' => $offset,
@@ -54,6 +80,6 @@ class ScheduleController extends Controller
                 'indiv' => 'Индивидуальное',
                 'event' => 'Мероприятие',
             ],
-        ]);
+        ];
     }
 }

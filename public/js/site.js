@@ -105,8 +105,10 @@ if (dirModal) {
 // ===== Модальное окно расписания =====
 const schedModal = document.getElementById('schedModal');
 const gridSchedule = document.getElementById('gridSchedule');
+const gridschedStage = document.getElementById('gridschedStage');
+const schedRangeLabel = document.getElementById('schedRangeLabel');
 
-if (schedModal && gridSchedule && window.__schedConfig) {
+if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
   const cfg = window.__schedConfig;
   const typeEl = document.getElementById('schedModalType');
   const datetimeEl = document.getElementById('schedModalDatetime');
@@ -117,6 +119,9 @@ if (schedModal && gridSchedule && window.__schedConfig) {
   const seatsEl = document.getElementById('schedModalSeats');
   const descEl = document.getElementById('schedModalDesc');
   const actionEl = document.getElementById('schedModalAction');
+
+  let schedNavLoading = false;
+  let schedCurrentOffset = cfg.offset ?? 0;
 
   const closeSchedModal = () => {
     schedModal.classList.remove('is-open');
@@ -193,33 +198,128 @@ if (schedModal && gridSchedule && window.__schedConfig) {
     document.body.style.overflow = 'hidden';
   };
 
-  gridSchedule.querySelectorAll('.gridsched__card').forEach((card) => {
-    card.addEventListener('click', () => {
+  const buildScheduleUrl = (offset) => {
+    const url = new URL(cfg.scheduleUrl, window.location.origin);
+    if (offset > 0) {
+      url.searchParams.set('offset', String(offset));
+    } else {
+      url.searchParams.delete('offset');
+    }
+    if (cfg.rescheduleFrom) {
+      url.searchParams.set('reschedule', String(cfg.rescheduleFrom));
+    }
+    return url;
+  };
+
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const loadScheduleWeek = async (offset, direction) => {
+    if (schedNavLoading) {
+      return;
+    }
+
+    schedNavLoading = true;
+    gridSchedule.classList.add('is-loading');
+    gridschedStage.classList.remove('is-entering-left', 'is-entering-right', 'is-leaving-left', 'is-leaving-right');
+    gridschedStage.classList.add(direction === 'next' ? 'is-leaving-left' : 'is-leaving-right');
+
+    await wait(200);
+
+    try {
+      const url = buildScheduleUrl(offset);
+      url.searchParams.set('ajax', '1');
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Schedule fetch failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      gridschedStage.innerHTML = data.html;
+      schedCurrentOffset = data.offset;
+
+      if (schedRangeLabel) {
+        schedRangeLabel.textContent = data.rangeLabel;
+      }
+
+      gridschedStage.classList.remove('is-leaving-left', 'is-leaving-right');
+      gridschedStage.classList.add(direction === 'next' ? 'is-entering-right' : 'is-entering-left');
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          gridschedStage.classList.remove('is-entering-left', 'is-entering-right');
+        });
+      });
+
+      const pageUrl = buildScheduleUrl(data.offset);
+      pageUrl.searchParams.delete('ajax');
+      history.pushState({ schedOffset: data.offset }, '', pageUrl.toString());
+    } catch (error) {
+      console.error(error);
+      gridschedStage.classList.remove('is-leaving-left', 'is-leaving-right');
+      window.location.href = buildScheduleUrl(offset).toString();
+    } finally {
+      gridSchedule.classList.remove('is-loading');
+      schedNavLoading = false;
+    }
+  };
+
+  gridSchedule.addEventListener('click', (event) => {
+    const navBtn = event.target.closest('[data-sched-nav]');
+    if (navBtn) {
+      event.preventDefault();
+      const offset = parseInt(navBtn.dataset.offset, 10);
+      if (Number.isNaN(offset)) {
+        return;
+      }
+      loadScheduleWeek(offset, navBtn.dataset.schedNav);
+      return;
+    }
+
+    const card = event.target.closest('.gridsched__card');
+    if (card) {
       try {
         openSchedModal(JSON.parse(card.dataset.session));
       } catch (e) {
         console.error('Schedule card data parse error', e);
       }
+      return;
+    }
+
+    const tab = event.target.closest('[data-day-tab]');
+    if (!tab) {
+      return;
+    }
+
+    const mobnav = gridSchedule.querySelector('#gridschedMobnav');
+    const mobPanels = gridSchedule.querySelectorAll('[data-day-panel]');
+    const index = tab.dataset.dayTab;
+
+    mobnav?.querySelectorAll('[data-day-tab]').forEach((t) => {
+      const active = t === tab;
+      t.classList.toggle('is-active', active);
+      t.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+
+    mobPanels.forEach((panel) => {
+      panel.classList.toggle('is-hidden', panel.dataset.dayPanel !== index);
     });
   });
 
-  const mobnav = document.getElementById('gridschedMobnav');
-  const mobPanels = gridSchedule.querySelectorAll('[data-day-panel]');
-  if (mobnav) {
-    mobnav.querySelectorAll('[data-day-tab]').forEach((tab) => {
-      tab.addEventListener('click', () => {
-        const index = tab.dataset.dayTab;
-        mobnav.querySelectorAll('[data-day-tab]').forEach((t) => {
-          const active = t === tab;
-          t.classList.toggle('is-active', active);
-          t.setAttribute('aria-selected', active ? 'true' : 'false');
-        });
-        mobPanels.forEach((panel) => {
-          panel.classList.toggle('is-hidden', panel.dataset.dayPanel !== index);
-        });
-      });
-    });
-  }
+  window.addEventListener('popstate', (event) => {
+    const offset = event.state?.schedOffset ?? 0;
+    if (offset === schedCurrentOffset) {
+      return;
+    }
+    const direction = offset > schedCurrentOffset ? 'next' : 'prev';
+    loadScheduleWeek(offset, direction);
+  });
 
   schedModal.querySelectorAll('[data-sched-close]').forEach((el) => {
     el.addEventListener('click', closeSchedModal);
@@ -230,6 +330,8 @@ if (schedModal && gridSchedule && window.__schedConfig) {
       closeSchedModal();
     }
   });
+
+  history.replaceState({ schedOffset: schedCurrentOffset }, '', window.location.href);
 }
 
 // ===== Аккордеон FAQ =====
