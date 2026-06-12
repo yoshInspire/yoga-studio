@@ -162,7 +162,7 @@ class ClassSession extends Model
 
     public function formattedDateTime(): string
     {
-        return $this->starts_at->translatedFormat('d.m.Y, H:i');
+        return mb_ucfirst($this->starts_at->translatedFormat('l, d.m.Y, H:i'));
     }
 
     /**
