@@ -5,6 +5,8 @@ namespace App\Filament\Pages;
 use App\Services\StudioMailingService;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions;
@@ -14,6 +16,10 @@ use Filament\Support\Icons\Heroicon;
 
 class Mailings extends Page
 {
+    public string $customHeading = '';
+
+    public string $customBody = '';
+
     protected static ?string $navigationLabel = 'Рассылки';
 
     protected static ?string $title = 'Рассылки клиентам';
@@ -26,6 +32,7 @@ class Mailings extends Page
     {
         $mailings = app(StudioMailingService::class);
         [$weekStart, $weekEnd] = $mailings->announcementWeekRange();
+        $recipients = $mailings->eligibleClientsCount();
 
         return $schema->components([
             Section::make('Ежедневное напоминание')
@@ -77,6 +84,40 @@ class Mailings extends Page
                             }),
                     ]),
                 ]),
+            Section::make('Произвольное оповещение')
+                ->description('Свободная рассылка на любую тему. Сообщение уйдёт всем клиентам с принятой офертой (email и/или Telegram). Сейчас получателей: '.$recipients.'.')
+                ->schema([
+                    TextInput::make('customHeading')
+                        ->label('Тема сообщения')
+                        ->placeholder('Например: Изменение расписания на праздники')
+                        ->required()
+                        ->maxLength(120),
+                    Textarea::make('customBody')
+                        ->label('Текст')
+                        ->placeholder("Здравствуйте!\n\nТекст вашего сообщения...\n\nДо встречи в студии!")
+                        ->rows(8)
+                        ->required()
+                        ->maxLength(5000)
+                        ->helperText('Каждый абзац — с новой строки. Тема станет заголовком письма и заголовком в Telegram.'),
+                    Actions::make([
+                        Action::make('sendCustom')
+                            ->label('Отправить')
+                            ->icon(Heroicon::OutlinedPaperAirplane)
+                            ->color('success')
+                            ->requiresConfirmation()
+                            ->modalHeading('Отправить оповещение?')
+                            ->modalDescription('Сообщение уйдёт всем клиентам с принятой офертой (email и/или Telegram).')
+                            ->action(function () {
+                                $this->runCustom(dryRun: false);
+                            }),
+                        Action::make('dryRunCustom')
+                            ->label('Проверить (dry-run)')
+                            ->icon(Heroicon::OutlinedEye)
+                            ->action(function () {
+                                $this->runCustom(dryRun: true);
+                            }),
+                    ]),
+                ]),
         ]);
     }
 
@@ -111,5 +152,38 @@ class Mailings extends Page
             ))
             ->success()
             ->send();
+    }
+
+    private function runCustom(bool $dryRun): void
+    {
+        $this->validate([
+            'customHeading' => ['required', 'string', 'max:120'],
+            'customBody' => ['required', 'string', 'max:5000'],
+        ], [
+            'customHeading.required' => 'Укажите тему сообщения.',
+            'customBody.required' => 'Напишите текст сообщения.',
+        ]);
+
+        $result = app(StudioMailingService::class)->sendCustomAnnouncement(
+            heading: $this->customHeading,
+            body: $this->customBody,
+            dryRun: $dryRun,
+        );
+
+        Notification::make()
+            ->title($dryRun ? 'Проверка произвольного оповещения' : 'Оповещение отправлено')
+            ->body(sprintf(
+                'Тема: «%s». %s: %d.',
+                $this->customHeading,
+                $dryRun ? 'Будет отправлено' : 'Отправлено',
+                $result['sent'],
+            ))
+            ->success()
+            ->send();
+
+        if (! $dryRun) {
+            $this->customHeading = '';
+            $this->customBody = '';
+        }
     }
 }

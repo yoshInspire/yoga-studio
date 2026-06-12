@@ -11,6 +11,8 @@ class ClientMailingLog extends Model
 
     public const TYPE_WEEKLY_SCHEDULE = 'weekly_schedule';
 
+    public const TYPE_CUSTOM = 'custom';
+
     protected $fillable = [
         'user_id',
         'type',

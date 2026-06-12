@@ -145,6 +145,62 @@ class StudioMailingService
     }
 
     /**
+     * @return array{sent: int, mailing_key: string}
+     */
+    public function sendCustomAnnouncement(string $heading, string $body, bool $dryRun = false): array
+    {
+        $heading = trim($heading);
+        $lines = $this->parseBodyLines($body);
+        $mailingKey = now()->format('Y-m-d-His');
+        $sent = 0;
+
+        $this->eligibleClients()->each(function (User $user) use (
+            $heading,
+            $lines,
+            $mailingKey,
+            $dryRun,
+            &$sent,
+        ) {
+            if ($dryRun) {
+                $sent++;
+
+                return;
+            }
+
+            $this->notifications->notifyUser(
+                $user,
+                $heading,
+                $lines,
+                $heading,
+            );
+
+            $this->markSent($user, ClientMailingLog::TYPE_CUSTOM, $mailingKey);
+            $sent++;
+        });
+
+        return [
+            'sent' => $sent,
+            'mailing_key' => $mailingKey,
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function parseBodyLines(string $body): array
+    {
+        return array_values(array_filter(
+            array_map('trim', preg_split("/\r\n|\r|\n/", $body) ?: []),
+            fn (string $line) => $line !== '',
+        ));
+    }
+
+    public function eligibleClientsCount(): int
+    {
+        return $this->eligibleClients()->count();
+    }
+
+    /**
      * @return array{0: Carbon, 1: Carbon}
      */
     public function announcementWeekRange(?Carbon $on = null): array

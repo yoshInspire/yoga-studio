@@ -197,4 +197,53 @@ class StudioMailingsTest extends TestCase
 
         Mail::assertSent(StudioNotificationMail::class, fn (StudioNotificationMail $mail) => str_contains($mail->heading, 'Спокойной ночи'));
     }
+
+    public function test_custom_announcement_sends_to_all_eligible_clients(): void
+    {
+        Mail::fake();
+
+        $first = $this->eligibleClient('+79990000001', 'first@example.com');
+        $second = $this->eligibleClient('+79990000002', 'second@example.com');
+
+        $result = app(StudioMailingService::class)->sendCustomAnnouncement(
+            heading: 'Важное объявление',
+            body: "Здравствуйте!\n\nЗавтра студия работает по особому расписанию.",
+        );
+
+        $this->assertSame(2, $result['sent']);
+
+        Mail::assertSent(StudioNotificationMail::class, 2);
+        Mail::assertSent(StudioNotificationMail::class, fn (StudioNotificationMail $mail) => $mail->hasTo($first->email)
+            && $mail->heading === 'Важное объявление'
+            && collect($mail->lines)->contains(fn (string $line) => str_contains($line, 'особому расписанию')));
+
+        $this->assertDatabaseHas('client_mailing_logs', [
+            'user_id' => $second->id,
+            'type' => ClientMailingLog::TYPE_CUSTOM,
+        ]);
+    }
+
+    public function test_custom_announcement_skips_clients_without_offer_acceptance(): void
+    {
+        Mail::fake();
+
+        $this->eligibleClient();
+
+        User::create([
+            'first_name' => 'Без',
+            'last_name' => 'Оферты',
+            'phone' => '+79990000099',
+            'email' => 'no-offer@example.com',
+            'role' => UserRole::Client,
+            'password' => 'secret123',
+        ]);
+
+        $result = app(StudioMailingService::class)->sendCustomAnnouncement(
+            heading: 'Новость студии',
+            body: 'Текст для клиентов.',
+        );
+
+        $this->assertSame(1, $result['sent']);
+        Mail::assertSent(StudioNotificationMail::class, 1);
+    }
 }
