@@ -15,6 +15,7 @@ use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Utilities\Get;
@@ -23,8 +24,11 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class BookingResource extends Resource
 {
@@ -134,10 +138,12 @@ class BookingResource extends Resource
                 TextColumn::make('classSession.starts_at')
                     ->label('Когда')
                     ->dateTime('d.m.Y H:i')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('classSession.title')
                     ->label('Занятие')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('user.last_name')
                     ->label('Клиент')
                     ->formatStateUsing(fn ($record) => $record->user?->fullName())
@@ -150,8 +156,45 @@ class BookingResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (BookingStatus $state) => $state->label()),
             ])
-            ->defaultSort('created_at', 'desc')
+            ->defaultSort('classSession.starts_at', 'desc')
+            ->groups([
+                Group::make('class_session_id')
+                    ->label('Занятие')
+                    ->collapsible()
+                    ->titlePrefixedWithLabel(false)
+                    ->getTitleFromRecordUsing(function (Booking $record): string {
+                        $session = $record->classSession;
+
+                        if ($session === null) {
+                            return 'Без занятия';
+                        }
+
+                        return $session->starts_at->format('d.m.Y H:i')
+                            .' · '.$session->title
+                            .' · '.$session->confirmedCount().' / '.$session->capacity;
+                    }),
+            ])
+            ->defaultGroup('class_session_id')
+            ->groupingSettingsHidden()
+            ->collapsedGroupsByDefault()
             ->filters([
+                Filter::make('session_date')
+                    ->label('Дата занятия')
+                    ->form([
+                        DatePicker::make('date')
+                            ->label('Дата')
+                            ->native(false),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (blank($data['date'] ?? null)) {
+                            return $query;
+                        }
+
+                        return $query->whereHas(
+                            'classSession',
+                            fn (Builder $q) => $q->whereDate('starts_at', $data['date']),
+                        );
+                    }),
                 SelectFilter::make('status')
                     ->label('Статус')
                     ->options(collect(BookingStatus::cases())->mapWithKeys(
@@ -167,6 +210,12 @@ class BookingResource extends Resource
                 ]),
             ])
             ->stackedOnMobile();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['classSession', 'user', 'subscription']);
     }
 
     public static function getRelations(): array
