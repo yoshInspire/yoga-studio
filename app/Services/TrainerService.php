@@ -74,6 +74,7 @@ class TrainerService
                 'key' => $dayKeys[$i],
                 'name' => $dayNames[$i],
                 'date' => RussianDate::dayMonth($date),
+                'is_today' => $date->isToday(),
                 'slots' => $slots,
             ];
         }

@@ -33,10 +33,15 @@
         </form>
       </div>
 
+      @php
+        $activeDayKey = collect($week)->firstWhere('is_today', true)['key'] ?? $week[0]['key'];
+      @endphp
+
       <div class="sched__days reveal" role="tablist" id="schedDays">
-        @foreach($week as $i => $day)
-          <button type="button" class="sched__day {{ $i === 0 ? 'is-active' : '' }}"
-                  data-day="{{ $day['key'] }}" role="tab" aria-selected="{{ $i === 0 ? 'true' : 'false' }}">
+        @foreach($week as $day)
+          @php $isActive = $day['key'] === $activeDayKey; @endphp
+          <button type="button" class="sched__day {{ $isActive ? 'is-active' : '' }}"
+                  data-day="{{ $day['key'] }}" role="tab" aria-selected="{{ $isActive ? 'true' : 'false' }}">
             <span class="sched__day-name">{{ $day['name'] }}</span>
             <span class="sched__day-date">{{ $day['date'] }}</span>
           </button>
@@ -44,8 +49,8 @@
       </div>
 
       <div class="sched__board reveal">
-        @foreach($week as $i => $day)
-          <div class="sched__panel {{ $i === 0 ? '' : 'is-hidden' }}" data-panel="{{ $day['key'] }}">
+        @foreach($week as $day)
+          <div class="sched__panel {{ $day['key'] === $activeDayKey ? '' : 'is-hidden' }}" data-panel="{{ $day['key'] }}">
             @forelse($day['slots'] as $slot)
               @php
                 $cls = $slot['status'] === 'full' ? 'slot--full' : ($slot['status'] === 'cancelled' ? 'slot--cancelled' : '');

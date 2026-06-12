@@ -464,6 +464,28 @@ if (soonModal) {
   });
 }
 
+// ===== Вкладки по дням в кабинете тренера =====
+const schedDays = document.getElementById('schedDays');
+if (schedDays) {
+  const dayTabs = schedDays.querySelectorAll('.sched__day[data-day]');
+  const panels = document.querySelectorAll('.sched__panel[data-panel]');
+
+  const switchSchedDay = (dayKey) => {
+    dayTabs.forEach((tab) => {
+      const active = tab.dataset.day === dayKey;
+      tab.classList.toggle('is-active', active);
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    panels.forEach((panel) => {
+      panel.classList.toggle('is-hidden', panel.dataset.panel !== dayKey);
+    });
+  };
+
+  dayTabs.forEach((tab) => {
+    tab.addEventListener('click', () => switchSchedDay(tab.dataset.day));
+  });
+}
+
 // ===== Разделы личного кабинета =====
 const lkNav = document.getElementById('lkNav');
 if (lkNav) {
