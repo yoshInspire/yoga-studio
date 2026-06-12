@@ -39,6 +39,8 @@ return [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
         'bot_username' => env('TELEGRAM_BOT_USERNAME'),
         'auth_max_age' => (int) env('TELEGRAM_AUTH_MAX_AGE', 86400),
+        /** Обход блокировки api.telegram.org на VPS: host:port:ip */
+        'curl_resolve' => env('TELEGRAM_CURL_RESOLVE', 'api.telegram.org:443:149.154.167.220'),
     ],
 
 ];

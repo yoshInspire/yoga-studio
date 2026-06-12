@@ -85,6 +85,7 @@ set_env APP_TIMEZONE Europe/Moscow
         script += f"set_env TELEGRAM_BOT_TOKEN {telegram_token}\n"
         script += f"set_env TELEGRAM_BOT_USERNAME {telegram_username}\n"
         script += "set_env TELEGRAM_AUTH_MAX_AGE 86400\n"
+        script += "set_env TELEGRAM_CURL_RESOLVE api.telegram.org:443:149.154.167.220\n"
 
     script += f"""
 
