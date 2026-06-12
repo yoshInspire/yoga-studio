@@ -24,6 +24,7 @@ class PaymentService
     public function __construct(
         private YooKassaService $yookassa,
         private SubscriptionService $subscriptions,
+        private AdminActivityNotifier $adminActivity,
     ) {}
 
     public function initiate(User $user, string $productKey, Carbon $startsAt): Payment
@@ -88,7 +89,10 @@ class PaymentService
             'confirmation_url' => $response->getConfirmation()?->getConfirmationUrl(),
         ]);
 
-        return $payment->refresh();
+        $payment = $payment->refresh();
+        $this->adminActivity->clientStartedPurchase($user, $payment);
+
+        return $payment;
     }
 
     public function signedReturnUrl(Payment $payment): string
@@ -184,6 +188,8 @@ class PaymentService
                 'paid_at' => now(),
                 'status' => PaymentStatus::Succeeded,
             ]);
+
+            $this->adminActivity->clientPaidSubscription($payment->user, $payment->refresh(), $subscription);
 
             return $subscription;
         });

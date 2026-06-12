@@ -7,6 +7,7 @@ use App\Http\Requests\Account\SendProfileEmailCodeRequest;
 use App\Http\Requests\Account\UpdateProfileRequest;
 use App\Http\Requests\Account\VerifyProfileEmailCodeRequest;
 use App\Models\User;
+use App\Services\AdminActivityNotifier;
 use App\Services\ProfileEmailVerificationService;
 use Illuminate\Http\RedirectResponse;
 
@@ -14,6 +15,7 @@ class ProfileController extends Controller
 {
     public function __construct(
         protected ProfileEmailVerificationService $emailVerification,
+        protected AdminActivityNotifier $adminActivity,
     ) {}
 
     public function update(UpdateProfileRequest $request): RedirectResponse
@@ -36,6 +38,8 @@ class ProfileController extends Controller
             }
         }
 
+        $changes = $this->profileChanges($user, $data);
+
         $user->fill([
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
@@ -54,6 +58,7 @@ class ProfileController extends Controller
         $user->save();
 
         $this->emailVerification->clear($user);
+        $this->adminActivity->clientUpdatedProfile($user, $changes);
 
         return redirect()
             ->route('account')
@@ -150,5 +155,45 @@ class ProfileController extends Controller
         }
 
         return $new !== $current;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return list<string>
+     */
+    private function profileChanges(User $user, array $data): array
+    {
+        $labels = [
+            'first_name' => 'Имя',
+            'last_name' => 'Фамилия',
+            'patronymic' => 'Отчество',
+            'birth_day' => 'День рождения',
+            'birth_month' => 'Месяц рождения',
+            'birth_year' => 'Год рождения',
+            'phone' => 'Телефон',
+            'email' => 'Email',
+        ];
+
+        $changes = [];
+
+        foreach ($labels as $field => $label) {
+            $old = $user->getAttribute($field);
+            $new = $data[$field] ?? null;
+
+            if ($old != $new) {
+                $changes[] = $label.': '.($this->formatProfileValue($old) ?? '—').' → '.($this->formatProfileValue($new) ?? '—');
+            }
+        }
+
+        return $changes;
+    }
+
+    private function formatProfileValue(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (string) $value;
     }
 }

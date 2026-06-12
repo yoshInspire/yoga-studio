@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\VerifyRegistrationEmailRequest;
 use App\Models\User;
+use App\Services\AdminActivityNotifier;
 use App\Services\RegistrationEmailVerificationService;
 use App\Services\TelegramAuthService;
 use App\Support\TelegramAuthData;
@@ -21,6 +22,7 @@ class RegisterController extends Controller
     public function __construct(
         protected TelegramAuthService $telegram,
         protected RegistrationEmailVerificationService $emailVerification,
+        protected AdminActivityNotifier $adminActivity,
     ) {}
 
     public function create(): View|RedirectResponse
@@ -186,6 +188,8 @@ class RegisterController extends Controller
         $request->session()->regenerate();
         $request->session()->forget('telegram_pending');
         $this->emailVerification->clear($request->session());
+
+        $this->adminActivity->clientRegistered($user, viaTelegram: $telegramData !== null);
 
         return redirect()
             ->route('account')

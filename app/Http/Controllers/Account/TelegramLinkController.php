@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
+use App\Services\AdminActivityNotifier;
 use App\Services\TelegramAuthService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ class TelegramLinkController extends Controller
 {
     public function __construct(
         protected TelegramAuthService $telegram,
+        protected AdminActivityNotifier $adminActivity,
     ) {}
 
     public function callback(Request $request): RedirectResponse
@@ -44,6 +46,9 @@ class TelegramLinkController extends Controller
         }
 
         $this->telegram->linkUser($user, $authData);
+        $user->refresh();
+
+        $this->adminActivity->clientLinkedTelegram($user);
 
         return redirect()
             ->route('account')
@@ -59,6 +64,8 @@ class TelegramLinkController extends Controller
                 ->route('account')
                 ->withErrors(['telegram' => 'Telegram не привязан.']);
         }
+
+        $this->adminActivity->clientUnlinkedTelegram($user);
 
         $this->telegram->unlinkUser($user);
 

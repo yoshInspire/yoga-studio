@@ -89,6 +89,14 @@ return [
     /** Почта администратора для уведомлений (по умолчанию — ящик рассылки) */
     'admin_email' => env('STUDIO_ADMIN_EMAIL', env('MAIL_FROM_ADDRESS', 'ecoyoga-ik@yandex.ru')),
 
+    /**
+     * Письма администратору о действиях клиентов в личном кабинете
+     * (регистрация, запись, отмена, оплата, профиль и т.д.).
+     */
+    'admin_activity_notifications' => [
+        'enabled' => env('STUDIO_ADMIN_ACTIVITY_NOTIFICATIONS', true),
+    ],
+
     /** Имя отправителя в письмах (поле «От кого» в почте) */
     'mail_from_name' => env('MAIL_FROM_NAME', 'ЭКО YOGA'),
 
