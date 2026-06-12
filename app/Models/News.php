@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Support\RussianDate;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -37,7 +38,7 @@ class News extends Model
 
     public function formattedDate(): string
     {
-        return ($this->published_at ?? $this->created_at)->translatedFormat('d F Y');
+        return RussianDate::dayMonthYear($this->published_at ?? $this->created_at);
     }
 
     public function readableExcerpt(): string

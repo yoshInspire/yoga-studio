@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\RussianDate;
 use App\Enums\BookingStatus;
 use App\Enums\ClassSessionStatus;
 use App\Models\Booking;
@@ -428,10 +429,10 @@ class BookingService
             $days[] = [
                 'key' => $dayKeys[$date->dayOfWeekIso - 1],
                 'name' => $dayNames[$date->dayOfWeekIso - 1],
-                'date' => $date->translatedFormat('j F'),
+                'date' => RussianDate::dayMonth($date),
                 'label' => $isToday
                     ? 'Сегодня'
-                    : mb_strtoupper($date->translatedFormat('j F')).' '.mb_strtoupper($dayNames[$date->dayOfWeekIso - 1]),
+                    : mb_strtoupper(RussianDate::dayMonth($date)).' '.mb_strtoupper($dayNames[$date->dayOfWeekIso - 1]),
                 'is_today' => $isToday,
                 'slots' => $slots,
             ];
@@ -479,7 +480,7 @@ class BookingService
             $week[] = [
                 'key' => $dayKeys[$i],
                 'name' => $dayNames[$i],
-                'date' => $date->translatedFormat('j F'),
+                'date' => RussianDate::dayMonth($date),
                 'slots' => $slots,
             ];
         }

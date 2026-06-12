@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\SubscriptionType;
+use App\Support\RussianDate;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -92,12 +93,12 @@ class Subscription extends Model
 
     public function formattedStartsAt(): string
     {
-        return $this->starts_at->translatedFormat('d F Y');
+        return RussianDate::dayMonthYear($this->starts_at);
     }
 
     public function formattedEndsAt(): string
     {
-        return $this->ends_at->translatedFormat('d F Y');
+        return RussianDate::dayMonthYear($this->ends_at);
     }
 
     /**

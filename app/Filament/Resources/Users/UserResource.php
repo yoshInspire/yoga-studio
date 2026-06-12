@@ -80,7 +80,7 @@ class UserResource extends Resource
                         ]),
                     ]),
                 Section::make('Ограничения по здоровью')
-                    ->description('Видит только администратор. Хранится в карточке клиента и не привязано к абонементу.')
+                    ->description('Видит администратор. Тренер — только если клиент включил «Доступна информация для тренера» в личном кабинете.')
                     ->visible(fn (Get $get): bool => $get('role') === UserRole::Client->value)
                     ->schema([
                         Textarea::make('health_note')
@@ -88,6 +88,9 @@ class UserResource extends Resource
                             ->rows(4)
                             ->maxLength(5000)
                             ->columnSpanFull(),
+                        Toggle::make('health_note_visible_to_trainer')
+                            ->label('Доступна информация для тренера')
+                            ->default(false),
                         DateTimePicker::make('offer_accepted_at')
                             ->label('Оферта принята')
                             ->seconds(false)
@@ -204,6 +207,12 @@ class UserResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (?string $state) => filled($state) ? 'Есть примечание' : '')
                     ->color(fn (?string $state) => filled($state) ? 'warning' : 'gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('health_note_visible_to_trainer')
+                    ->label('Тренеру')
+                    ->formatStateUsing(fn (?bool $state) => $state ? 'Да' : '')
+                    ->badge()
+                    ->color(fn (?bool $state) => $state ? 'success' : 'gray')
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('offer_accepted_at')
                     ->label('Оферта')

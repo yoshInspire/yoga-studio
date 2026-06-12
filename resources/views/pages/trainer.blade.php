@@ -11,6 +11,7 @@
           <h1 class="section__title">Мои занятия</h1>
           <p class="sched__note">
             Здесь видны только занятия, на которые вас назначили. Список гостей — имя и фамилия, без контактов.
+            Если клиент разрешил, под именем показывается примечание о здоровье.
             Редактирование недоступно.
           </p>
         </div>
@@ -66,7 +67,12 @@
                   @elseif(count($slot['attendees']))
                     <ul class="trainer__roster">
                       @foreach($slot['attendees'] as $guest)
-                        <li>{{ $guest['name'] }}</li>
+                        <li>
+                          {{ $guest['name'] }}
+                          @if(!empty($guest['health_note']))
+                            <span class="trainer__health-note">{{ $guest['health_note'] }}</span>
+                          @endif
+                        </li>
                       @endforeach
                     </ul>
                   @else

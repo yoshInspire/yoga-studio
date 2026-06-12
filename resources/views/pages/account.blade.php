@@ -105,6 +105,20 @@
                 </div>
               </dl>
 
+              @if (filled($user->health_note))
+                <div class="lk-profile-health">
+                  <h2 class="lk-profile-form__heading">Состояние здоровья</h2>
+                  <p class="lk-profile-health__text">{{ $user->health_note }}</p>
+                  <p class="lk-profile-health__meta">
+                    @if ($user->health_note_visible_to_trainer)
+                      Тренер видит это примечание в списке гостей на занятии.
+                    @else
+                      Тренер не видит это примечание.
+                    @endif
+                  </p>
+                </div>
+              @endif
+
               <button type="button" class="btn btn--line" id="profileEditBtn">Редактировать профиль</button>
             </div>
 
@@ -215,6 +229,19 @@
                       </div>
                     </div>
                   </div>
+                </div>
+
+                <div class="lk-profile-form__section">
+                  <h2 class="lk-profile-form__heading">Состояние здоровья</h2>
+                  <p class="lk-profile-form__hint">Опишите ограничения, травмы или особенности — это поможет подобрать нагрузку. Администратор студии всегда видит эту информацию.</p>
+                  <div class="lk-profile-form__field">
+                    <label class="lk-profile-form__label" for="profile-health-note">Примечание</label>
+                    <textarea class="lk-profile-form__input lk-profile-form__textarea" id="profile-health-note" name="health_note" rows="4" maxlength="5000" placeholder="Например: гипертония, не рекомендуются перевёрнутые асаны">{{ old('health_note', $user->health_note) }}</textarea>
+                  </div>
+                  <label class="lk-profile-form__check">
+                    <input type="checkbox" name="health_note_visible_to_trainer" value="1" @checked(old('health_note_visible_to_trainer', $user->health_note_visible_to_trainer)) />
+                    <span>Доступна информация для тренера</span>
+                  </label>
                 </div>
 
                 <div class="lk-profile-form__actions">
@@ -328,7 +355,7 @@
                 <div class="lk-row">
                   <div class="lk-row__when">
                     <strong>{{ $session->formattedTime() }}</strong>
-                    <span>{{ $session->starts_at->translatedFormat('D, j F') }}</span>
+                    <span>{{ \App\Support\RussianDate::weekdayShortDayMonth($session->starts_at) }}</span>
                   </div>
                   <div class="lk-row__main">
                     <h3>{{ $session->direction?->title ?: $session->topic ?: $session->title }}</h3>

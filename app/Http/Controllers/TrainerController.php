@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\BookingService;
 use App\Services\TrainerService;
+use App\Support\RussianDate;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -18,7 +19,7 @@ class TrainerController extends Controller
         return view('pages.trainer', [
             'trainer' => $trainer,
             'week' => $trainerService->buildWeekSchedule($trainer, $weekStart),
-            'weekLabel' => $weekStart->translatedFormat('j F').' – '.$weekEnd->translatedFormat('j F'),
+            'weekLabel' => RussianDate::dayMonthRange($weekStart, $weekEnd),
             'prevWeek' => $weekStart->copy()->subWeek()->toDateString(),
             'nextWeek' => $weekStart->copy()->addWeek()->toDateString(),
             'typeLabels' => [

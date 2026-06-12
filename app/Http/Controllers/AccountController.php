@@ -7,6 +7,7 @@ use App\Services\ProfileEmailVerificationService;
 use App\Services\SubscriptionService;
 use App\Services\TelegramAuthService;
 use App\Support\OfferStorage;
+use App\Support\RussianDate;
 use Illuminate\View\View;
 
 class AccountController extends Controller
@@ -35,7 +36,7 @@ class AccountController extends Controller
             ->get()
             ->flatMap(fn ($sub) => $sub->usages->map(fn ($usage) => [
                 'sort' => $usage->used_at,
-                'date' => $usage->used_at->translatedFormat('d F Y'),
+                'date' => RussianDate::dayMonthYear($usage->used_at),
                 'title' => $usage->description ?? 'Занятие',
                 'sub' => $sub->type->shortLabel().' абонемент',
             ]))
@@ -53,7 +54,7 @@ class AccountController extends Controller
             ->orderByDesc('cancelled_at')
             ->get()
             ->map(fn ($booking) => [
-                'date' => $booking->classSession->starts_at->translatedFormat('D, j F').' · '.$booking->classSession->formattedTime(),
+                'date' => RussianDate::weekdayShortDayMonth($booking->classSession->starts_at).' · '.$booking->classSession->formattedTime(),
                 'title' => $booking->classSession->title,
                 'reason' => $booking->cancellation_reason ?? $booking->classSession->cancellation_reason ?? 'Занятие отменено',
             ])

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\RussianDate;
 use App\Enums\BookingStatus;
 use App\Models\ClassSession;
 use App\Models\User;
@@ -21,7 +22,7 @@ class TrainerService
                 'direction',
                 'bookings' => fn ($q) => $q
                     ->where('status', BookingStatus::Confirmed)
-                    ->with('user:id,first_name,last_name'),
+                    ->with('user:id,first_name,last_name,health_note,health_note_visible_to_trainer'),
             ])
             ->withCount(['bookings as taken' => fn ($q) => $q->where('status', BookingStatus::Confirmed)])
             ->orderBy('starts_at')
@@ -39,9 +40,18 @@ class TrainerService
 
             $slots = $daySessions->map(function (ClassSession $session) {
                 $attendees = $session->bookings
-                    ->map(fn ($booking) => [
-                        'name' => trim($booking->user->first_name.' '.$booking->user->last_name),
-                    ])
+                    ->map(function ($booking) {
+                        $user = $booking->user;
+                        $entry = [
+                            'name' => trim($user->first_name.' '.$user->last_name),
+                        ];
+
+                        if ($user->health_note_visible_to_trainer && filled($user->health_note)) {
+                            $entry['health_note'] = $user->health_note;
+                        }
+
+                        return $entry;
+                    })
                     ->values()
                     ->all();
 
@@ -63,7 +73,7 @@ class TrainerService
             $week[] = [
                 'key' => $dayKeys[$i],
                 'name' => $dayNames[$i],
-                'date' => $date->translatedFormat('j F'),
+                'date' => RussianDate::dayMonth($date),
                 'slots' => $slots,
             ];
         }

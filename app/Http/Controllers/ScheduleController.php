@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Services\BookingService;
+use App\Support\RussianDate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -73,7 +74,7 @@ class ScheduleController extends Controller
             'canGoPrev' => $offset > 0,
             'prevOffset' => max(0, $offset - 1),
             'nextOffset' => $offset + 1,
-            'rangeLabel' => $startDate->translatedFormat('j F').' – '.$endDate->translatedFormat('j F'),
+            'rangeLabel' => RussianDate::dayMonthRange($startDate, $endDate),
             'rescheduleFrom' => $rescheduleFrom,
             'typeLabels' => [
                 'group' => 'Групповое',
