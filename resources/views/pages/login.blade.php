@@ -7,7 +7,6 @@
   $activeTab = $activeTab ?? session('auth_tab', 'login');
   $telegramPending = $telegramPending ?? null;
   $verificationEmail = $verificationEmail ?? null;
-  $emailRequired = ! $telegramPending;
 @endphp
 
 @section('content')
@@ -140,13 +139,9 @@
             <div class="form__row">
               <label class="auth__label" for="reg-email">
                 Email
-                @if ($emailRequired)
-                  <span class="auth__required" aria-hidden="true">*</span>
-                @else
-                  <span class="auth__optional">(необязательно)</span>
-                @endif
+                <span class="auth__required" aria-hidden="true">*</span>
               </label>
-              <input type="email" id="reg-email" name="email" value="{{ old('email') }}" placeholder="email@example.com" autocomplete="email" @if ($emailRequired) required @endif />
+              <input type="email" id="reg-email" name="email" value="{{ old('email') }}" placeholder="email@example.com" autocomplete="email" required />
             </div>
             <div class="form__row">
               <label class="auth__label" for="reg-pass">Пароль</label>

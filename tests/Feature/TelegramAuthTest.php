@@ -74,6 +74,7 @@ class TelegramAuthTest extends TestCase
             'birth_month' => 3,
             'birth_year' => 1990,
             'phone' => '+79991112233',
+            'email' => 'anna@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
             'offer_accepted' => '1',
@@ -87,6 +88,32 @@ class TelegramAuthTest extends TestCase
         $this->assertSame(555444333, $user->telegram_id);
         $this->assertSame('anna_yoga', $user->telegram_username);
         $this->assertNotNull($user->telegram_linked_at);
+        $this->assertSame('anna@example.com', $user->email);
+    }
+
+    public function test_telegram_registration_without_email_is_rejected(): void
+    {
+        $payload = TelegramAuthTestHelper::signedPayload([
+            'id' => 555444334,
+            'username' => 'no_email_user',
+        ]);
+
+        $this->get(route('auth.telegram.callback', $payload));
+
+        $response = $this->post(route('register'), [
+            'first_name' => 'Анна',
+            'last_name' => 'Смирнова',
+            'birth_day' => 12,
+            'birth_month' => 3,
+            'birth_year' => 1990,
+            'phone' => '+79991112234',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'offer_accepted' => '1',
+        ]);
+
+        $response->assertSessionHasErrors('email', 'register');
+        $this->assertGuest();
     }
 
     public function test_client_can_link_telegram_from_account(): void
