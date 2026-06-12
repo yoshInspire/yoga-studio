@@ -69,7 +69,8 @@ class PaymentResource extends Resource
                     ->options(collect(PaymentStatus::cases())->mapWithKeys(
                         fn (PaymentStatus $status) => [$status->value => $status->label()]
                     )->all()),
-            ]);
+            ])
+            ->stackedOnMobile();
     }
 
     public static function getPages(): array
