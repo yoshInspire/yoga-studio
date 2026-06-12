@@ -235,7 +235,7 @@
           <div class="auth__alert auth__alert--error" style="margin-bottom: 14px">{{ $errors->first() }}</div>
         @endif
         <div class="form__row"><input type="text" name="name" value="{{ old('name') }}" placeholder="Ваше имя" required /></div>
-        <div class="form__row"><input type="tel" name="phone" value="{{ old('phone') }}" placeholder="Телефон" required /></div>
+        <div class="form__row"><input type="tel" name="phone" value="{{ old('phone') }}" placeholder="+7 (___) ___-__-__" autocomplete="tel" inputmode="tel" data-phone-mask required /></div>
         <div class="form__row"><input type="text" name="message" value="{{ old('message') }}" placeholder="Комментарий (необязательно)" /></div>
         {{-- honeypot: скрыто от людей, ловит ботов --}}
         <div style="position:absolute;left:-9999px" aria-hidden="true">
