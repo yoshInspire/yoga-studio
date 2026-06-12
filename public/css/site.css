@@ -1504,7 +1504,7 @@ a { color: inherit; text-decoration: none; }
 .sub__head .badge { align-self: flex-start; }
 .sub__name { font-family: var(--serif); font-size: 22px; font-weight: 600; }
 .sub__count { font-size: 14.5px; color: var(--ink-soft); }
-.sub__count strong { font-family: var(--serif); font-size: 24px; color: var(--clay); }
+.sub__count strong { color: var(--clay); font: inherit; font-weight: inherit; }
 .sub__bar { height: 8px; border-radius: 100px; background: var(--line); overflow: hidden; margin: 10px 0 18px; }
 .sub__bar span { display: block; height: 100%; background: var(--sage); border-radius: 100px; }
 .sub__dates { display: flex; gap: 28px; }
