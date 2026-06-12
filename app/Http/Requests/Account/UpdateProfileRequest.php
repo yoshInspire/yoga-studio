@@ -33,17 +33,6 @@ class UpdateProfileRequest extends FormRequest
         if (blank($this->input('patronymic'))) {
             $this->merge(['patronymic' => null]);
         }
-
-        $this->merge([
-            'health_note_visible_to_trainer' => $this->boolean('health_note_visible_to_trainer'),
-        ]);
-
-        if (blank($this->input('health_note'))) {
-            $this->merge([
-                'health_note' => null,
-                'health_note_visible_to_trainer' => false,
-            ]);
-        }
     }
 
     /**
@@ -72,8 +61,6 @@ class UpdateProfileRequest extends FormRequest
                 'unique:users,phone,'.$userId,
             ],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email,'.$userId],
-            'health_note' => ['nullable', 'string', 'max:5000'],
-            'health_note_visible_to_trainer' => ['sometimes', 'boolean'],
         ];
     }
 

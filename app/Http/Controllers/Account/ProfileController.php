@@ -45,8 +45,6 @@ class ProfileController extends Controller
             'birth_year' => $data['birth_year'] ?? null,
             'phone' => $data['phone'],
             'email' => $newEmail,
-            'health_note' => $data['health_note'] ?? null,
-            'health_note_visible_to_trainer' => $data['health_note_visible_to_trainer'] ?? false,
         ]);
 
         if ($newEmail !== $currentEmail) {

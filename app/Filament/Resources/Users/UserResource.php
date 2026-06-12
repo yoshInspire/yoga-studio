@@ -80,7 +80,7 @@ class UserResource extends Resource
                         ]),
                     ]),
                 Section::make('Ограничения по здоровью')
-                    ->description('Видит администратор. Тренер — только если клиент включил «Доступна информация для тренера» в личном кабинете.')
+                    ->description('Видит администратор. Тренер видит примечание только при включённой галке ниже.')
                     ->visible(fn (Get $get): bool => $get('role') === UserRole::Client->value)
                     ->schema([
                         Textarea::make('health_note')
