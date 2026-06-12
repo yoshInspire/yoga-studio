@@ -198,7 +198,7 @@
       <p class="eyebrow eyebrow--light reveal">Впервые на йоге?</p>
       <h2 class="cta__title reveal">Начните с пробного занятия</h2>
       <p class="cta__text reveal">
-        Пробное групповое занятие — 1 400 ₽. Подберём направление под ваши цели.
+        Пробное групповое занятие — {{ number_format($trialPrice, 0, '', ' ') }} ₽. Подберём направление под ваши цели.
       </p>
       <a href="{{ route('login') }}" class="btn btn--solid btn--lg reveal">Войти в личный кабинет</a>
     </div>
