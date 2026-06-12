@@ -9,6 +9,7 @@
   $seoOgType = trim($__env->yieldContent('og_type')) ?: 'website';
 @endphp
 <meta name="description" content="{{ $seoDescription }}" />
+<meta name="yandex-verification" content="4d5bc6e9b8cf5eb3" />
 @if ($seoRobots !== '')
   <meta name="robots" content="{{ $seoRobots }}" />
 @endif
