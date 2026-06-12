@@ -1,6 +1,7 @@
 @extends('layouts.site')
 
 @section('title', 'Кабинет тренера — Студия йоги Ирины Коленцевой')
+@section('robots', 'noindex, nofollow')
 
 @section('content')
   <section class="section sched trainer">

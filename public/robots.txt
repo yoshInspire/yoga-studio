@@ -1,2 +1,10 @@
 User-agent: *
-Disallow:
+Disallow: /account
+Disallow: /login
+Disallow: /purchase
+Disallow: /trainer
+Disallow: /payments/
+Disallow: /admin
+Disallow: /oferta
+
+Sitemap: https://ekoyoga-ik.ru/sitemap.xml

@@ -1,6 +1,8 @@
 @extends('layouts.site')
 
 @section('title', 'Расписание занятий — Студия йоги Ирины Коленцевой')
+@section('meta_description', 'Расписание занятий йоги в студии Ирины Коленцевой (Коньково, Москва): групповые и индивидуальные классы. Запись через личный кабинет.')
+@section('canonical', route('schedule'))
 
 @section('content')
   @php

@@ -1,6 +1,7 @@
 @extends('layouts.site')
 
 @section('title', 'Студия йоги Ирины Коленцевой — Москва, Коньково')
+@section('meta_description', 'Студия йоги Ирины Коленцевой в Коньково (Москва): хатха, виньяса, йогатерапия, группы до 6 человек. Расписание, абонементы, запись онлайн.')
 
 @section('content')
   <section class="hero" id="hero">
@@ -52,7 +53,7 @@
             <div class="card__body">
               <span class="card__num">{{ $card->num }}</span>
               <h3 class="card__title">{{ $card->title }}</h3>
-              <button type="button" class="card__more" data-dir="{{ $card->slug }}">Подробнее</button>
+              <a href="{{ route('directions.show', $card) }}" class="card__more">Подробнее</a>
             </div>
           </article>
         @endforeach
@@ -249,3 +250,7 @@
 
   @include('partials.direction-modals')
 @endsection
+
+@push('head')
+  <script type="application/ld+json">{!! json_encode(\App\Support\Seo::localBusinessJsonLd(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+@endpush

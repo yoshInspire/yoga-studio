@@ -72,4 +72,14 @@ class Direction extends Model
     {
         return $query->orderBy('sort_order')->orderBy('id');
     }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+    public function seoDescription(): string
+    {
+        return \Illuminate\Support\Str::limit(strip_tags($this->lead ?? ''), 160);
+    }
 }

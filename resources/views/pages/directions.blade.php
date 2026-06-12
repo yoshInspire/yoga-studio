@@ -1,6 +1,7 @@
 @extends('layouts.site')
 
 @section('title', 'Направления студии — Студия йоги Ирины Коленцевой')
+@section('meta_description', '17 направлений йоги и оздоровительных практик в студии Ирины Коленцевой: хатха, виньяса, йогатерапия, аэройога, пилатес и другие. Коньково, Москва.')
 
 @section('content')
   <section class="section directions directions-page" id="directions">
@@ -24,7 +25,7 @@
             <div class="card__body">
               <span class="card__num">{{ $card->num }}</span>
               <h3 class="card__title">{{ $card->title }}</h3>
-              <button type="button" class="card__more" data-dir="{{ $card->slug }}">Подробнее</button>
+              <a href="{{ route('directions.show', $card) }}" class="card__more">Подробнее</a>
             </div>
           </article>
         @endforeach

@@ -20,16 +20,20 @@ use App\Http\Controllers\OfferController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\TrainerController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
 
 Route::get('/schedule', ScheduleController::class)->name('schedule');
-Route::get('/directions', DirectionController::class)->name('directions');
+Route::get('/directions', [DirectionController::class, 'index'])->name('directions');
+Route::get('/directions/{direction:slug}', [DirectionController::class, 'show'])->name('directions.show');
 
 Route::get('/news', [NewsController::class, 'index'])->name('news.index');
 Route::get('/news/{news}', [NewsController::class, 'show'])->name('news.show');
+
+Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 
 Route::post('/news/{news}/reactions', [NewsReactionController::class, 'store'])
     ->middleware(['auth', 'role:client', 'throttle:60,1'])
@@ -40,7 +44,7 @@ Route::post('/lead', [LeadController::class, 'store'])
     ->name('lead.store');
 
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [LoginController::class, 'create'])->name('login');
+    Route::get('/login', [LoginController::class, 'create'])->middleware('noindex')->name('login');
     Route::post('/login', [LoginController::class, 'store'])->name('login.store');
     Route::post('/register', [RegisterController::class, 'store'])
         ->middleware('throttle:6,1')
@@ -76,10 +80,10 @@ Route::get('/oferta', [OfferController::class, 'show'])
     ->name('offer.show');
 
 Route::get('/payments/{payment}/return', [PaymentController::class, 'return'])
-    ->middleware('signed')
+    ->middleware(['signed', 'noindex'])
     ->name('payments.return');
 
-Route::middleware(['auth', 'role:client'])->group(function () {
+Route::middleware(['auth', 'role:client', 'noindex'])->group(function () {
     Route::get('/account', AccountController::class)->name('account');
     Route::post('/account/offer/accept', [OfferAcceptanceController::class, 'store'])->name('account.offer.accept');
     Route::put('/account/profile', [ProfileController::class, 'update'])->name('account.profile.update');
@@ -106,6 +110,6 @@ Route::middleware(['auth', 'role:client'])->group(function () {
 
 Route::post('/payments/webhook', [PaymentController::class, 'webhook'])->name('payments.webhook');
 
-Route::middleware(['auth', 'role:trainer'])->group(function () {
+Route::middleware(['auth', 'role:trainer', 'noindex'])->group(function () {
     Route::get('/trainer', TrainerController::class)->name('trainer');
 });

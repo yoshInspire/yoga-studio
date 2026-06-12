@@ -51,6 +51,11 @@ class NewsResource extends Resource
                             ->label('Заголовок')
                             ->required()
                             ->maxLength(255),
+                        TextInput::make('slug')
+                            ->label('URL (slug)')
+                            ->helperText('Если пусто — формируется автоматически из заголовка.')
+                            ->maxLength(255)
+                            ->unique(ignoreRecord: true),
                         Textarea::make('excerpt')
                             ->label('Краткое описание')
                             ->helperText('Показывается в списке новостей. Если пусто — берётся начало текста.')

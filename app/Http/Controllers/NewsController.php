@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\News;
 use App\Services\NewsReactionService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class NewsController extends Controller
@@ -23,8 +25,14 @@ class NewsController extends Controller
         ]);
     }
 
-    public function show(News $news, NewsReactionService $reactions): View
+    public function show(Request $request, ?News $news, NewsReactionService $reactions): View|RedirectResponse
     {
+        abort_if($news === null, 404);
+
+        if (ctype_digit((string) $request->route('news'))) {
+            return redirect()->route('news.show', $news, 301);
+        }
+
         abort_unless(
             $news->is_published && $news->published_at !== null && $news->published_at->lte(now()),
             404,

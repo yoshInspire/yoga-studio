@@ -1,6 +1,7 @@
 @extends('layouts.site')
 
 @section('title', 'Купить абонемент — Студия йоги Ирины Коленцевой')
+@section('robots', 'noindex, nofollow')
 
 @section('content')
   <section class="section lk">

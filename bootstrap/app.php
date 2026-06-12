@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
             'offer.accepted' => \App\Http\Middleware\EnsureOfferAccepted::class,
+            'noindex' => \App\Http\Middleware\PreventSearchIndexing::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

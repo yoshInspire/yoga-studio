@@ -663,6 +663,15 @@ a { color: inherit; text-decoration: none; }
   content: "✦"; position: absolute; left: 0; top: 0; color: var(--sage-deep); font-size: 13px;
 }
 .dir-detail__content { padding-bottom: 44px; }
+.dir-detail--page {
+  max-width: 920px; margin: 0 auto;
+  background: #fff; border-radius: var(--radius-lg); overflow: hidden;
+  box-shadow: 0 24px 60px rgba(44, 62, 45, .08);
+}
+.dir-detail__actions {
+  display: flex; flex-wrap: wrap; gap: 12px; padding: 28px 44px 0;
+}
+.dir-detail__benefits h2 { font-family: var(--serif); font-size: 22px; font-weight: 600; margin-bottom: 14px; }
 
 /* ============ Бейджи типов занятий ============ */
 .badge {

@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="@yield('meta_description', 'Студия йоги Ирины Коленцевой в Москве (р-н Коньково). Уютная студия, группы до 6 человек, индивидуальный подход.')" />
+  @include('partials.seo-head')
   <meta name="csrf-token" content="{{ csrf_token() }}" />
-  <title>@yield('title', 'Студия йоги Ирины Коленцевой — Москва, Коньково')</title>
+  <title>@yield('title', config('seo.default_title'))</title>
   <link rel="icon" href="{{ asset('images/favicon.ico') }}" sizes="any" />
   <link rel="icon" type="image/png" href="{{ asset('images/favico.png') }}" />
   <link rel="apple-touch-icon" href="{{ asset('images/favico.png') }}" />
@@ -24,10 +24,11 @@
       </a>
 
       <nav class="nav" id="nav">
-        <a href="{{ route('home') }}#directions" class="nav__link">Направления</a>
+        <a href="{{ route('directions') }}" class="nav__link">Направления</a>
         <a href="{{ route('home') }}#services" class="nav__link">Услуги</a>
         <a href="{{ route('home') }}#teachers" class="nav__link">Тренеры</a>
         <a href="{{ route('news.index') }}" class="nav__link">Новости</a>
+        <a href="{{ route('schedule') }}" class="nav__link">Расписание</a>
         <a href="{{ route('home') }}#about" class="nav__link">О студии</a>
         <a href="{{ route('home') }}#contacts" class="nav__link">Контакты</a>
       </nav>
@@ -42,10 +43,11 @@
   </header>
 
   <div class="mobile-menu" id="mobileMenu">
-    <a href="{{ route('home') }}#directions" class="mobile-menu__link">Направления</a>
+    <a href="{{ route('directions') }}" class="mobile-menu__link">Направления</a>
     <a href="{{ route('home') }}#services" class="mobile-menu__link">Услуги</a>
     <a href="{{ route('home') }}#teachers" class="mobile-menu__link">Тренеры</a>
     <a href="{{ route('news.index') }}" class="mobile-menu__link">Новости</a>
+    <a href="{{ route('schedule') }}" class="mobile-menu__link">Расписание</a>
     <a href="{{ route('home') }}#about" class="mobile-menu__link">О студии</a>
     <a href="{{ route('home') }}#contacts" class="mobile-menu__link">Контакты</a>
     <div class="mobile-menu__actions mobile-menu__actions--icons">
@@ -68,14 +70,16 @@
       <div class="footer__cols">
         <div class="footer__col">
           <h4>Студия</h4>
-          <a href="{{ route('home') }}#directions">Направления</a>
+          <a href="{{ route('directions') }}">Направления</a>
           <a href="{{ route('home') }}#services">Услуги и цены</a>
           <a href="{{ route('home') }}#teachers">Тренеры</a>
           <a href="{{ route('news.index') }}">Новости</a>
+          <a href="{{ route('schedule') }}">Расписание</a>
         </div>
         <div class="footer__col">
           <h4>Гостям</h4>
           <a href="{{ route('schedule') }}">Расписание</a>
+          <a href="{{ route('directions') }}">Направления</a>
           <a href="{{ route('login') }}">Личный кабинет</a>
           <a href="https://t.me/yogAvLife" target="_blank" rel="noopener">Telegram студии</a>
         </div>
@@ -108,7 +112,7 @@
   </div>
 
   <script src="{{ asset('js/phone-mask.js') }}?v=1"></script>
-  <script src="{{ asset('js/site.js') }}?v=19"></script>
+  <script src="{{ asset('js/site.js') }}?v=20"></script>
   @stack('scripts')
 </body>
 </html>

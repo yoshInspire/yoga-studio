@@ -1,6 +1,7 @@
 @extends('layouts.site')
 
 @section('title', 'Новости студии — Студия йоги Ирины Коленцевой')
+@section('meta_description', 'Новости и события студии йоги Ирины Коленцевой в Коньково: анонсы занятий, мероприятия и полезные заметки о практике.')
 
 @section('content')
   <section class="section directions" id="news">

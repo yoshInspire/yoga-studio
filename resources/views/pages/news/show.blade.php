@@ -2,6 +2,10 @@
 
 @section('title', $item->title.' — Новости студии йоги Ирины Коленцевой')
 @section('meta_description', $item->readableExcerpt())
+@section('og_type', 'article')
+@if ($item->imageUrl())
+  @section('og_image', $item->imageUrl())
+@endif
 
 @section('content')
   <article class="section news-article">
@@ -47,4 +51,27 @@
 
 @push('scripts')
   <script src="{{ asset('js/news-reactions.js') }}?v=1"></script>
+@endpush
+
+@push('head')
+  @php
+    use App\Support\Seo;
+
+    $pageUrl = route('news.show', $item);
+    $article = Seo::articleJsonLd(
+      $item->title,
+      $item->readableExcerpt(),
+      $pageUrl,
+      $item->imageUrl(),
+      $item->published_at?->toAtomString(),
+      $item->updated_at?->toAtomString(),
+    );
+    $breadcrumb = Seo::breadcrumbJsonLd([
+      ['name' => 'Главная', 'url' => route('home')],
+      ['name' => 'Новости', 'url' => route('news.index')],
+      ['name' => $item->title, 'url' => $pageUrl],
+    ]);
+  @endphp
+  <script type="application/ld+json">{!! json_encode($article, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+  <script type="application/ld+json">{!! json_encode($breadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
 @endpush

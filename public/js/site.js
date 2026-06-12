@@ -83,7 +83,15 @@ if (dirModal) {
     el.addEventListener('click', closeDir);
   });
 
-  dirModal.querySelectorAll('.dir-detail__nav').forEach((btn) => {
+  initDirectionSlides(dirModal);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && dirModal.classList.contains('is-open')) closeDir();
+  });
+}
+
+function initDirectionSlides(root) {
+  root.querySelectorAll('.dir-detail__nav').forEach((btn) => {
     btn.addEventListener('click', () => {
       const hero = btn.closest('.dir-detail__hero');
       if (!hero) return;
@@ -96,11 +104,9 @@ if (dirModal) {
       slides[i].classList.add('is-active');
     });
   });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && dirModal.classList.contains('is-open')) closeDir();
-  });
 }
+
+document.querySelectorAll('.dir-detail--page').forEach((page) => initDirectionSlides(page));
 
 // ===== Модальное окно расписания =====
 const schedModal = document.getElementById('schedModal');
