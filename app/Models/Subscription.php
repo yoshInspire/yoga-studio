@@ -83,7 +83,7 @@ class Subscription extends Model
 
     public function isActive(?Carbon $on = null): bool
     {
-        $on ??= now()->startOfDay();
+        $on = ($on ?? now())->copy()->startOfDay();
 
         return $this->starts_at->lte($on)
             && $this->ends_at->gte($on)
@@ -105,11 +105,11 @@ class Subscription extends Model
      */
     public function scopeActive(Builder $query, ?Carbon $on = null): Builder
     {
-        $on ??= now()->startOfDay();
+        $on = ($on ?? now())->copy()->startOfDay();
 
         return $query
-            ->where('starts_at', '<=', $on)
-            ->where('ends_at', '>=', $on)
+            ->whereDate('starts_at', '<=', $on)
+            ->whereDate('ends_at', '>=', $on)
             ->whereColumn('sessions_used', '<', 'sessions_total');
     }
 

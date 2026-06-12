@@ -33,7 +33,15 @@ class BookingService
             $subscription ??= $this->findChargedDoubleSubscriptionForDay($user, $session);
 
             if ($subscription === null) {
-                throw new InvalidArgumentException('Нет подходящего абонемента с доступными занятиями.');
+                $reason = $this->subscriptions->bookingUnavailableReason(
+                    $user,
+                    $session->type,
+                    $session->starts_at,
+                );
+
+                throw new InvalidArgumentException(
+                    $reason ?? 'Нет подходящего абонемента с доступными занятиями.',
+                );
             }
 
             if (! $this->subscriptions->typesMatch($subscription->type, $session->type)) {

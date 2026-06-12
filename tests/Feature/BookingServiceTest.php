@@ -81,8 +81,44 @@ class BookingServiceTest extends TestCase
         $this->subscription($user, ['type' => SubscriptionType::Individual]);
         $session = $this->makeSession(['type' => SubscriptionType::Group]);
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->service->book($user, $session);
+        try {
+            $this->service->book($user, $session);
+            $this->fail('Expected InvalidArgumentException');
+        } catch (InvalidArgumentException $e) {
+            $this->assertStringContainsString('нет абонемента для этого типа', $e->getMessage());
+        }
+    }
+
+    public function test_cannot_book_when_subscription_starts_later_than_class(): void
+    {
+        $user = $this->client();
+        $this->subscription($user, [
+            'sessions_total' => 1,
+            'starts_at' => now()->addDays(2),
+            'ends_at' => now()->addDays(32),
+        ]);
+        $session = $this->makeSession(['starts_at' => now()->addDay()->setTime(10, 0)]);
+
+        try {
+            $this->service->book($user, $session);
+            $this->fail('Expected InvalidArgumentException');
+        } catch (InvalidArgumentException $e) {
+            $this->assertStringContainsString('начнёт действовать', $e->getMessage());
+        }
+    }
+
+    public function test_cannot_book_when_all_sessions_used(): void
+    {
+        $user = $this->client();
+        $this->subscription($user, ['sessions_total' => 1, 'sessions_used' => 1]);
+        $session = $this->makeSession();
+
+        try {
+            $this->service->book($user, $session);
+            $this->fail('Expected InvalidArgumentException');
+        } catch (InvalidArgumentException $e) {
+            $this->assertStringContainsString('не осталось занятий', $e->getMessage());
+        }
     }
 
     public function test_cannot_use_group_subscription_for_individual_class(): void

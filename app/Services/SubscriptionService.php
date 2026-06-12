@@ -17,12 +17,53 @@ class SubscriptionService
         // (первичный), затем — по сроку окончания.
         return $user->subscriptions()
             ->forType($classType)
-            ->active($on)
+            ->active($on?->copy()->startOfDay())
             ->orderBy('purchased_at')
             ->orderBy('starts_at')
             ->orderBy('ends_at')
             ->orderBy('id')
             ->first();
+    }
+
+    /**
+     * Почему нельзя записаться: null — абонемент должен быть, причина неизвестна.
+     */
+    public function bookingUnavailableReason(User $user, SubscriptionType $classType, Carbon $classStartsAt): ?string
+    {
+        $classDay = $classStartsAt->copy()->startOfDay();
+
+        $matching = $user->subscriptions()->forType($classType)->get();
+
+        if ($matching->isEmpty()) {
+            return 'У вас нет абонемента для этого типа занятий. Купите подходящий тариф в личном кабинете.';
+        }
+
+        $withSessions = $matching->filter(fn (Subscription $s) => $s->sessionsRemaining() > 0);
+
+        if ($withSessions->isEmpty()) {
+            return 'На ваших абонементах не осталось занятий. Купите новый абонемент или разовое занятие.';
+        }
+
+        $activeOnDay = $withSessions->filter(
+            fn (Subscription $s) => $s->starts_at->lte($classDay) && $s->ends_at->gte($classDay),
+        );
+
+        if ($activeOnDay->isNotEmpty()) {
+            return null;
+        }
+
+        /** @var Subscription|null $future */
+        $future = $withSessions
+            ->filter(fn (Subscription $s) => $s->starts_at->gt($classDay))
+            ->sortBy('starts_at')
+            ->first();
+
+        if ($future !== null) {
+            return 'Абонемент начнёт действовать с '.$future->formattedStartsAt()
+                .'. Выберите занятие на эту дату или позже.';
+        }
+
+        return 'На выбранную дату абонемент уже не действует. Выберите занятие в пределах срока абонемента.';
     }
 
     /**

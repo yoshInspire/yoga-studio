@@ -222,6 +222,7 @@ class SubscriptionServiceTest extends TestCase
         $this->assertSame('2026-06-13', $subscription->starts_at->toDateString());
         $this->assertSame('2026-07-12', $subscription->ends_at->toDateString());
         $this->assertTrue($subscription->isActive(Carbon::create(2026, 7, 12)->startOfDay()));
+        $this->assertTrue($subscription->isActive(Carbon::create(2026, 7, 12, 18, 0)));
         $this->assertFalse($subscription->isActive(Carbon::create(2026, 7, 13)->startOfDay()));
     }
 }
