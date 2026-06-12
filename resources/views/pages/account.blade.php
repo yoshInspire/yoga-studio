@@ -363,11 +363,15 @@
           <div class="lk__panel is-hidden" data-panel="history">
             <h1 class="lk__title">История посещений</h1>
             <p class="lk__lead">Занятия, которые вы посетили, и с какого абонемента они списаны.</p>
-            <table class="lk-table">
-              <thead><tr><th>Дата</th><th>Занятие</th><th>Списано с</th></tr></thead>
+            <table class="lk-table lk-table--stacked">
+              <thead><tr><th>Дата</th><th>Занятие</th><th>Абонемент</th></tr></thead>
               <tbody>
                 @forelse($history as $h)
-                  <tr><td>{{ $h['date'] }}</td><td>{{ $h['title'] }}</td><td>{{ $h['sub'] }}</td></tr>
+                  <tr>
+                    <td data-label="Дата">{{ $h['date'] }}</td>
+                    <td data-label="Занятие">{{ $h['title'] }}</td>
+                    <td data-label="Абонемент">{{ $h['sub'] }}</td>
+                  </tr>
                 @empty
                   <tr><td colspan="3" class="lk__empty">История появится после посещений.</td></tr>
                 @endforelse
