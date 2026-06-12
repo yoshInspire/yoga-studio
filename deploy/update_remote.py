@@ -101,6 +101,26 @@ php artisan view:cache
 
 chown -R www-data:www-data {APP_DIR}/storage {APP_DIR}/bootstrap/cache
 chmod -R 775 {APP_DIR}/storage {APP_DIR}/bootstrap/cache
+mkdir -p {APP_DIR}/storage/app/livewire-tmp
+chown www-data:www-data {APP_DIR}/storage/app/livewire-tmp
+
+# Загрузка фото в админке: PHP и nginx по умолчанию режут файлы > 1–2 МБ.
+cat > /etc/php/8.3/fpm/conf.d/99-yoga-studio-uploads.ini <<'PHPINI'
+upload_max_filesize = 20M
+post_max_size = 22M
+PHPINI
+cp /etc/php/8.3/fpm/conf.d/99-yoga-studio-uploads.ini /etc/php/8.3/cli/conf.d/99-yoga-studio-uploads.ini
+
+NGINX_SITE=/etc/nginx/sites-available/ekoyoga-ik.ru
+if [ -f "$NGINX_SITE" ]; then
+  if grep -q 'client_max_body_size' "$NGINX_SITE"; then
+    sed -i 's/client_max_body_size[^;]*;/client_max_body_size 20M;/' "$NGINX_SITE"
+  else
+    sed -i '/server_name ekoyoga-ik.ru/a \\    client_max_body_size 20M;' "$NGINX_SITE"
+  fi
+  nginx -t && systemctl reload nginx
+fi
+
 systemctl restart php8.3-fpm
 
 # Планировщик Laravel: автоотмена недобранных групп и напоминания по абонементам.

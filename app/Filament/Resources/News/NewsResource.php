@@ -67,7 +67,8 @@ class NewsResource extends Resource
                             ->disk('public')
                             ->directory('news')
                             ->imageEditor()
-                            ->maxSize(8192),
+                            ->maxSize(8192)
+                            ->helperText('До 8 МБ. Если загрузка не удаётся — уменьшите файл или сохраните как JPG/WebP.'),
                     ]),
                 Section::make('Видимость')
                     ->schema([
