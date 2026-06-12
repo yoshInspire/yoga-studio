@@ -18,6 +18,7 @@ use Illuminate\Support\Carbon;
     'topic',
     'description',
     'starts_at',
+    'duration_minutes',
     'type',
     'capacity',
     'trainer_id',
@@ -38,6 +39,7 @@ class ClassSession extends Model
     {
         return [
             'starts_at' => 'datetime',
+            'duration_minutes' => 'integer',
             'type' => SubscriptionType::class,
             'capacity' => 'integer',
             'status' => ClassSessionStatus::class,
@@ -143,11 +145,21 @@ class ClassSession extends Model
         return $this->starts_at->format('H:i');
     }
 
-    public function durationMinutes(): int
+    public static function defaultDurationMinutesForType(SubscriptionType|string|null $type): int
     {
+        $typeValue = $type instanceof SubscriptionType ? $type->value : ($type ?? 'default');
         $defaults = config('studio.default_class_duration_minutes', []);
 
-        return (int) ($defaults[$this->type->value] ?? $defaults['default'] ?? 90);
+        return (int) ($defaults[$typeValue] ?? $defaults['default'] ?? 90);
+    }
+
+    public function durationMinutes(): int
+    {
+        if ($this->duration_minutes !== null) {
+            return (int) $this->duration_minutes;
+        }
+
+        return self::defaultDurationMinutesForType($this->type);
     }
 
     public function endsAt(): Carbon

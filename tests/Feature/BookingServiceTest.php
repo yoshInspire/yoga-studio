@@ -297,6 +297,7 @@ class BookingServiceTest extends TestCase
 
         $this->actingAs($user);
         $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Вы не можете отменить запись в соответствии с правилами студии.');
         $this->service->cancelByClient($booking);
     }
 

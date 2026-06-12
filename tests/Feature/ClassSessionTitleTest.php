@@ -48,4 +48,37 @@ class ClassSessionTitleTest extends TestCase
 
         $this->assertSame('Йога-нидра', $session->title);
     }
+
+    public function test_custom_duration_is_used_in_schedule(): void
+    {
+        $session = ClassSession::query()->create([
+            'topic' => 'Тест',
+            'starts_at' => now()->addDay()->setTime(10, 0),
+            'type' => SubscriptionType::Group,
+            'duration_minutes' => 75,
+            'capacity' => 6,
+            'status' => ClassSessionStatus::Scheduled,
+        ]);
+
+        $this->assertSame(75, $session->durationMinutes());
+        $this->assertSame('10:00–11:15', $session->formattedTimeRange());
+    }
+
+    public function test_duration_falls_back_to_type_default(): void
+    {
+        config(['studio.default_class_duration_minutes' => [
+            'group' => 90,
+            'default' => 90,
+        ]]);
+
+        $session = ClassSession::query()->create([
+            'topic' => 'Тест',
+            'starts_at' => now()->addDay()->setTime(14, 0),
+            'type' => SubscriptionType::Group,
+            'capacity' => 6,
+            'status' => ClassSessionStatus::Scheduled,
+        ]);
+
+        $this->assertSame(90, $session->durationMinutes());
+    }
 }

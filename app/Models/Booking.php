@@ -86,7 +86,7 @@ class Booking extends Model
      */
     public function cancellationBlockedMessage(): string
     {
-        return $this->deadlineBlockedMessage('отменить');
+        return 'Вы не можете отменить запись в соответствии с правилами студии.';
     }
 
     public function canBeRescheduledByClient(): bool

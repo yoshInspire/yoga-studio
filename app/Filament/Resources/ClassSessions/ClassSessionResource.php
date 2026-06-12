@@ -70,11 +70,11 @@ class ClassSessionResource extends Resource
                             ->rows(3)
                             ->columnSpanFull(),
                         DateTimePicker::make('starts_at')
-                            ->label('Дата и время')
+                            ->label('Дата и время начала')
                             ->required()
                             ->seconds(false)
                             ->native(false),
-                        Grid::make(2)->schema([
+                        Grid::make(3)->schema([
                             Select::make('type')
                                 ->label('Тип')
                                 ->options(collect(SubscriptionType::cases())->mapWithKeys(
@@ -82,7 +82,20 @@ class ClassSessionResource extends Resource
                                 )->all())
                                 ->required()
                                 ->live()
+                                ->afterStateUpdated(fn ($state, callable $set) => $set(
+                                    'duration_minutes',
+                                    ClassSession::defaultDurationMinutesForType($state),
+                                ))
                                 ->native(false),
+                            TextInput::make('duration_minutes')
+                                ->label('Длительность')
+                                ->numeric()
+                                ->minValue(15)
+                                ->maxValue(300)
+                                ->suffix('мин')
+                                ->default(fn ($get) => ClassSession::defaultDurationMinutesForType($get('type')))
+                                ->required()
+                                ->helperText('Сколько минут длится занятие. Показывается в расписании на сайте.'),
                             TextInput::make('capacity')
                                 ->label('Мест в группе')
                                 ->numeric()
@@ -122,6 +135,10 @@ class ClassSessionResource extends Resource
                 TextColumn::make('starts_at')
                     ->label('Когда')
                     ->dateTime('d.m.Y H:i')
+                    ->sortable(),
+                TextColumn::make('duration_minutes')
+                    ->label('Длительность')
+                    ->formatStateUsing(fn (?int $state, ClassSession $record) => ($state ?? $record->durationMinutes()).' мин')
                     ->sortable(),
                 TextColumn::make('direction.title')
                     ->label('Направление')

@@ -61,9 +61,15 @@ class BookingController extends Controller
         try {
             $bookings->cancelByClient($booking);
         } catch (InvalidArgumentException $e) {
-            return back()->withErrors(['booking' => $e->getMessage()]);
+            return redirect()
+                ->route('account')
+                ->with('lk_section', 'bookings')
+                ->withErrors(['booking' => $e->getMessage()]);
         }
 
-        return back()->with('status', 'Запись отменена. Занятие возвращено на абонемент.');
+        return redirect()
+            ->route('account')
+            ->with('lk_section', 'bookings')
+            ->with('status', 'Запись отменена. Занятие возвращено на абонемент.');
     }
 }

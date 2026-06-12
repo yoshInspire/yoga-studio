@@ -340,17 +340,15 @@
                       {{ $session->trainerName() }}
                     </p>
                   </div>
-                  @if($booking->canBeCancelledByClient())
-                    <div class="lk-row__actions">
+                  <div class="lk-row__actions">
+                    @if($booking->canBeCancelledByClient())
                       <a href="{{ route('schedule', ['reschedule' => $booking->id]) }}" class="btn btn--solid">Перенести</a>
-                      <form action="{{ route('bookings.cancel', $booking) }}" method="post">
-                        @csrf
-                        <button type="submit" class="btn btn--ghost">Отменить</button>
-                      </form>
-                    </div>
-                  @else
-                    <button type="button" class="btn btn--ghost" disabled title="Отмена и перенос недоступны менее чем за установленный срок до начала">Отменить</button>
-                  @endif
+                    @endif
+                    <form action="{{ route('bookings.cancel', $booking) }}" method="post">
+                      @csrf
+                      <button type="submit" class="btn btn--ghost">Отменить</button>
+                    </form>
+                  </div>
                 </div>
               @empty
                 <p class="lk__empty">Пока нет активных записей. <a href="{{ route('schedule') }}">Посмотреть расписание</a></p>
