@@ -174,7 +174,7 @@
           <p class="eyebrow reveal">Форматы занятий</p>
           <h2 class="section__title reveal">Услуги и цены</h2>
         </div>
-        <p class="section__desc reveal">Актуальные цены студии на групповые и индивидуальные форматы.</p>
+        <p class="section__desc reveal">Актуальные цены студии на групповые и индивидуальные форматы. Запись на&nbsp;занятие осуществляется по&nbsp;100% предоплате.</p>
       </div>
       @include('partials.pricing')
     </div>

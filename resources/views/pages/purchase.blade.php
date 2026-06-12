@@ -7,7 +7,7 @@
     <div class="container">
       <div class="lk__content reveal" style="max-width: 920px; margin: 0 auto;">
         <h1 class="lk__title">Купить абонемент</h1>
-        <p class="lk__lead">Выберите тариф и дату начала. После успешной оплаты абонемент появится в личном кабинете — можно сразу записываться на занятия.</p>
+        <p class="lk__lead">Выберите тариф и дату начала. После успешной оплаты абонемент появится в личном кабинете — можно сразу записываться на занятия. Запись на&nbsp;занятие осуществляется по&nbsp;100% предоплате.</p>
 
         @if ($errors->has('purchase'))
           <div class="auth__alert auth__alert--error" style="margin-bottom: 18px">{{ $errors->first('purchase') }}</div>
