@@ -257,7 +257,6 @@ class StudioMailingService
             'heading' => 'Спокойной ночи!',
             'subject' => 'Завтра у вас нет занятий',
             'lines' => [
-                'Спокойной ночи!',
                 'Завтра '.$tomorrow->translatedFormat('j F').' у вас нет активных занятий.',
                 'Если захотите записаться — мы на связи: '.$this->scheduleUrl(),
             ],
