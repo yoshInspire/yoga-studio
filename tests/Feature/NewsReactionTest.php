@@ -90,6 +90,37 @@ class NewsReactionTest extends TestCase
         $this->assertDatabaseCount('news_reactions', 1);
     }
 
+    public function test_trainer_can_submit_reaction(): void
+    {
+        $trainer = User::factory()->trainer()->create();
+        $news = $this->publishedNews();
+
+        $this->actingAs($trainer)
+            ->postJson(route('news.reactions.store', $news), [
+                'reaction' => NewsReactionType::Thanks->value,
+            ])
+            ->assertOk()
+            ->assertJson([
+                'counts' => [
+                    'thanks' => 1,
+                ],
+                'total' => 1,
+                'user_reaction' => 'thanks',
+            ]);
+    }
+
+    public function test_admin_cannot_submit_reaction(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $news = $this->publishedNews();
+
+        $this->actingAs($admin)
+            ->postJson(route('news.reactions.store', $news), [
+                'reaction' => NewsReactionType::Like->value,
+            ])
+            ->assertForbidden();
+    }
+
     public function test_news_page_shows_reactions_block(): void
     {
         $news = $this->publishedNews();

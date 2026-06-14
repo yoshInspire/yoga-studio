@@ -3,7 +3,7 @@
 
   $summary = $summary ?? ['counts' => array_fill_keys(NewsReactionType::values(), 0), 'total' => 0, 'user_reaction' => null];
   $compact = $compact ?? false;
-  $canReact = auth()->check() && auth()->user()->isClient();
+  $canReact = auth()->check() && auth()->user()->canReactToNews();
   $loginUrl = route('login');
 @endphp
 

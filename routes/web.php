@@ -36,7 +36,7 @@ Route::get('/news/{news}', [NewsController::class, 'show'])->name('news.show');
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 
 Route::post('/news/{news}/reactions', [NewsReactionController::class, 'store'])
-    ->middleware(['auth', 'role:client', 'throttle:60,1'])
+    ->middleware(['auth', 'role:client,trainer', 'throttle:60,1'])
     ->name('news.reactions.store');
 
 Route::post('/lead', [LeadController::class, 'store'])

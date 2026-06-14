@@ -144,6 +144,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->role === UserRole::Trainer;
     }
 
+    public function canReactToNews(): bool
+    {
+        return in_array($this->role, [UserRole::Client, UserRole::Trainer], true);
+    }
+
     public function trainerDisplayName(): string
     {
         return trim("{$this->first_name} {$this->last_name}");
