@@ -192,6 +192,7 @@ class ClassSessionResource extends Resource
             ->defaultGroup('starts_at')
             ->groupingSettingsHidden()
             ->collapsedGroupsByDefault()
+            ->defaultPaginationPageOption(50)
             ->filters([
                 SelectFilter::make('type')
                     ->label('Тип')
