@@ -7,6 +7,7 @@ use App\Models\ClassSession;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\BookingService;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
@@ -23,16 +24,39 @@ class CreateBooking extends CreateRecord
             : null;
 
         try {
-            return app(BookingService::class)->book(
+            return app(BookingService::class)->bookForAdmin(
                 User::query()->findOrFail($data['user_id']),
                 ClassSession::query()->findOrFail($data['class_session_id']),
                 $subscription,
             );
         } catch (InvalidArgumentException $e) {
+            $message = $e->getMessage();
+            $field = $this->validationFieldForMessage($message);
+
+            Notification::make()
+                ->danger()
+                ->title('Не удалось создать запись')
+                ->body($message)
+                ->persistent()
+                ->send();
+
             throw ValidationException::withMessages([
-                'user_id' => $e->getMessage(),
+                $field => $message,
             ]);
         }
+    }
+
+    private function validationFieldForMessage(string $message): string
+    {
+        if (str_contains($message, 'абонемент') || str_contains($message, 'Абонемент')) {
+            return 'subscription_id';
+        }
+
+        if (str_contains($message, 'заняти') || str_contains($message, 'Заняти')) {
+            return 'class_session_id';
+        }
+
+        return 'user_id';
     }
 
     protected function getRedirectUrl(): string

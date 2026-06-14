@@ -107,6 +107,47 @@ class BookingServiceTest extends TestCase
         }
     }
 
+    public function test_booking_deducts_when_subscription_starts_on_class_day(): void
+    {
+        $user = $this->client();
+        $classDay = now()->addDay()->startOfDay();
+        $sub = $this->subscription($user, [
+            'type' => SubscriptionType::Individual,
+            'sessions_total' => 1,
+            'starts_at' => $classDay,
+            'ends_at' => $classDay->copy()->addMonth(),
+        ]);
+        $session = $this->makeSession([
+            'type' => SubscriptionType::Individual,
+            'starts_at' => $classDay->copy()->setTime(18, 0),
+            'capacity' => 1,
+        ]);
+
+        $booking = $this->service->book($user, $session, $sub);
+
+        $this->assertSame(BookingStatus::Confirmed, $booking->status);
+        $this->assertSame($sub->id, $booking->subscription_id);
+        $this->assertSame(1, $sub->fresh()->sessions_used);
+    }
+
+    public function test_admin_can_book_outside_public_booking_window(): void
+    {
+        $user = $this->client();
+        $this->subscription($user);
+        $session = $this->makeSession(['starts_at' => now()->addDays(10)->setTime(10, 0)]);
+
+        try {
+            $this->service->book($user, $session);
+            $this->fail('Expected InvalidArgumentException');
+        } catch (InvalidArgumentException $e) {
+            $this->assertStringContainsString('недоступна', $e->getMessage());
+        }
+
+        $booking = $this->service->bookForAdmin($user, $session);
+
+        $this->assertSame(BookingStatus::Confirmed, $booking->status);
+    }
+
     public function test_cannot_book_when_all_sessions_used(): void
     {
         $user = $this->client();

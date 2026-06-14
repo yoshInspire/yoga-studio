@@ -12,6 +12,7 @@ use App\Models\Booking;
 use App\Models\ClassSession;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Services\SubscriptionService;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -99,7 +100,7 @@ class BookingResource extends Resource
                         Select::make('subscription_id')
                             ->label('Абонемент для списания')
                             ->placeholder('Подобрать автоматически')
-                            ->helperText('Оставьте пустым — система выберет подходящий абонемент нужного типа. Или укажите явно, с какого списать.')
+                            ->helperText('Оставьте пустым — система выберет подходящий абонемент. Или выберите вручную, с какого списать занятие.')
                             ->options(function ($get) {
                                 $userId = $get('user_id');
                                 $sessionId = $get('class_session_id');
@@ -109,24 +110,25 @@ class BookingResource extends Resource
                                 }
 
                                 $session = ClassSession::find($sessionId);
+                                $user = User::find($userId);
 
-                                if (! $session) {
+                                if (! $session || ! $user) {
                                     return [];
                                 }
 
-                                return Subscription::query()
-                                    ->where('user_id', $userId)
-                                    ->forType($session->type)
-                                    ->active()
-                                    ->orderBy('ends_at')
-                                    ->get()
-                                    ->mapWithKeys(fn (Subscription $s) => [
-                                        $s->id => $s->type->shortLabel()
-                                            .' · остаток '.$s->sessionsRemaining().'/'.$s->sessions_total
-                                            .' · до '.$s->ends_at->format('d.m.Y'),
-                                    ])
-                                    ->all();
+                                return collect(app(SubscriptionService::class)->usableForUserOnDate(
+                                    $user,
+                                    $session->type,
+                                    $session->starts_at,
+                                ))->mapWithKeys(fn (Subscription $s) => [
+                                    $s->id => $s->type->shortLabel()
+                                        .' · остаток '.$s->sessionsRemaining().'/'.$s->sessions_total
+                                        .' · с '.$s->starts_at->format('d.m.Y')
+                                        .' до '.$s->ends_at->format('d.m.Y'),
+                                ])->all();
                             })
+                            ->searchable()
+                            ->native(false)
                             ->visibleOn('create'),
                     ]),
             ]);

@@ -21,10 +21,36 @@ class BookingService
 
     public function book(User $user, ClassSession $session, ?Subscription $subscription = null): Booking
     {
-        return DB::transaction(function () use ($user, $session, $subscription) {
+        return $this->bookInternal($user, $session, $subscription, forAdmin: false);
+    }
+
+    public function bookForAdmin(User $user, ClassSession $session, ?Subscription $subscription = null): Booking
+    {
+        return $this->bookInternal($user, $session, $subscription, forAdmin: true);
+    }
+
+    private function bookInternal(User $user, ClassSession $session, ?Subscription $subscription, bool $forAdmin): Booking
+    {
+        return DB::transaction(function () use ($user, $session, $subscription, $forAdmin) {
             $session = ClassSession::query()->lockForUpdate()->findOrFail($session->id);
 
-            $this->assertCanBook($user, $session);
+            $this->assertCanBook($user, $session, forAdmin: $forAdmin);
+
+            if ($subscription !== null) {
+                if ($subscription->user_id !== $user->id) {
+                    throw new InvalidArgumentException('Выбранный абонемент принадлежит другому клиенту.');
+                }
+
+                if (! $this->subscriptions->typesMatch($subscription->type, $session->type)) {
+                    throw new InvalidArgumentException('Тип абонемента не подходит для этого занятия.');
+                }
+
+                if (! $subscription->isActive($session->starts_at)) {
+                    throw new InvalidArgumentException(
+                        'Выбранный абонемент не действует на дату занятия или на нём не осталось занятий.',
+                    );
+                }
+            }
 
             $subscription ??= $this->subscriptions->findUsableForUser($user, $session->type, $session->starts_at);
 
@@ -43,10 +69,6 @@ class BookingService
                 throw new InvalidArgumentException(
                     $reason ?? 'Нет подходящего абонемента с доступными занятиями.',
                 );
-            }
-
-            if (! $this->subscriptions->typesMatch($subscription->type, $session->type)) {
-                throw new InvalidArgumentException('Тип абонемента не подходит для этого занятия.');
             }
 
             if ($session->confirmedCount() >= $session->capacity) {
@@ -297,9 +319,17 @@ class BookingService
         });
     }
 
-    protected function assertCanBook(User $user, ClassSession $session, ?int $excludeBookingId = null): void
+    protected function assertCanBook(User $user, ClassSession $session, ?int $excludeBookingId = null, bool $forAdmin = false): void
     {
-        if (! $session->isBookable()) {
+        if ($forAdmin) {
+            if ($session->status !== ClassSessionStatus::Scheduled) {
+                throw new InvalidArgumentException('Занятие отменено или недоступно для записи.');
+            }
+
+            if ($session->isFull()) {
+                throw new InvalidArgumentException('На занятии не осталось свободных мест.');
+            }
+        } elseif (! $session->isBookable()) {
             throw new InvalidArgumentException('Запись на это занятие недоступна.');
         }
 

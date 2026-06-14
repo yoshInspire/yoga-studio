@@ -11,6 +11,22 @@ use InvalidArgumentException;
 
 class SubscriptionService
 {
+    /**
+     * @return list<Subscription>
+     */
+    public function usableForUserOnDate(User $user, SubscriptionType $classType, Carbon $on): array
+    {
+        return $user->subscriptions()
+            ->forType($classType)
+            ->active($on->copy()->startOfDay())
+            ->orderBy('purchased_at')
+            ->orderBy('starts_at')
+            ->orderBy('ends_at')
+            ->orderBy('id')
+            ->get()
+            ->all();
+    }
+
     public function findUsableForUser(User $user, SubscriptionType $classType, ?Carbon $on = null): ?Subscription
     {
         // Историчность: списываем из абонемента, приобретённого раньше всех
@@ -90,7 +106,7 @@ class SubscriptionService
             throw new InvalidArgumentException('Количество списываемых занятий должно быть не меньше 1.');
         }
 
-        if (! $this->canDeduct($subscription)) {
+        if (! $this->canDeduct($subscription, $usedAt)) {
             throw new InvalidArgumentException('В абонементе нет доступных занятий или срок действия истёк.');
         }
 
