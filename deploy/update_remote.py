@@ -103,6 +103,9 @@ chown -R www-data:www-data {APP_DIR}/storage {APP_DIR}/bootstrap/cache
 chmod -R 775 {APP_DIR}/storage {APP_DIR}/bootstrap/cache
 mkdir -p {APP_DIR}/storage/app/livewire-tmp
 chown www-data:www-data {APP_DIR}/storage/app/livewire-tmp
+mkdir -p {APP_DIR}/public/images/directions
+chown -R www-data:www-data {APP_DIR}/public/images
+chmod -R 775 {APP_DIR}/public/images
 
 # Загрузка фото в админке: PHP и nginx по умолчанию режут файлы > 1–2 МБ.
 cat > /etc/php/8.3/fpm/conf.d/99-yoga-studio-uploads.ini <<'PHPINI'

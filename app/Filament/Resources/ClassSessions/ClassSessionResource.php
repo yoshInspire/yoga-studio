@@ -10,6 +10,7 @@ use App\Filament\Resources\ClassSessions\Pages\EditClassSession;
 use App\Filament\Resources\ClassSessions\Pages\ListClassSessions;
 use App\Models\ClassSession;
 use App\Models\User;
+use App\Support\RussianDate;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -25,6 +26,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 
 class ClassSessionResource extends Resource
@@ -133,8 +135,8 @@ class ClassSessionResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('starts_at')
-                    ->label('Когда')
-                    ->dateTime('d.m.Y H:i')
+                    ->label('Время')
+                    ->dateTime('H:i')
                     ->sortable(),
                 TextColumn::make('duration_minutes')
                     ->label('Длительность')
@@ -168,6 +170,24 @@ class ClassSessionResource extends Resource
                     ->formatStateUsing(fn (ClassSessionStatus $state) => $state->label()),
             ])
             ->defaultSort('starts_at')
+            ->groups([
+                Group::make('starts_at')
+                    ->label('День')
+                    ->date()
+                    ->collapsible()
+                    ->titlePrefixedWithLabel(false)
+                    ->getTitleFromRecordUsing(function (ClassSession $record): string {
+                        $date = $record->starts_at;
+
+                        if ($date->isToday()) {
+                            return 'Сегодня · '.RussianDate::weekdayShortDayMonth($date);
+                        }
+
+                        return RussianDate::weekdayShortDayMonth($date);
+                    }),
+            ])
+            ->defaultGroup('starts_at')
+            ->groupingSettingsHidden()
             ->filters([
                 SelectFilter::make('type')
                     ->label('Тип')
