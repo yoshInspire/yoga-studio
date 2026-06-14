@@ -28,6 +28,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ClassSessionResource extends Resource
 {
@@ -173,9 +174,9 @@ class ClassSessionResource extends Resource
             ->groups([
                 Group::make('starts_at')
                     ->label('День')
-                    ->date()
                     ->collapsible()
                     ->titlePrefixedWithLabel(false)
+                    ->getKeyFromRecordUsing(fn (ClassSession $record): string => $record->starts_at->toDateString())
                     ->getTitleFromRecordUsing(function (ClassSession $record): string {
                         $date = $record->starts_at;
 
@@ -184,7 +185,9 @@ class ClassSessionResource extends Resource
                         }
 
                         return RussianDate::weekdayShortDayMonth($date);
-                    }),
+                    })
+                    ->orderQueryUsing(fn (Builder $query, string $direction): Builder => $query->orderBy('starts_at', $direction))
+                    ->scopeQueryByKeyUsing(fn (Builder $query, string $key): Builder => $query->whereDate('starts_at', $key)),
             ])
             ->defaultGroup('starts_at')
             ->groupingSettingsHidden()
