@@ -34,7 +34,7 @@ class ClassSessionResource extends Resource
 {
     protected static ?string $model = ClassSession::class;
 
-    protected static ?string $navigationLabel = 'Занятия';
+    protected static ?string $navigationLabel = 'Расписание';
 
     protected static ?string $modelLabel = 'занятие';
 
