@@ -151,7 +151,7 @@ class SubscriptionResource extends Resource
                 TextColumn::make('user.last_name')
                     ->label('Клиент')
                     ->formatStateUsing(fn ($record) => $record->user?->fullName())
-                    ->searchable(['users.last_name', 'users.first_name'])
+                    ->searchable(['last_name', 'first_name'])
                     ->sortable(),
                 TextColumn::make('type')
                     ->label('Тип')

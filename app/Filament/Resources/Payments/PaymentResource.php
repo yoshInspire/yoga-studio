@@ -36,7 +36,7 @@ class PaymentResource extends Resource
                 TextColumn::make('user.last_name')
                     ->label('Клиент')
                     ->formatStateUsing(fn (Payment $record) => $record->user?->fullName())
-                    ->searchable(['users.last_name', 'users.first_name'])
+                    ->searchable(['last_name', 'first_name'])
                     ->sortable(),
                 TextColumn::make('description')
                     ->label('Тариф')

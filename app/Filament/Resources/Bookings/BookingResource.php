@@ -147,7 +147,7 @@ class BookingResource extends Resource
                 TextColumn::make('user.last_name')
                     ->label('Клиент')
                     ->formatStateUsing(fn ($record) => $record->user?->fullName())
-                    ->searchable(['users.last_name', 'users.first_name']),
+                    ->searchable(['last_name', 'first_name']),
                 TextColumn::make('subscription.type')
                     ->label('Абонемент')
                     ->formatStateUsing(fn ($record) => $record->subscription?->type?->shortLabel() ?? '—'),
