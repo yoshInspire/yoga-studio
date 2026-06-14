@@ -10,7 +10,7 @@ class ListBookings extends ListRecords
 {
     protected static string $resource = BookingResource::class;
 
-    protected ?string $subheading = 'Записи сгруппированы по занятиям — нажмите на строку занятия, чтобы увидеть список клиентов. Обзор по дням: раздел «Занятия».';
+    protected ?string $subheading = 'Записи сгруппированы по занятиям — раскройте строку, чтобы увидеть клиентов. Индивидуальные занятия отмечены типом «Индивидуальный»; для быстрого поиска используйте фильтр «Тип занятия». Обзор слотов по дням — в разделе «Занятия».';
 
     protected function getHeaderActions(): array
     {

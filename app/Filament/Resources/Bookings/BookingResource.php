@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Bookings;
 
 use App\Enums\BookingStatus;
+use App\Enums\SubscriptionType;
 use App\Enums\UserRole;
 use App\Filament\Resources\Bookings\Pages\CreateBooking;
 use App\Filament\Resources\Bookings\Pages\EditBooking;
@@ -138,12 +139,14 @@ class BookingResource extends Resource
                 TextColumn::make('classSession.starts_at')
                     ->label('Когда')
                     ->dateTime('d.m.Y H:i')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable(),
                 TextColumn::make('classSession.title')
                     ->label('Занятие')
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->searchable(),
+                TextColumn::make('classSession.type')
+                    ->label('Тип занятия')
+                    ->badge()
+                    ->formatStateUsing(fn (?SubscriptionType $state) => $state?->shortLabel() ?? '—'),
                 TextColumn::make('user.last_name')
                     ->label('Клиент')
                     ->formatStateUsing(fn ($record) => $record->user?->fullName())
@@ -170,7 +173,11 @@ class BookingResource extends Resource
                         }
 
                         return $session->starts_at->format('d.m.Y H:i')
+                            .' · '.$session->type->shortLabel()
                             .' · '.$session->title
+                            .($session->type === SubscriptionType::Individual
+                                ? ' · '.$session->trainerName()
+                                : '')
                             .' · '.$session->confirmedCount().' / '.$session->capacity;
                     }),
             ])
@@ -195,6 +202,21 @@ class BookingResource extends Resource
                             fn (Builder $q) => $q->whereDate('starts_at', $data['date']),
                         );
                     }),
+                SelectFilter::make('session_type')
+                    ->label('Тип занятия')
+                    ->options(collect(SubscriptionType::cases())->mapWithKeys(
+                        fn (SubscriptionType $type) => [$type->value => $type->label()]
+                    )->all())
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (blank($data['value'] ?? null)) {
+                            return $query;
+                        }
+
+                        return $query->whereHas(
+                            'classSession',
+                            fn (Builder $q) => $q->where('type', $data['value']),
+                        );
+                    }),
                 SelectFilter::make('status')
                     ->label('Статус')
                     ->options(collect(BookingStatus::cases())->mapWithKeys(
@@ -215,7 +237,7 @@ class BookingResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['classSession', 'user', 'subscription']);
+            ->with(['classSession.trainer', 'user', 'subscription']);
     }
 
     public static function getRelations(): array
