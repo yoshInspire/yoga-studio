@@ -191,6 +191,7 @@ class ClassSessionResource extends Resource
             ])
             ->defaultGroup('starts_at')
             ->groupingSettingsHidden()
+            ->collapsedGroupsByDefault()
             ->filters([
                 SelectFilter::make('type')
                     ->label('Тип')
