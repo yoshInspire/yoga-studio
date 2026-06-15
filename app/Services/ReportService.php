@@ -34,7 +34,7 @@ class ReportService
     public function visitMonths(?Carbon $from = null, ?Carbon $to = null): array
     {
         return Booking::query()
-            ->where('status', BookingStatus::Confirmed)
+            ->where('bookings.status', BookingStatus::Confirmed)
             ->whereHas('classSession', function (Builder $q) use ($from, $to) {
                 $q->where('starts_at', '<', now())
                     ->when($from, fn (Builder $inner) => $inner->where('starts_at', '>=', $from->copy()->startOfDay()))
@@ -115,7 +115,7 @@ class ReportService
     private function completedVisitsQuery(?Carbon $from = null, ?Carbon $to = null, ?int $clientId = null): Builder
     {
         return Booking::query()
-            ->where('status', BookingStatus::Confirmed)
+            ->where('bookings.status', BookingStatus::Confirmed)
             ->when($clientId, fn (Builder $q) => $q->where('user_id', $clientId))
             ->whereHas('classSession', function (Builder $q) use ($from, $to) {
                 $q->where('starts_at', '<', now())

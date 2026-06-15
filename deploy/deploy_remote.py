@@ -41,7 +41,7 @@ if ! command -v nginx >/dev/null 2>&1; then
   apt-get install -y nginx mysql-server git unzip curl ca-certificates gnupg2 lsb-release certbot python3-certbot-nginx
   add-apt-repository -y ppa:ondrej/php
   apt-get update -y
-  apt-get install -y php8.3-fpm php8.3-cli php8.3-mysql php8.3-mbstring php8.3-xml php8.3-curl php8.3-zip php8.3-bcmath php8.3-gd
+  apt-get install -y php8.3-fpm php8.3-cli php8.3-mysql php8.3-mbstring php8.3-xml php8.3-curl php8.3-zip php8.3-bcmath php8.3-gd php8.3-intl
   curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
   systemctl enable nginx php8.3-fpm mysql
   systemctl start nginx php8.3-fpm mysql

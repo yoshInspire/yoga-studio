@@ -38,7 +38,7 @@ def load_local_secrets() -> dict[str, str]:
 
 def ssh_credentials() -> tuple[str, str, str]:
     local = load_local_secrets()
-    host = os.environ.get("SSH_HOST") or local.get("SSH_HOST", "77.91.93.110")
+    host = os.environ.get("SSH_HOST") or local.get("SSH_HOST", "193.247.73.221")
     user = os.environ.get("SSH_USER") or local.get("SSH_USER", "root")
     password = os.environ.get("SSH_PASSWORD") or local.get("SSH_PASSWORD", "")
 
