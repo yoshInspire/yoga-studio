@@ -34,7 +34,7 @@ class Reports extends Page
     {
         return $schema->components([
             Section::make('Абонементы')
-                ->description('Три листа Excel: групповые, индивидуальные и мероприятия вне абонемента.')
+                ->description('Три листа Excel: групповые, индивидуальные и мероприятия вне абонемента. Включая даты посещений по каждому абонементу.')
                 ->schema([
                     Actions::make([
                         $this->downloadSubscriptionsAction(),

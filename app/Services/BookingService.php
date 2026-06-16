@@ -114,6 +114,12 @@ class BookingService
             }
         }
 
+        // Абонемент с будущей датой начала: запись можно создать заранее,
+        // но списание откладываем до наступления даты начала.
+        if (! $subscription->hasStarted()) {
+            return null;
+        }
+
         $usage = $this->subscriptions->deduct(
             $subscription,
             $description,
@@ -122,6 +128,38 @@ class BookingService
         );
 
         return $usage->id;
+    }
+
+    /**
+     * Списать занятие по брони, если абонемент уже начал действовать,
+     * а списание было отложено при ранней записи.
+     */
+    public function chargePendingBooking(Booking $booking): bool
+    {
+        if (! $booking->isConfirmed() || $booking->subscription_usage_id !== null) {
+            return false;
+        }
+
+        $subscription = $booking->subscription;
+        $session = $booking->classSession;
+
+        if ($subscription === null || $session === null || ! $subscription->hasStarted()) {
+            return false;
+        }
+
+        if (! $subscription->isActive($session->starts_at)) {
+            return false;
+        }
+
+        $usageId = $this->chargeForBooking($booking->user, $session, $subscription);
+
+        if ($usageId === null) {
+            return false;
+        }
+
+        $booking->update(['subscription_usage_id' => $usageId]);
+
+        return true;
     }
 
     /**

@@ -39,6 +39,7 @@ class SubscriptionTypeSheet implements FromCollection, ShouldAutoSize, WithHeadi
             'Дата покупки',
             'Начало действия',
             'Окончание',
+            'Даты посещений',
             'Примечание',
         ];
     }
@@ -58,6 +59,7 @@ class SubscriptionTypeSheet implements FromCollection, ShouldAutoSize, WithHeadi
                 $subscription->purchased_at->format('d.m.Y'),
                 $subscription->starts_at->format('d.m.Y'),
                 $subscription->ends_at->format('d.m.Y'),
+                $this->reports->visitDatesForSubscription($subscription),
                 $subscription->admin_note ?? '',
             ]);
     }

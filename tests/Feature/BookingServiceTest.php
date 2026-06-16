@@ -107,7 +107,7 @@ class BookingServiceTest extends TestCase
         }
     }
 
-    public function test_booking_deducts_when_subscription_starts_on_class_day(): void
+    public function test_booking_defers_charge_when_subscription_starts_on_class_day(): void
     {
         $user = $this->client();
         $classDay = now()->addDay()->startOfDay();
@@ -127,7 +127,14 @@ class BookingServiceTest extends TestCase
 
         $this->assertSame(BookingStatus::Confirmed, $booking->status);
         $this->assertSame($sub->id, $booking->subscription_id);
+        $this->assertNull($booking->subscription_usage_id);
+        $this->assertSame(0, $sub->fresh()->sessions_used);
+
+        $this->travelTo($classDay->copy()->setTime(8, 0));
+
+        $this->assertTrue($this->service->chargePendingBooking($booking->fresh()));
         $this->assertSame(1, $sub->fresh()->sessions_used);
+        $this->assertNotNull($booking->fresh()->subscription_usage_id);
     }
 
     public function test_admin_can_book_outside_public_booking_window(): void

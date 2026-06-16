@@ -18,6 +18,11 @@ Schedule::command('studio:subscription-reminders')
     ->dailyAt('10:00')
     ->withoutOverlapping();
 
+// Отложенное списание по броням на абонементы с будущей датой начала.
+Schedule::command('studio:charge-pending-bookings')
+    ->dailyAt('00:05')
+    ->withoutOverlapping();
+
 // Ежедневное напоминание о занятиях на завтра — в 20:00.
 Schedule::command('studio:daily-booking-reminders')
     ->dailyAt((string) config('studio.mailings.daily_reminder.time', '20:00'))

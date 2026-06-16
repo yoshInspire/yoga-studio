@@ -16,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(Client::class, function () {
             $client = new Client;
             $client->setAuth(
-                (string) config('yookassa.shop_id'),
+                (int) config('yookassa.shop_id'),
                 (string) config('yookassa.secret_key'),
             );
 

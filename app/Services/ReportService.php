@@ -22,10 +22,37 @@ class ReportService
     {
         return Subscription::query()
             ->forType($type)
-            ->with('user:id,first_name,last_name,patronymic,phone')
+            ->with([
+                'user:id,first_name,last_name,patronymic,phone',
+                'usages' => fn ($query) => $query->orderBy('used_at'),
+            ])
             ->orderBy('starts_at')
             ->orderBy('id')
             ->get();
+    }
+
+    /**
+     * Даты посещений для строки отчёта «Абонементы».
+     */
+    public function visitDatesForSubscription(Subscription $subscription): string
+    {
+        $dates = $subscription->usages
+            ->map(fn ($usage) => $usage->used_at->format('d.m.Y'))
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($dates !== []) {
+            return implode(', ', $dates);
+        }
+
+        $note = $subscription->admin_note ?? '';
+
+        if (preg_match('/Посещения:\s*(.+?)(?:\n|$)/u', $note, $matches)) {
+            return trim($matches[1]);
+        }
+
+        return '';
     }
 
     /**

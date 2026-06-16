@@ -91,6 +91,16 @@ class Subscription extends Model
             && $this->sessionsRemaining() > 0;
     }
 
+    /**
+     * Абонемент уже начал действовать (дата начала наступила).
+     */
+    public function hasStarted(?Carbon $on = null): bool
+    {
+        $on = ($on ?? now())->copy()->startOfDay();
+
+        return $this->starts_at->lte($on);
+    }
+
     public function formattedStartsAt(): string
     {
         return RussianDate::dayMonthYear($this->starts_at);
