@@ -23,6 +23,27 @@ final class RussianDate
     ];
 
     /** @var list<string> */
+    private const WEEKDAYS_FULL = [
+        1 => 'Понедельник',
+        2 => 'Вторник',
+        3 => 'Среда',
+        4 => 'Четверг',
+        5 => 'Пятница',
+        6 => 'Суббота',
+        7 => 'Воскресенье',
+    ];
+
+    public static function weekdayFull(Carbon $date): string
+    {
+        return self::WEEKDAYS_FULL[$date->dayOfWeekIso];
+    }
+
+    public static function weekdayHeader(Carbon $date): string
+    {
+        return self::weekdayFull($date).' '.$date->format('d.m');
+    }
+
+    /** @var list<string> */
     private const WEEKDAYS_SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
     public static function dayMonth(Carbon $date): string

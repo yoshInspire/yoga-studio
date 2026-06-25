@@ -3,12 +3,14 @@
 namespace App\Services;
 
 use App\Enums\BookingStatus;
+use App\Enums\ClassSessionStatus;
 use App\Enums\SubscriptionType;
 use App\Enums\UserRole;
 use App\Models\Booking;
 use App\Models\ClassSession;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Support\RussianDate;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -32,11 +34,42 @@ class ReportService
     }
 
     /**
-     * Даты посещений для строки отчёта «Абонементы».
+     * Списания абонемента, по которым занятие уже физически прошло на дату отчёта.
+     *
+     * @return Collection<int, \App\Models\SubscriptionUsage>
      */
-    public function visitDatesForSubscription(Subscription $subscription): string
+    public function completedUsagesForSubscription(Subscription $subscription, ?Carbon $asOf = null): Collection
     {
-        $dates = $subscription->usages
+        $asOf ??= now();
+
+        return $subscription->usages
+            ->filter(fn ($usage) => $usage->used_at->lt($asOf))
+            ->values();
+    }
+
+    /**
+     * Сколько занятий списано по фактически прошедшим посещениям на дату отчёта.
+     */
+    public function completedSessionsUsed(Subscription $subscription, ?Carbon $asOf = null): int
+    {
+        return (int) $this->completedUsagesForSubscription($subscription, $asOf)
+            ->sum(fn ($usage) => max(1, (int) $usage->sessions_spent));
+    }
+
+    /**
+     * Остаток абонемента на дату отчёта (без будущих записей).
+     */
+    public function sessionsRemainingAsOf(Subscription $subscription, ?Carbon $asOf = null): int
+    {
+        return max(0, $subscription->sessions_total - $this->completedSessionsUsed($subscription, $asOf));
+    }
+
+    /**
+     * Даты посещений для строки отчёта «Абонементы» (только прошедшие занятия).
+     */
+    public function visitDatesForSubscription(Subscription $subscription, ?Carbon $asOf = null): string
+    {
+        $dates = $this->completedUsagesForSubscription($subscription, $asOf)
             ->map(fn ($usage) => $usage->used_at->format('d.m.Y'))
             ->unique()
             ->values()
@@ -53,6 +86,103 @@ class ReportService
         }
 
         return '';
+    }
+
+    /**
+     * @return Collection<int, ClassSession>
+     */
+    public function sessionsForWeeklyBookings(Carbon $weekStart): Collection
+    {
+        return ClassSession::query()
+            ->inWeek($weekStart)
+            ->where('status', ClassSessionStatus::Scheduled)
+            ->with([
+                'trainer:id,first_name,last_name',
+                'bookings' => fn ($q) => $q
+                    ->where('status', BookingStatus::Confirmed)
+                    ->with('user:id,first_name,last_name,patronymic'),
+            ])
+            ->orderBy('starts_at')
+            ->get();
+    }
+
+    /**
+     * Сетка недельного отчёта по записям: 7 столбцов (дни), в каждом — строки с занятиями и ФИО.
+     *
+     * @return array{
+     *     headers: list<string>,
+     *     columns: list<list<string>>,
+     *     week_label: string,
+     * }
+     */
+    public function buildWeeklyBookingsGrid(Carbon $weekStart): array
+    {
+        $weekStart = $weekStart->copy()->startOfWeek(Carbon::MONDAY);
+        $sessions = $this->sessionsForWeeklyBookings($weekStart)
+            ->groupBy(fn (ClassSession $session) => $session->starts_at->toDateString());
+
+        $headers = [];
+        $columns = [];
+
+        for ($i = 0; $i < 7; $i++) {
+            $date = $weekStart->copy()->addDays($i);
+            $headers[] = RussianDate::weekdayHeader($date);
+            $columns[] = $this->weeklyBookingsLinesForDay(
+                $sessions->get($date->toDateString(), collect()),
+            );
+        }
+
+        return [
+            'headers' => $headers,
+            'columns' => $columns,
+            'week_label' => RussianDate::dayMonthRange($weekStart, $weekStart->copy()->addDays(6)),
+        ];
+    }
+
+    /**
+     * @param  Collection<int, ClassSession>  $daySessions
+     * @return list<string>
+     */
+    private function weeklyBookingsLinesForDay(Collection $daySessions): array
+    {
+        if ($daySessions->isEmpty()) {
+            return [];
+        }
+
+        $lines = [];
+
+        foreach ($daySessions as $session) {
+            if ($lines !== []) {
+                $lines[] = '';
+            }
+
+            $lines[] = sprintf(
+                '%s %s · %s',
+                $session->formattedTime(),
+                $session->type->shortLabel(),
+                $session->trainerName(),
+            );
+
+            $attendees = $session->bookings
+                ->sortBy(fn ($booking) => [
+                    $booking->user->last_name ?? '',
+                    $booking->user->first_name ?? '',
+                    $booking->user->patronymic ?? '',
+                ])
+                ->map(fn ($booking) => '  '.$booking->user->fullName())
+                ->values()
+                ->all();
+
+            if ($attendees === []) {
+                $lines[] = '  нет записей';
+
+                continue;
+            }
+
+            array_push($lines, ...$attendees);
+        }
+
+        return $lines;
     }
 
     /**

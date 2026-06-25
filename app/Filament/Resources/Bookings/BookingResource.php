@@ -161,12 +161,20 @@ class BookingResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (BookingStatus $state) => $state->label()),
             ])
-            ->defaultSort('classSession.starts_at', 'desc')
+            ->defaultSort('classSession.starts_at', 'asc')
             ->groups([
                 Group::make('class_session_id')
                     ->label('Занятие')
                     ->collapsible()
                     ->titlePrefixedWithLabel(false)
+                    ->orderQueryUsing(function (Builder $query, string $direction): Builder {
+                        return $query->orderBy(
+                            ClassSession::query()
+                                ->select('starts_at')
+                                ->whereColumn('class_sessions.id', 'bookings.class_session_id'),
+                            $direction,
+                        );
+                    })
                     ->getTitleFromRecordUsing(function (Booking $record): string {
                         $session = $record->classSession;
 

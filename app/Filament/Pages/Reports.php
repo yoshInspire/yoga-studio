@@ -7,7 +7,9 @@ use App\Exports\BookingsAnalyticsExport;
 use App\Exports\ClientStatsExport;
 use App\Exports\SubscriptionsWorkbookExport;
 use App\Exports\VisitsExport;
+use App\Exports\WeeklyBookingsExport;
 use App\Models\User;
+use App\Services\BookingService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -34,7 +36,7 @@ class Reports extends Page
     {
         return $schema->components([
             Section::make('Абонементы')
-                ->description('Три листа Excel: групповые, индивидуальные и мероприятия вне абонемента. Включая даты посещений по каждому абонементу.')
+                ->description('Три листа Excel: групповые, индивидуальные и мероприятия вне абонемента. Использовано, остаток и даты посещений — на момент выгрузки (будущие записи не учитываются).')
                 ->schema([
                     Actions::make([
                         $this->downloadSubscriptionsAction(),
@@ -45,6 +47,13 @@ class Reports extends Page
                 ->schema([
                     Actions::make([
                         $this->downloadClientStatsAction(),
+                    ]),
+                ]),
+            Section::make('Записи на неделю')
+                ->description('Понедельник — воскресенье в столбцах: все открытые занятия (групповые, индивидуальные, все тренеры) и записавшиеся по фамилии, имени, отчеству.')
+                ->schema([
+                    Actions::make([
+                        $this->downloadWeeklyBookingsAction(),
                     ]),
                 ]),
             Section::make('Аналитика записей')
@@ -98,6 +107,33 @@ class Reports extends Page
                 return Excel::download(
                     new ClientStatsExport($clientId),
                     'statistika-klientov-'.now()->format('Y-m-d').'.xlsx',
+                );
+            });
+    }
+
+    private function downloadWeeklyBookingsAction(): Action
+    {
+        return Action::make('weeklyBookings')
+            ->label('Скачать Excel')
+            ->icon(Heroicon::OutlinedArrowDownTray)
+            ->schema([
+                DatePicker::make('week_date')
+                    ->label('Неделя')
+                    ->default(now())
+                    ->native(false)
+                    ->displayFormat('d.m.Y')
+                    ->helperText('Укажите любой день нужной недели.'),
+            ])
+            ->action(function (array $data) {
+                $weekStart = app(BookingService::class)->weekStart(
+                    filled($data['week_date'] ?? null)
+                        ? Carbon::parse($data['week_date'])->toDateString()
+                        : null,
+                );
+
+                return Excel::download(
+                    new WeeklyBookingsExport($weekStart),
+                    'zapisi-nedelya-'.$weekStart->format('Y-m-d').'.xlsx',
                 );
             });
     }
