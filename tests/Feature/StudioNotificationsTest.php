@@ -12,6 +12,7 @@ use App\Models\Subscription;
 use App\Models\User;
 use App\Services\BookingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -77,6 +78,34 @@ class StudioNotificationsTest extends TestCase
         // Письмо клиенту + письмо администратору.
         Mail::assertSent(StudioNotificationMail::class, 2);
         Mail::assertSent(StudioNotificationMail::class, fn (StudioNotificationMail $mail) => $mail->hasTo('client@example.com'));
+    }
+
+    public function test_empty_group_class_is_auto_cancelled_with_admin_notification(): void
+    {
+        Mail::fake();
+
+        config([
+            'studio.auto_cancel.min_group_size' => 2,
+            'studio.auto_cancel.morning_hours' => 10,
+            'studio.auto_cancel.day_hours' => 10,
+        ]);
+
+        $session = ClassSession::create([
+            'topic' => 'Гамак',
+            'starts_at' => now()->addHours(2),
+            'type' => SubscriptionType::Group,
+            'capacity' => 5,
+            'status' => ClassSessionStatus::Scheduled,
+        ]);
+
+        $this->artisan('studio:cancel-underfilled')->assertExitCode(0);
+
+        $this->assertSame(ClassSessionStatus::Cancelled, $session->fresh()->status);
+        $this->assertSame(
+            'Занятие отменено автоматически: группа не набралась (меньше 2 человек).',
+            $session->fresh()->cancellation_reason,
+        );
+        Mail::assertSent(StudioNotificationMail::class, 1);
     }
 
     public function test_full_enough_group_is_not_auto_cancelled(): void
@@ -145,7 +174,7 @@ class StudioNotificationsTest extends TestCase
     {
         $session = ClassSession::create([
             'topic' => 'Хатха-йога',
-            'starts_at' => \Illuminate\Support\Carbon::parse('2026-06-11 10:00:00', config('app.timezone')),
+            'starts_at' => Carbon::parse('2026-06-11 10:00:00', config('app.timezone')),
             'type' => SubscriptionType::Group,
             'capacity' => 6,
             'status' => ClassSessionStatus::Scheduled,
@@ -161,7 +190,7 @@ class StudioNotificationsTest extends TestCase
     {
         $session = ClassSession::create([
             'topic' => 'Хатха-йога',
-            'starts_at' => \Illuminate\Support\Carbon::parse('2026-06-11 18:00:00', config('app.timezone')),
+            'starts_at' => Carbon::parse('2026-06-11 18:00:00', config('app.timezone')),
             'type' => SubscriptionType::Group,
             'capacity' => 6,
             'status' => ClassSessionStatus::Scheduled,

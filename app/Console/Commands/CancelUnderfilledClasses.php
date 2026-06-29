@@ -5,10 +5,12 @@ namespace App\Console\Commands;
 use App\Enums\BookingStatus;
 use App\Enums\ClassSessionStatus;
 use App\Enums\SubscriptionType;
+use App\Models\Booking;
 use App\Models\ClassSession;
 use App\Services\BookingService;
 use App\Services\NotificationService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 
 class CancelUnderfilledClasses extends Command
 {
@@ -43,8 +45,7 @@ class CancelUnderfilledClasses extends Command
         foreach ($candidates as $session) {
             $confirmed = (int) $session->confirmed_count;
 
-            // Отменяем только реально недобранные группы, где кто-то записан (1..min-1).
-            if ($confirmed < 1 || $confirmed >= $minGroupSize) {
+            if ($confirmed >= $minGroupSize) {
                 continue;
             }
 
@@ -87,7 +88,7 @@ class CancelUnderfilledClasses extends Command
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, \App\Models\Booking>  $affected
+     * @param  Collection<int, Booking>  $affected
      */
     private function notifyClients(NotificationService $notifications, ClassSession $session, $affected, int $minGroupSize): void
     {
@@ -113,7 +114,7 @@ class CancelUnderfilledClasses extends Command
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, \App\Models\Booking>  $affected
+     * @param  Collection<int, Booking>  $affected
      */
     private function notifyAdmin(NotificationService $notifications, ClassSession $session, $affected, int $minGroupSize): void
     {
@@ -121,14 +122,17 @@ class CancelUnderfilledClasses extends Command
             ->map(fn ($booking) => $booking->user?->fullName() ?? 'Клиент #'.$booking->user_id)
             ->all();
 
-        $notifications->notifyAdmin(
-            'Автоотмена занятия',
-            [
-                'Занятие «'.$session->title.'» '.$session->formattedDateTime().' отменено автоматически.',
-                'Причина: группа не набралась (записано '.count($names).', нужно от '.$minGroupSize.').',
-                'Клиенты (записи аннулированы, занятия возвращены на абонемент): '.implode(', ', $names).'.',
-            ],
-            subject: 'Автоотмена занятия',
-        );
+        $lines = [
+            'Занятие «'.$session->title.'» '.$session->formattedDateTime().' отменено автоматически.',
+            'Причина: группа не набралась (записано '.count($names).', нужно от '.$minGroupSize.').',
+        ];
+
+        if ($names !== []) {
+            $lines[] = 'Клиенты (записи аннулированы, занятия возвращены на абонемент): '.implode(', ', $names).'.';
+        } else {
+            $lines[] = 'На занятие никто не был записан.';
+        }
+
+        $notifications->notifyAdmin('Автоотмена занятия', $lines, subject: 'Автоотмена занятия');
     }
 }
