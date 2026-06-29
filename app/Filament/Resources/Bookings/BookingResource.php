@@ -20,9 +20,9 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -167,7 +167,11 @@ class BookingResource extends Resource
                     ->label('Занятие')
                     ->collapsible()
                     ->titlePrefixedWithLabel(false)
-                    ->orderQueryUsing(function (Builder $query, string $direction): Builder {
+                    ->orderQueryUsing(function (Builder $query, string $direction, $livewire): Builder {
+                        if ($livewire->getTableSortColumn() === 'classSession.starts_at') {
+                            $direction = $livewire->getTableSortDirection() ?? 'asc';
+                        }
+
                         return $query->orderBy(
                             ClassSession::query()
                                 ->select('starts_at')
