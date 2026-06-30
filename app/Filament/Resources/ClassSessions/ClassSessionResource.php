@@ -11,7 +11,9 @@ use App\Filament\Resources\ClassSessions\Pages\ListClassSessions;
 use App\Models\ClassSession;
 use App\Models\User;
 use App\Support\RussianDate;
+use App\Support\SchedulePeriod;
 use BackedEnum;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -29,6 +31,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 class ClassSessionResource extends Resource
 {
@@ -170,7 +173,7 @@ class ClassSessionResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (ClassSessionStatus $state) => $state->label()),
             ])
-            ->defaultSort('starts_at')
+            ->defaultSort('starts_at', 'asc')
             ->groups([
                 Group::make('starts_at')
                     ->label('День')
@@ -186,14 +189,36 @@ class ClassSessionResource extends Resource
 
                         return RussianDate::weekdayShortDayMonth($date);
                     })
-                    ->orderQueryUsing(fn (Builder $query, string $direction): Builder => $query->orderBy('starts_at', $direction))
+                    ->orderQueryUsing(function (Builder $query, string $direction, $livewire): Builder {
+                        if ($livewire->getTableSortColumn() === 'starts_at') {
+                            $direction = $livewire->getTableSortDirection() ?? 'asc';
+                        }
+
+                        return $query->orderBy('starts_at', $direction);
+                    })
                     ->scopeQueryByKeyUsing(fn (Builder $query, string $key): Builder => $query->whereDate('starts_at', $key)),
             ])
             ->defaultGroup('starts_at')
             ->groupingSettingsHidden()
-            ->collapsedGroupsByDefault()
+            ->groupingDirectionSettingHidden()
             ->defaultPaginationPageOption(50)
             ->filters([
+                SelectFilter::make('period')
+                    ->label('Период')
+                    ->options(SchedulePeriod::labels())
+                    ->default(SchedulePeriod::CURRENT_WEEK)
+                    ->selectablePlaceholder(false)
+                    ->query(function (Builder $query, array $data): Builder {
+                        $range = SchedulePeriod::range($data['value'] ?? SchedulePeriod::CURRENT_WEEK);
+
+                        if ($range === null) {
+                            return $query;
+                        }
+
+                        [$from, $to] = $range;
+
+                        return $query->whereBetween('starts_at', [$from, $to]);
+                    }),
                 SelectFilter::make('type')
                     ->label('Тип')
                     ->options(collect(SubscriptionType::cases())->mapWithKeys(
@@ -210,6 +235,22 @@ class ClassSessionResource extends Resource
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('hideSelectedDays')
+                        ->label('Скрыть выбранные дни')
+                        ->icon(Heroicon::EyeSlash)
+                        ->requiresConfirmation()
+                        ->modalHeading('Скрыть выбранные дни?')
+                        ->modalDescription('Дни с отмеченными занятиями исчезнут из списка. Их можно вернуть кнопкой «Показать скрытые дни».')
+                        ->action(function (Collection $records): void {
+                            $dates = $records
+                                ->map(fn (ClassSession $record): string => $record->starts_at->toDateString())
+                                ->unique()
+                                ->values()
+                                ->all();
+
+                            ListClassSessions::hideDates($dates);
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     DeleteBulkAction::make(),
                 ]),
             ])
