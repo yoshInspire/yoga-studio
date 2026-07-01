@@ -11,6 +11,7 @@ use App\Models\ClassSession;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Support\RussianDate;
+use App\Support\VisitDatesFormatter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -82,7 +83,7 @@ class ReportService
         $note = $subscription->admin_note ?? '';
 
         if (preg_match('/Посещения:\s*(.+?)(?:\n|$)/u', $note, $matches)) {
-            return trim($matches[1]);
+            return VisitDatesFormatter::normalizeList(trim($matches[1]), $subscription);
         }
 
         return '';

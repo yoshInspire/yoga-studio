@@ -106,4 +106,31 @@ class SubscriptionReportTest extends TestCase
 
         Carbon::setTestNow();
     }
+
+    public function test_subscription_report_normalizes_imported_visit_dates_without_year(): void
+    {
+        $user = User::create([
+            'first_name' => 'Ольга',
+            'last_name' => 'Кременскова',
+            'phone' => '+79031898884',
+            'role' => UserRole::Client,
+            'password' => 'secret123',
+        ]);
+
+        $subscription = Subscription::create([
+            'user_id' => $user->id,
+            'type' => SubscriptionType::Group,
+            'sessions_total' => 4,
+            'sessions_used' => 3,
+            'purchased_at' => '2026-06-07',
+            'starts_at' => '2026-06-08',
+            'ends_at' => '2026-07-07',
+            'admin_note' => 'Импорт из старой системы (14.06.2026). Посещения: 08.06, 11.06, 12.06',
+        ]);
+
+        $this->assertSame(
+            '08.06.2026, 11.06.2026, 12.06.2026',
+            $this->reports->visitDatesForSubscription($subscription),
+        );
+    }
 }
