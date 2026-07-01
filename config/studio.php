@@ -49,6 +49,13 @@ return [
     ],
 
     /**
+     * Уведомления клиентам о публикации новостей на сайте (почта/Telegram).
+     */
+    'news_notifications' => [
+        'enabled' => env('STUDIO_NEWS_NOTIFICATIONS', true),
+    ],
+
+    /**
      * Информационные рассылки клиентам (почта/Telegram).
      */
     'mailings' => [

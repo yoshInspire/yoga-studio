@@ -20,6 +20,7 @@ use Illuminate\Support\Str;
     'image_path',
     'is_published',
     'published_at',
+    'notifications_sent_at',
 ])]
 class News extends Model
 {
@@ -53,6 +54,7 @@ class News extends Model
         return [
             'is_published' => 'boolean',
             'published_at' => 'datetime',
+            'notifications_sent_at' => 'datetime',
         ];
     }
 
