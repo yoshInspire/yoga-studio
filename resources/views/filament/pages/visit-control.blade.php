@@ -131,7 +131,7 @@
                                             wire:click="markAttended({{ $attendee['booking_id'] }})"
                                             wire:loading.attr="disabled"
                                             wire:target="markAttended({{ $attendee['booking_id'] }})">
-                                            ✓ Был(а)
+                                            Был(а)
                                         </button>
                                         <button type="button"
                                             class="vc-btn vc-btn--no"
@@ -139,7 +139,7 @@
                                             wire:confirm="Отметить неявку и вернуть занятие на абонемент?"
                                             wire:loading.attr="disabled"
                                             wire:target="markNoShow({{ $attendee['booking_id'] }})">
-                                            ✗ Не пришёл(ла)
+                                            Не пришёл(ла)
                                         </button>
                                     </div>
                                     <button type="button"
@@ -246,14 +246,16 @@
             margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: #fff7ed;
             font-size: .8rem; color: #9a3412; line-height: 1.35;
         }
-        .vc-attendee__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+        .vc-attendee__actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
         .vc-btn {
-            min-height: 48px; padding: 10px 12px; border-radius: 10px; border: none;
-            font-size: .9rem; font-weight: 700; cursor: pointer; line-height: 1.2;
+            flex: 1 1 calc(50% - 3px); min-width: 0; min-height: 0;
+            padding: 7px 10px; border-radius: 8px; border: 1px solid transparent;
+            font-size: .78rem; font-weight: 600; cursor: pointer; line-height: 1.25;
+            text-align: center;
         }
         .vc-btn:disabled { opacity: .6; cursor: wait; }
-        .vc-btn--ok { background: #059669; color: #fff; }
-        .vc-btn--no { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+        .vc-btn--ok { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+        .vc-btn--no { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
         .vc-attendee__cancel {
             display: block; width: 100%; margin-top: 8px; padding: 6px; border: none; background: none;
             font-size: .78rem; color: #9ca3af; text-decoration: underline; cursor: pointer; text-align: center;
