@@ -6,37 +6,39 @@
     @endphp
 
     <div class="vc" wire:key="visit-control-{{ $selectedDate }}">
-        {{-- Навигация по дням --}}
-        <div class="vc-nav fi-section rounded-xl bg-white p-3 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-            <div class="vc-nav__row">
-                <button type="button" class="vc-nav__arrow" wire:click="goToDate('{{ $prevDate }}')" aria-label="Предыдущий день">
+        {{-- Навигация по дням: стрелки + выбор даты --}}
+        <div class="vc-date fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
+            <div class="vc-date__row">
+                <button type="button" class="vc-date__arrow" wire:click="goToDate('{{ $prevDate }}')" aria-label="Предыдущий день">
                     ‹
                 </button>
-                <div class="vc-nav__center">
-                    <p class="vc-nav__date">{{ $day['weekday'] ?? '' }}</p>
-                    <p class="vc-nav__label">{{ $day['date_label'] ?? '' }}</p>
-                </div>
-                <button type="button" class="vc-nav__arrow" wire:click="goToDate('{{ $nextDate }}')" aria-label="Следующий день">
+
+                <label class="vc-date__picker">
+                    <span class="vc-date__weekday">
+                        {{ $day['weekday'] ?? '' }}
+                        @if ($isToday)
+                            <span class="vc-date__tag">сегодня</span>
+                        @endif
+                    </span>
+                    <span class="vc-date__label">{{ $day['date_label'] ?? '' }}</span>
+                    <input
+                        type="date"
+                        class="vc-date__input"
+                        wire:model.live="selectedDate"
+                        aria-label="Выбрать дату"
+                    />
+                </label>
+
+                <button type="button" class="vc-date__arrow" wire:click="goToDate('{{ $nextDate }}')" aria-label="Следующий день">
                     ›
                 </button>
             </div>
-            <div class="vc-nav__pills">
-                <button type="button"
-                    class="vc-pill{{ $selectedDate === $yesterdayDate ? ' is-active' : '' }}"
-                    wire:click="goToDate('{{ $yesterdayDate }}')">
-                    Вчера
+
+            @if (! $isToday)
+                <button type="button" class="vc-date__today" wire:click="goToToday">
+                    Перейти к сегодня
                 </button>
-                <button type="button"
-                    class="vc-pill{{ $selectedDate === $todayDate ? ' is-active' : '' }}"
-                    wire:click="goToDate('{{ $todayDate }}')">
-                    Сегодня
-                </button>
-                <button type="button"
-                    class="vc-pill{{ $selectedDate === $tomorrowDate ? ' is-active' : '' }}"
-                    wire:click="goToDate('{{ $tomorrowDate }}')">
-                    Завтра
-                </button>
-            </div>
+            @endif
         </div>
 
         {{-- Сводка --}}
@@ -58,7 +60,7 @@
                 <span class="vc-stat__lbl">ждут</span>
             </div>
             @if ($stats['no_show'] > 0)
-                <div class="vc-stat vc-stat--bad">
+                <div class="vc-stat vc-stat--bad" style="grid-column: 1 / -1">
                     <span class="vc-stat__num">{{ $stats['no_show'] }}</span>
                     <span class="vc-stat__lbl">не пришли</span>
                 </div>
@@ -159,28 +161,42 @@
 
     <style>
         .vc { display: flex; flex-direction: column; gap: 12px; max-width: 640px; }
-        .vc-nav__row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-        .vc-nav__arrow {
-            flex: 0 0 44px; height: 44px; border-radius: 10px; border: 1px solid rgba(0,0,0,.08);
-            background: #fff; font-size: 1.5rem; line-height: 1; color: #374151; cursor: pointer;
+        .vc-date { padding: 12px 14px; }
+        .vc-date__row { display: flex; align-items: center; gap: 10px; }
+        .vc-date__arrow {
+            flex: 0 0 44px; height: 44px; border-radius: 12px; border: 1px solid rgba(0,0,0,.08);
+            background: #f9fafb; font-size: 1.4rem; line-height: 1; color: #374151; cursor: pointer;
         }
-        .dark .vc-nav__arrow { background: #111827; border-color: rgba(255,255,255,.1); color: #e5e7eb; }
-        .vc-nav__center { text-align: center; flex: 1; min-width: 0; }
-        .vc-nav__date { font-size: .8rem; color: #6b7280; margin: 0; text-transform: capitalize; }
-        .dark .vc-nav__date { color: #9ca3af; }
-        .vc-nav__label { font-size: 1.05rem; font-weight: 600; margin: 2px 0 0; color: #111827; }
-        .dark .vc-nav__label { color: #f9fafb; }
-        .vc-nav__pills { display: flex; gap: 8px; margin-top: 12px; }
-        .vc-pill {
-            flex: 1; padding: 10px 8px; border-radius: 999px; border: 1px solid rgba(0,0,0,.08);
-            background: #f9fafb; font-size: .85rem; font-weight: 600; color: #374151; cursor: pointer; text-align: center;
+        .dark .vc-date__arrow { background: #1f2937; border-color: rgba(255,255,255,.1); color: #e5e7eb; }
+        .vc-date__picker {
+            position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center; cursor: pointer;
+            padding: 4px 8px; border-radius: 10px;
         }
-        .dark .vc-pill { background: #1f2937; border-color: rgba(255,255,255,.1); color: #e5e7eb; }
-        .vc-pill.is-active { background: rgb(var(--primary-600)); border-color: transparent; color: #fff; }
-        .vc-stats { display: flex; flex-wrap: wrap; gap: 8px; }
+        .vc-date__picker:active { background: rgba(0,0,0,.03); }
+        .vc-date__input {
+            position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
+        }
+        .vc-date__weekday {
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            font-size: .8rem; color: #6b7280; margin: 0; text-transform: capitalize;
+        }
+        .dark .vc-date__weekday { color: #9ca3af; }
+        .vc-date__tag {
+            padding: 2px 8px; border-radius: 999px; background: #d1fae5; color: #065f46;
+            font-size: .68rem; font-weight: 700; text-transform: lowercase;
+        }
+        .vc-date__label { font-size: 1.05rem; font-weight: 700; margin: 2px 0 0; color: #111827; line-height: 1.25; }
+        .dark .vc-date__label { color: #f9fafb; }
+        .vc-date__today {
+            display: block; width: 100%; margin-top: 10px; padding: 8px; border: none; border-top: 1px solid rgba(0,0,0,.06);
+            background: none; font-size: .82rem; font-weight: 600; color: rgb(var(--primary-600)); cursor: pointer; text-align: center;
+        }
+        .dark .vc-date__today { border-color: rgba(255,255,255,.08); }
+        .vc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         .vc-stat {
-            flex: 1 1 calc(33% - 8px); min-width: 90px; padding: 10px 12px; border-radius: 12px;
-            background: #fff; ring: 1px; box-shadow: 0 1px 2px rgba(0,0,0,.04); border: 1px solid rgba(0,0,0,.06); text-align: center;
+            min-width: 0; padding: 10px 8px; border-radius: 12px;
+            background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.04); border: 1px solid rgba(0,0,0,.06); text-align: center;
         }
         .dark .vc-stat { background: #111827; border-color: rgba(255,255,255,.08); }
         .vc-stat__num { display: block; font-size: 1.35rem; font-weight: 700; color: #111827; line-height: 1.2; }
@@ -245,7 +261,6 @@
         .vc-attendee__note { margin: 8px 0 0; font-size: .78rem; color: #6b7280; }
         @media (min-width: 768px) {
             .vc { max-width: 720px; }
-            .vc-stat { flex: 1 1 auto; }
         }
     </style>
 </x-filament-panels::page>

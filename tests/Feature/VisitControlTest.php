@@ -77,7 +77,7 @@ class VisitControlTest extends TestCase
             ->get('/admin/visit-control')
             ->assertOk()
             ->assertSee('Контроль посещений')
-            ->assertSee('Сегодня');
+            ->assertSee('сегодня');
     }
 
     public function test_build_day_lists_confirmed_bookings_with_subscription_info(): void

@@ -43,8 +43,7 @@ class VisitControl extends Page
             'prevDate' => $date->copy()->subDay()->toDateString(),
             'nextDate' => $date->copy()->addDay()->toDateString(),
             'todayDate' => now()->toDateString(),
-            'yesterdayDate' => now()->subDay()->toDateString(),
-            'tomorrowDate' => now()->addDay()->toDateString(),
+            'isToday' => $date->isToday(),
             'createBookingBaseUrl' => BookingResource::getUrl('create'),
         ];
     }
@@ -52,6 +51,22 @@ class VisitControl extends Page
     public function goToDate(string $date): void
     {
         $this->selectedDate = Carbon::parse($date)->toDateString();
+    }
+
+    public function goToToday(): void
+    {
+        $this->selectedDate = now()->toDateString();
+    }
+
+    public function updatedSelectedDate(): void
+    {
+        if (blank($this->selectedDate)) {
+            $this->selectedDate = now()->toDateString();
+
+            return;
+        }
+
+        $this->selectedDate = Carbon::parse($this->selectedDate)->toDateString();
     }
 
     public function markAttended(int $bookingId): void
