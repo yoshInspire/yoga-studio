@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Bookings\Pages;
 
+use App\Filament\Pages\VisitControl;
 use App\Filament\Resources\Bookings\BookingResource;
 use App\Models\ClassSession;
 use App\Models\Subscription;
@@ -16,6 +17,17 @@ use InvalidArgumentException;
 class CreateBooking extends CreateRecord
 {
     protected static string $resource = BookingResource::class;
+
+    public function mount(): void
+    {
+        parent::mount();
+
+        $sessionId = request()->integer('class_session_id');
+
+        if ($sessionId > 0) {
+            $this->form->fill(['class_session_id' => $sessionId]);
+        }
+    }
 
     protected function handleRecordCreation(array $data): Model
     {
@@ -61,6 +73,10 @@ class CreateBooking extends CreateRecord
 
     protected function getRedirectUrl(): string
     {
+        if (request()->has('class_session_id')) {
+            return VisitControl::getUrl();
+        }
+
         return $this->getResource()::getUrl('index');
     }
 }

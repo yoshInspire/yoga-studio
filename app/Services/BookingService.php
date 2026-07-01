@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Support\RussianDate;
+use App\Enums\AttendanceStatus;
 use App\Enums\BookingStatus;
 use App\Enums\ClassSessionStatus;
 use App\Models\Booking;
@@ -351,6 +352,50 @@ class BookingService
                 'cancellation_reason' => $reason,
                 'cancelled_at' => now(),
                 'subscription_usage_id' => null,
+            ]);
+
+            return $booking->refresh();
+        });
+    }
+
+    public function markAttended(Booking $booking): Booking
+    {
+        return DB::transaction(function () use ($booking) {
+            $booking = Booking::query()->lockForUpdate()->findOrFail($booking->id);
+
+            if (! $booking->isConfirmed()) {
+                throw new InvalidArgumentException('Запись отменена — отметить посещение нельзя.');
+            }
+
+            $booking->update([
+                'attendance_status' => AttendanceStatus::Attended,
+                'attended_at' => now(),
+            ]);
+
+            return $booking->refresh();
+        });
+    }
+
+    /**
+     * Клиент не пришёл: отмечаем и возвращаем списание на абонемент, если оно было.
+     */
+    public function markNoShow(Booking $booking): Booking
+    {
+        return DB::transaction(function () use ($booking) {
+            $booking = Booking::query()->lockForUpdate()->findOrFail($booking->id);
+
+            if (! $booking->isConfirmed()) {
+                throw new InvalidArgumentException('Запись отменена — отметить неявку нельзя.');
+            }
+
+            if ($booking->isCharged()) {
+                $this->releaseBooking($booking);
+            }
+
+            $booking->update([
+                'subscription_usage_id' => null,
+                'attendance_status' => AttendanceStatus::NoShow,
+                'attended_at' => now(),
             ]);
 
             return $booking->refresh();

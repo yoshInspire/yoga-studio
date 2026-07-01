@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AttendanceStatus;
 use App\Enums\BookingStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'subscription_id',
     'subscription_usage_id',
     'status',
+    'attendance_status',
+    'attended_at',
     'cancellation_reason',
     'cancelled_at',
 ])]
@@ -23,6 +26,8 @@ class Booking extends Model
     {
         return [
             'status' => BookingStatus::class,
+            'attendance_status' => AttendanceStatus::class,
+            'attended_at' => 'datetime',
             'cancelled_at' => 'datetime',
         ];
     }
@@ -50,6 +55,36 @@ class Booking extends Model
     public function isConfirmed(): bool
     {
         return $this->status === BookingStatus::Confirmed;
+    }
+
+    public function isCharged(): bool
+    {
+        return $this->subscription_usage_id !== null;
+    }
+
+    /**
+     * @return array{label: string, color: string}
+     */
+    public function chargeStatus(): array
+    {
+        if ($this->subscription_usage_id !== null) {
+            return ['label' => 'Списано', 'color' => 'success'];
+        }
+
+        if ($this->subscription !== null && ! $this->subscription->hasStarted($this->classSession?->starts_at)) {
+            return ['label' => 'Ожидает списания', 'color' => 'warning'];
+        }
+
+        if ($this->subscription?->isDoublePerDay()) {
+            return ['label' => 'День оплачен', 'color' => 'info'];
+        }
+
+        return ['label' => 'Без списания', 'color' => 'gray'];
+    }
+
+    public function attendancePending(): bool
+    {
+        return ($this->attendance_status ?? AttendanceStatus::Expected) === AttendanceStatus::Expected;
     }
 
     public function canBeCancelledByClient(): bool
