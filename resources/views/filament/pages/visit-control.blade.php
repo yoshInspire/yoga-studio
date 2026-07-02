@@ -115,7 +115,11 @@
                                     <span class="vc-badge vc-badge--{{ $attendee['charge_color'] }}">{{ $attendee['charge_label'] }}</span>
                                     @if ($attendee['sessions_remaining'] !== null)
                                         <span class="vc-badge vc-badge--sub">
-                                            {{ $attendee['subscription_label'] }} · остаток {{ $attendee['sessions_remaining'] }}/{{ $attendee['sessions_total'] }}
+                                            {{ $attendee['subscription_label'] }}
+                                            @if ($attendee['subscription_starts_at'])
+                                                · с {{ $attendee['subscription_starts_at'] }}
+                                            @endif
+                                            · остаток {{ $attendee['sessions_remaining'] }}/{{ $attendee['sessions_total'] }}
                                         </span>
                                     @endif
                                 </div>

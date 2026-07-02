@@ -98,6 +98,7 @@ class VisitControlTest extends TestCase
         $this->assertSame($booking->id, $attendee['booking_id']);
         $this->assertSame('Петров Иван', $attendee['name']);
         $this->assertSame('Списано', $attendee['charge_label']);
+        $this->assertSame($sub->starts_at->format('d.m.Y'), $attendee['subscription_starts_at']);
         $this->assertSame(3, $attendee['sessions_remaining']);
         $this->assertTrue($attendee['attendance_pending']);
     }
