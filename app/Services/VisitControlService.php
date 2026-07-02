@@ -7,11 +7,18 @@ use App\Enums\BookingStatus;
 use App\Enums\ClassSessionStatus;
 use App\Models\Booking;
 use App\Models\ClassSession;
+use App\Models\Subscription;
 use App\Support\RussianDate;
 use Illuminate\Support\Carbon;
 
 class VisitControlService
 {
+    public function __construct(
+        private SubscriptionBalanceService $subscriptionBalance,
+    ) {}
+
+    /** @var array<int, array{sessions_total: int, sessions_reserved: int, sessions_consumed: int, sessions_remaining: int}> */
+    private array $subscriptionBalanceCache = [];
     /**
      * @return array{
      *     date: Carbon,
@@ -40,6 +47,8 @@ class VisitControlService
      *             subscription_starts_at: string|null,
      *             sessions_remaining: int|null,
      *             sessions_total: int|null,
+     *             sessions_reserved: int|null,
+     *             sessions_consumed: int|null,
      *             charge_label: string,
      *             charge_color: string,
      *             attendance: string,
@@ -77,6 +86,7 @@ class VisitControlService
         ];
 
         $slots = [];
+        $this->subscriptionBalanceCache = [];
 
         foreach ($sessions as $session) {
             $stats['sessions']++;
@@ -131,6 +141,8 @@ class VisitControlService
      *     subscription_starts_at: string|null,
      *     sessions_remaining: int|null,
      *     sessions_total: int|null,
+     *     sessions_reserved: int|null,
+     *     sessions_consumed: int|null,
      *     charge_label: string,
      *     charge_color: string,
      *     attendance: string,
@@ -147,6 +159,7 @@ class VisitControlService
         $attendance = $booking->attendance_status ?? AttendanceStatus::Expected;
         $charge = $booking->chargeStatus();
         $phone = $user?->phone;
+        $balance = $subscription !== null ? $this->subscriptionBalanceFor($subscription) : null;
 
         return [
             'booking_id' => $booking->id,
@@ -155,8 +168,10 @@ class VisitControlService
             'phone_href' => filled($phone) ? 'tel:'.preg_replace('/\s+/', '', $phone) : null,
             'subscription_label' => $subscription?->type?->shortLabel() ?? '—',
             'subscription_starts_at' => $subscription?->starts_at?->format('d.m.Y'),
-            'sessions_remaining' => $subscription?->sessionsRemaining(),
-            'sessions_total' => $subscription?->sessions_total,
+            'sessions_remaining' => $balance['sessions_remaining'] ?? null,
+            'sessions_total' => $balance['sessions_total'] ?? null,
+            'sessions_reserved' => $balance['sessions_reserved'] ?? null,
+            'sessions_consumed' => $balance['sessions_consumed'] ?? null,
             'charge_label' => $charge['label'],
             'charge_color' => $charge['color'],
             'attendance' => $attendance->value,
@@ -165,5 +180,17 @@ class VisitControlService
             'attendance_pending' => $booking->attendancePending(),
             'health_note' => filled($user?->health_note) ? $user->health_note : null,
         ];
+    }
+
+    /**
+     * @return array{sessions_total: int, sessions_reserved: int, sessions_consumed: int, sessions_remaining: int}
+     */
+    private function subscriptionBalanceFor(Subscription $subscription): array
+    {
+        if (! isset($this->subscriptionBalanceCache[$subscription->id])) {
+            $this->subscriptionBalanceCache[$subscription->id] = $this->subscriptionBalance->breakdown($subscription);
+        }
+
+        return $this->subscriptionBalanceCache[$subscription->id];
     }
 }

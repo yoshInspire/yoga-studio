@@ -51,6 +51,11 @@ class Subscription extends Model
         return $this->hasMany(SubscriptionUsage::class);
     }
 
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
+
     public function sessionsRemaining(): int
     {
         return max(0, $this->sessions_total - $this->sessions_used);

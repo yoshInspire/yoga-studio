@@ -119,7 +119,12 @@
                                             @if ($attendee['subscription_starts_at'])
                                                 · с {{ $attendee['subscription_starts_at'] }}
                                             @endif
-                                            · остаток {{ $attendee['sessions_remaining'] }}/{{ $attendee['sessions_total'] }}
+                                            · всего {{ $attendee['sessions_total'] }}
+                                            · рез. {{ $attendee['sessions_reserved'] }}
+                                            @if ($attendee['sessions_consumed'] > 0)
+                                                · исп. {{ $attendee['sessions_consumed'] }}
+                                            @endif
+                                            · ост. {{ $attendee['sessions_remaining'] }}
                                         </span>
                                     @endif
                                 </div>

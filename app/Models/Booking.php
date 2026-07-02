@@ -68,7 +68,11 @@ class Booking extends Model
     public function chargeStatus(): array
     {
         if ($this->subscription_usage_id !== null) {
-            return ['label' => 'Списано', 'color' => 'success'];
+            if ($this->attendancePending()) {
+                return ['label' => 'Зарезервировано', 'color' => 'info'];
+            }
+
+            return ['label' => 'Использовано', 'color' => 'success'];
         }
 
         if ($this->subscription !== null && ! $this->subscription->hasStarted($this->classSession?->starts_at)) {
