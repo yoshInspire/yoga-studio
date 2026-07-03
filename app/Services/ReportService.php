@@ -72,7 +72,6 @@ class ReportService
     {
         $dates = $this->completedUsagesForSubscription($subscription, $asOf)
             ->map(fn ($usage) => $usage->used_at->format('d.m.Y'))
-            ->unique()
             ->values()
             ->all();
 

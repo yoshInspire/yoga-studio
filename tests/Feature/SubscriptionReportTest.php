@@ -133,4 +133,58 @@ class SubscriptionReportTest extends TestCase
             $this->reports->visitDatesForSubscription($subscription),
         );
     }
+
+    public function test_subscription_report_lists_same_day_visit_twice(): void
+    {
+        Carbon::setTestNow('2026-07-03 10:00:00');
+
+        $user = User::create([
+            'first_name' => 'Ирина',
+            'last_name' => 'Лобанова',
+            'phone' => '+79939047684',
+            'role' => UserRole::Client,
+            'password' => 'secret123',
+        ]);
+
+        $subscription = Subscription::create([
+            'user_id' => $user->id,
+            'type' => SubscriptionType::Group,
+            'sessions_total' => 8,
+            'sessions_used' => 3,
+            'purchased_at' => '2026-06-12',
+            'starts_at' => '2026-06-12',
+            'ends_at' => '2026-07-11',
+        ]);
+
+        SubscriptionUsage::create([
+            'subscription_id' => $subscription->id,
+            'used_at' => '2026-06-26 10:00:00',
+            'description' => 'Утреннее занятие',
+            'sessions_spent' => 1,
+        ]);
+
+        SubscriptionUsage::create([
+            'subscription_id' => $subscription->id,
+            'used_at' => '2026-07-02 19:15:00',
+            'description' => 'Йога-нидра',
+            'sessions_spent' => 1,
+        ]);
+
+        SubscriptionUsage::create([
+            'subscription_id' => $subscription->id,
+            'used_at' => '2026-07-02 20:30:00',
+            'description' => 'Stic Mobility Yoga',
+            'sessions_spent' => 1,
+        ]);
+
+        $subscription->load('usages');
+
+        $this->assertSame(3, $this->reports->completedSessionsUsed($subscription));
+        $this->assertSame(
+            '26.06.2026, 02.07.2026, 02.07.2026',
+            $this->reports->visitDatesForSubscription($subscription),
+        );
+
+        Carbon::setTestNow();
+    }
 }
