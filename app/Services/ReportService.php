@@ -50,11 +50,25 @@ class ReportService
 
     /**
      * Сколько занятий списано по фактически прошедшим посещениям на дату отчёта.
+     *
+     * Учитывает и записи subscription_usages, и ручную правку «Списано» в карточке
+     * абонемента (без отдельной usage-записи). Будущие списания (used_at >= asOf)
+     * из sessions_used исключаются.
      */
     public function completedSessionsUsed(Subscription $subscription, ?Carbon $asOf = null): int
     {
-        return (int) $this->completedUsagesForSubscription($subscription, $asOf)
+        $asOf ??= now();
+
+        $fromCompletedUsages = (int) $this->completedUsagesForSubscription($subscription, $asOf)
             ->sum(fn ($usage) => max(1, (int) $usage->sessions_spent));
+
+        $futureUsagesSpent = (int) $subscription->usages
+            ->filter(fn ($usage) => $usage->used_at->gte($asOf))
+            ->sum(fn ($usage) => max(1, (int) $usage->sessions_spent));
+
+        $fromSubscriptionBalance = max(0, $subscription->sessions_used - $futureUsagesSpent);
+
+        return max($fromCompletedUsages, $fromSubscriptionBalance);
     }
 
     /**

@@ -187,4 +187,34 @@ class SubscriptionReportTest extends TestCase
 
         Carbon::setTestNow();
     }
+
+    public function test_subscription_report_respects_manually_set_sessions_used(): void
+    {
+        Carbon::setTestNow('2026-07-05 12:00:00');
+
+        $user = User::create([
+            'first_name' => 'Виктория',
+            'last_name' => 'Титова',
+            'phone' => '+79175603520',
+            'role' => UserRole::Client,
+            'password' => 'secret123',
+        ]);
+
+        $subscription = Subscription::create([
+            'user_id' => $user->id,
+            'type' => SubscriptionType::Individual,
+            'sessions_total' => 4,
+            'sessions_used' => 1,
+            'purchased_at' => '2026-07-03',
+            'starts_at' => '2026-07-03',
+            'ends_at' => '2026-08-01',
+        ]);
+
+        $subscription->load('usages');
+
+        $this->assertSame(1, $this->reports->completedSessionsUsed($subscription));
+        $this->assertSame(3, $this->reports->sessionsRemainingAsOf($subscription));
+
+        Carbon::setTestNow();
+    }
 }
