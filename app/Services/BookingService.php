@@ -425,15 +425,17 @@ class BookingService
             throw new InvalidArgumentException('Вы уже записаны на это занятие.');
         }
 
-        $dayBookings = Booking::query()
-            ->where('user_id', $user->id)
-            ->where('status', BookingStatus::Confirmed)
-            ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId))
-            ->whereHas('classSession', fn ($q) => $q->whereDate('starts_at', $session->starts_at->toDateString()))
-            ->count();
+        if (! $forAdmin) {
+            $dayBookings = Booking::query()
+                ->where('user_id', $user->id)
+                ->where('status', BookingStatus::Confirmed)
+                ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId))
+                ->whereHas('classSession', fn ($q) => $q->whereDate('starts_at', $session->starts_at->toDateString()))
+                ->count();
 
-        if ($dayBookings >= (int) config('studio.max_bookings_per_day')) {
-            throw new InvalidArgumentException('В один день можно записаться максимум на '.config('studio.max_bookings_per_day').' занятия.');
+            if ($dayBookings >= (int) config('studio.max_bookings_per_day')) {
+                throw new InvalidArgumentException('В один день можно записаться максимум на '.config('studio.max_bookings_per_day').' занятия.');
+            }
         }
     }
 

@@ -317,6 +317,22 @@ class BookingServiceTest extends TestCase
         $this->service->book($user, $this->makeSession(['starts_at' => $day->copy()->setTime(18, 0)]));
     }
 
+    public function test_admin_can_book_beyond_max_bookings_per_day(): void
+    {
+        config(['studio.max_bookings_per_day' => 2]);
+
+        $user = $this->client();
+        $this->subscription($user, ['sessions_total' => 10]);
+
+        $day = now()->addDay();
+        $this->service->book($user, $this->makeSession(['starts_at' => $day->copy()->setTime(9, 0)]));
+        $this->service->book($user, $this->makeSession(['starts_at' => $day->copy()->setTime(12, 0)]));
+
+        $booking = $this->service->bookForAdmin($user, $this->makeSession(['starts_at' => $day->copy()->setTime(18, 0)]));
+
+        $this->assertSame(BookingStatus::Confirmed, $booking->status);
+    }
+
     public function test_client_cancellation_refunds_subscription(): void
     {
         $user = $this->client();
