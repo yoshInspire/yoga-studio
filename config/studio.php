@@ -68,6 +68,10 @@ return [
             'enabled' => true,
             'time' => '14:00',
         ],
+        'birthday' => [
+            'enabled' => true,
+            'time' => '09:00',
+        ],
     ],
 
     /** Лимит мест в группе по умолчанию */

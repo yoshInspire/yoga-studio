@@ -14,6 +14,7 @@ class StudioMailingService
 {
     public function __construct(
         private NotificationService $notifications,
+        private BirthdayGreetingService $birthdayGreetings,
     ) {}
 
     /**
@@ -182,6 +183,54 @@ class StudioMailingService
             'sent' => $sent,
             'mailing_key' => $mailingKey,
         ];
+    }
+
+    /**
+     * @return array{sent: int, skipped: int}
+     */
+    public function sendBirthdayGreetings(?Carbon $on = null, bool $dryRun = false): array
+    {
+        if (! ($this->config('birthday.enabled') ?? true)) {
+            return ['sent' => 0, 'skipped' => 0];
+        }
+
+        $on ??= now();
+        $mailingKey = $on->toDateString();
+        $counts = ['sent' => 0, 'skipped' => 0];
+
+        $this->eligibleClients()
+            ->birthdayOn($on)
+            ->each(function (User $user) use ($mailingKey, $dryRun, &$counts) {
+                if ($this->alreadySent($user, ClientMailingLog::TYPE_BIRTHDAY, $mailingKey)) {
+                    $counts['skipped']++;
+
+                    return;
+                }
+
+                $body = $this->birthdayGreetings->bodyForUser($user);
+
+                if ($body === null) {
+                    return;
+                }
+
+                if ($dryRun) {
+                    $counts['sent']++;
+
+                    return;
+                }
+
+                $this->notifications->notifyUser(
+                    $user,
+                    '🎂 С днём рождения!',
+                    [$body],
+                    'С днём рождения!',
+                );
+
+                $this->markSent($user, ClientMailingLog::TYPE_BIRTHDAY, $mailingKey);
+                $counts['sent']++;
+            });
+
+        return $counts;
     }
 
     /**

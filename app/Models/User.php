@@ -135,6 +135,40 @@ class User extends Authenticatable implements FilamentUser
         return $text;
     }
 
+    public function hasBirthdayOn(\Illuminate\Support\Carbon $date): bool
+    {
+        if (! $this->birth_day || ! $this->birth_month) {
+            return false;
+        }
+
+        if ($this->birth_month === 2 && $this->birth_day === 29 && ! $date->isLeapYear()) {
+            return $date->month === 2 && $date->day === 28;
+        }
+
+        return $this->birth_month === $date->month && $this->birth_day === $date->day;
+    }
+
+    /** @param  Builder<self>  $query */
+    public function scopeBirthdayOn(Builder $query, \Illuminate\Support\Carbon $date): Builder
+    {
+        return $query
+            ->whereNotNull('birth_day')
+            ->whereNotNull('birth_month')
+            ->where(function (Builder $query) use ($date) {
+                $query->where(function (Builder $query) use ($date) {
+                    $query->where('birth_month', $date->month)
+                        ->where('birth_day', $date->day);
+                });
+
+                if ($date->month === 2 && $date->day === 28 && ! $date->isLeapYear()) {
+                    $query->orWhere(function (Builder $query) {
+                        $query->where('birth_month', 2)
+                            ->where('birth_day', 29);
+                    });
+                }
+            });
+    }
+
     public function isClient(): bool
     {
         return $this->role === UserRole::Client;

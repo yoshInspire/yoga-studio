@@ -13,6 +13,8 @@ class ClientMailingLog extends Model
 
     public const TYPE_CUSTOM = 'custom';
 
+    public const TYPE_BIRTHDAY = 'birthday';
+
     protected $fillable = [
         'user_id',
         'type',

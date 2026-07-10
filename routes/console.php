@@ -33,6 +33,11 @@ Schedule::command('studio:weekly-schedule-announcement')
     ->weeklyOn(0, (string) config('studio.mailings.weekly_schedule.time', '14:00'))
     ->withoutOverlapping();
 
+// Поздравления с днём рождения — каждый день утром.
+Schedule::command('studio:birthday-greetings')
+    ->dailyAt((string) config('studio.mailings.birthday.time', '09:00'))
+    ->withoutOverlapping();
+
 // Уведомления о новостях с отложенной датой публикации.
 Schedule::command('studio:publish-scheduled-news')
     ->everyFiveMinutes()
