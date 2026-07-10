@@ -15,7 +15,9 @@
       <p class="news-article__date reveal">{{ $item->formattedDate() }}</p>
 
       @if ($item->imageUrl())
-        <div class="news-article__cover reveal" style="background-image:url('{{ $item->imageUrl() }}')"></div>
+        <figure class="news-article__cover reveal">
+          <img src="{{ $item->imageUrl() }}" alt="{{ $item->title }}" loading="lazy" decoding="async" />
+        </figure>
       @endif
 
       <div class="news-article__body reveal">
@@ -33,7 +35,7 @@
         <h2 class="section__title reveal" style="font-size: 1.6rem">Ещё новости</h2>
         <div class="cards">
           @foreach($more as $i => $other)
-            <article class="card reveal" style="--d:{{ $i * 0.08 + 0.05 }}s">
+            <article class="card news-card reveal" style="--d:{{ $i * 0.08 + 0.05 }}s">
               <div class="card__img" @if($other->imageUrl()) style="background-image:url('{{ $other->imageUrl() }}')" @endif></div>
               <div class="card__body">
                 <span class="card__num">{{ $other->formattedDate() }}</span>

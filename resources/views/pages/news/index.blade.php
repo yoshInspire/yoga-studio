@@ -22,7 +22,7 @@
       @else
         <div class="cards">
           @foreach($news as $i => $item)
-            <article class="card reveal" style="--d:{{ ($i % 3) * 0.08 + 0.05 }}s">
+            <article class="card news-card reveal" style="--d:{{ ($i % 3) * 0.08 + 0.05 }}s">
               <div class="card__img" @if($item->imageUrl()) style="background-image:url('{{ $item->imageUrl() }}')" @endif></div>
               <div class="card__body">
                 <span class="card__num">{{ $item->formattedDate() }}</span>
