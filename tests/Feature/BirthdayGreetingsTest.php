@@ -8,7 +8,6 @@ use App\Models\BirthdayGreeting;
 use App\Models\ClientMailingLog;
 use App\Models\User;
 use App\Services\BirthdayGreetingService;
-use App\Services\StudioMailingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
@@ -132,6 +131,25 @@ class BirthdayGreetingsTest extends TestCase
         Mail::assertSent(StudioNotificationMail::class, fn (StudioNotificationMail $mail) => $mail->hasTo($user->email));
     }
 
+    public function test_admin_can_add_and_remove_greeting_variants(): void
+    {
+        $bodies = app(BirthdayGreetingService::class)->orderedBodies();
+
+        app(BirthdayGreetingService::class)->syncBodies([
+            $bodies[0],
+            'Новый дополнительный вариант поздравления.',
+        ]);
+
+        $updated = app(BirthdayGreetingService::class)->orderedBodies();
+
+        $this->assertCount(2, $updated);
+        $this->assertSame('Новый дополнительный вариант поздравления.', $updated[1]);
+
+        app(BirthdayGreetingService::class)->syncBodies([$updated[0]]);
+
+        $this->assertCount(1, app(BirthdayGreetingService::class)->orderedBodies());
+    }
+
     public function test_admin_can_update_greeting_texts(): void
     {
         $custom = 'С днём рождения! Тестовый текст студии.';
@@ -145,17 +163,5 @@ class BirthdayGreetingsTest extends TestCase
         ]);
 
         $this->assertSame($custom, app(BirthdayGreetingService::class)->orderedBodies()[0]);
-    }
-
-    public function test_dry_run_does_not_create_mailing_log(): void
-    {
-        Mail::fake();
-
-        $this->eligibleClient();
-
-        app(StudioMailingService::class)->sendBirthdayGreetings(dryRun: true);
-
-        Mail::assertNothingSent();
-        $this->assertDatabaseCount('client_mailing_logs', 0);
     }
 }

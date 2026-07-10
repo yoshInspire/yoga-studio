@@ -35,9 +35,11 @@ class BirthdayGreetingService
      */
     public function syncBodies(array $bodies): void
     {
-        if (count($bodies) !== 5) {
-            throw new InvalidArgumentException('Нужно указать ровно 5 вариантов поздравления.');
+        if ($bodies === []) {
+            throw new InvalidArgumentException('Нужен хотя бы один вариант поздравления.');
         }
+
+        $normalized = [];
 
         foreach ($bodies as $index => $body) {
             $text = trim($body);
@@ -46,10 +48,16 @@ class BirthdayGreetingService
                 throw new InvalidArgumentException('Текст варианта '.($index + 1).' не может быть пустым.');
             }
 
-            BirthdayGreeting::query()->updateOrCreate(
-                ['position' => $index + 1],
-                ['body' => $text],
-            );
+            $normalized[] = $text;
+        }
+
+        BirthdayGreeting::query()->delete();
+
+        foreach ($normalized as $index => $body) {
+            BirthdayGreeting::query()->create([
+                'position' => $index + 1,
+                'body' => $body,
+            ]);
         }
     }
 

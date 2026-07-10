@@ -6,6 +6,7 @@ use App\Services\BirthdayGreetingService;
 use App\Services\StudioMailingService;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -22,15 +23,8 @@ class Mailings extends Page
 
     public string $customBody = '';
 
-    public string $birthdayGreeting1 = '';
-
-    public string $birthdayGreeting2 = '';
-
-    public string $birthdayGreeting3 = '';
-
-    public string $birthdayGreeting4 = '';
-
-    public string $birthdayGreeting5 = '';
+    /** @var list<array{body: string}> */
+    public array $birthdayGreetings = [];
 
     protected static ?string $navigationLabel = 'Рассылки';
 
@@ -44,11 +38,14 @@ class Mailings extends Page
     {
         $bodies = app(BirthdayGreetingService::class)->orderedBodies();
 
-        $this->birthdayGreeting1 = $bodies[0] ?? '';
-        $this->birthdayGreeting2 = $bodies[1] ?? '';
-        $this->birthdayGreeting3 = $bodies[2] ?? '';
-        $this->birthdayGreeting4 = $bodies[3] ?? '';
-        $this->birthdayGreeting5 = $bodies[4] ?? '';
+        $this->birthdayGreetings = array_map(
+            fn (string $body) => ['body' => $body],
+            $bodies,
+        );
+
+        if ($this->birthdayGreetings === []) {
+            $this->birthdayGreetings = [['body' => '']];
+        }
     }
 
     public function content(Schema $schema): Schema
@@ -61,33 +58,23 @@ class Mailings extends Page
             Section::make('Поздравления с днём рождения')
                 ->description('Автоматически каждый день в '
                     .(config('studio.mailings.birthday.time') ?? '09:00')
-                    .'. Клиентам с днём рождения в этот день отправляется один из пяти вариантов текста (email и/или Telegram). Каждый следующий год — следующий вариант по кругу.')
+                    .'. Клиентам с днём рождения в этот день отправляется один из вариантов текста (email и/или Telegram). Каждый следующий год — следующий вариант по кругу.')
                 ->schema([
-                    Textarea::make('birthdayGreeting1')
-                        ->label('Вариант 1')
-                        ->rows(4)
-                        ->required()
-                        ->maxLength(2000),
-                    Textarea::make('birthdayGreeting2')
-                        ->label('Вариант 2')
-                        ->rows(4)
-                        ->required()
-                        ->maxLength(2000),
-                    Textarea::make('birthdayGreeting3')
-                        ->label('Вариант 3')
-                        ->rows(4)
-                        ->required()
-                        ->maxLength(2000),
-                    Textarea::make('birthdayGreeting4')
-                        ->label('Вариант 4')
-                        ->rows(4)
-                        ->required()
-                        ->maxLength(2000),
-                    Textarea::make('birthdayGreeting5')
-                        ->label('Вариант 5')
-                        ->rows(4)
-                        ->required()
-                        ->maxLength(2000),
+                    Repeater::make('birthdayGreetings')
+                        ->label('Варианты поздравлений')
+                        ->schema([
+                            Textarea::make('body')
+                                ->label('Текст')
+                                ->rows(4)
+                                ->required()
+                                ->maxLength(2000),
+                        ])
+                        ->itemLabel(fn (array $state, ?string $key = null): string => 'Вариант '.((int) $key + 1))
+                        ->addActionLabel('Добавить вариант')
+                        ->reorderable(false)
+                        ->minItems(1)
+                        ->defaultItems(1)
+                        ->deletable(),
                     Actions::make([
                         Action::make('saveBirthdayGreetings')
                             ->label('Сохранить тексты')
@@ -95,12 +82,6 @@ class Mailings extends Page
                             ->color('success')
                             ->action(function () {
                                 $this->saveBirthdayGreetings();
-                            }),
-                        Action::make('dryRunBirthday')
-                            ->label('Проверить сегодня (dry-run)')
-                            ->icon(Heroicon::OutlinedEye)
-                            ->action(function () {
-                                $this->runBirthday(dryRun: true);
                             }),
                     ]),
                 ]),
@@ -193,27 +174,18 @@ class Mailings extends Page
     private function saveBirthdayGreetings(): void
     {
         $this->validate([
-            'birthdayGreeting1' => ['required', 'string', 'max:2000'],
-            'birthdayGreeting2' => ['required', 'string', 'max:2000'],
-            'birthdayGreeting3' => ['required', 'string', 'max:2000'],
-            'birthdayGreeting4' => ['required', 'string', 'max:2000'],
-            'birthdayGreeting5' => ['required', 'string', 'max:2000'],
+            'birthdayGreetings' => ['required', 'array', 'min:1'],
+            'birthdayGreetings.*.body' => ['required', 'string', 'max:2000'],
         ], [
-            'birthdayGreeting1.required' => 'Заполните вариант 1.',
-            'birthdayGreeting2.required' => 'Заполните вариант 2.',
-            'birthdayGreeting3.required' => 'Заполните вариант 3.',
-            'birthdayGreeting4.required' => 'Заполните вариант 4.',
-            'birthdayGreeting5.required' => 'Заполните вариант 5.',
+            'birthdayGreetings.required' => 'Добавьте хотя бы один вариант поздравления.',
+            'birthdayGreetings.min' => 'Добавьте хотя бы один вариант поздравления.',
+            'birthdayGreetings.*.body.required' => 'Заполните текст варианта.',
         ]);
 
         try {
-            app(BirthdayGreetingService::class)->syncBodies([
-                $this->birthdayGreeting1,
-                $this->birthdayGreeting2,
-                $this->birthdayGreeting3,
-                $this->birthdayGreeting4,
-                $this->birthdayGreeting5,
-            ]);
+            app(BirthdayGreetingService::class)->syncBodies(
+                collect($this->birthdayGreetings)->pluck('body')->all(),
+            );
         } catch (InvalidArgumentException $e) {
             Notification::make()
                 ->title('Не удалось сохранить')
@@ -224,23 +196,13 @@ class Mailings extends Page
             return;
         }
 
+        $this->birthdayGreetings = array_map(
+            fn (string $body) => ['body' => $body],
+            app(BirthdayGreetingService::class)->orderedBodies(),
+        );
+
         Notification::make()
             ->title('Тексты поздравлений сохранены')
-            ->success()
-            ->send();
-    }
-
-    private function runBirthday(bool $dryRun): void
-    {
-        $counts = app(StudioMailingService::class)->sendBirthdayGreetings(dryRun: $dryRun);
-
-        Notification::make()
-            ->title($dryRun ? 'Проверка поздравлений' : 'Поздравления отправлены')
-            ->body(sprintf(
-                'Сегодня именинников: %d. Пропущено (уже отправлено): %d.',
-                $counts['sent'],
-                $counts['skipped'],
-            ))
             ->success()
             ->send();
     }

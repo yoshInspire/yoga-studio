@@ -7,7 +7,7 @@ use Illuminate\Console\Command;
 
 class SendBirthdayGreetings extends Command
 {
-    protected $signature = 'studio:birthday-greetings {--dry-run : Показать, кому будет отправлено, без отправки}';
+    protected $signature = 'studio:birthday-greetings';
 
     protected $description = 'Поздравления клиентов с днём рождения (email и/или Telegram)';
 
@@ -19,12 +19,10 @@ class SendBirthdayGreetings extends Command
             return self::SUCCESS;
         }
 
-        $dryRun = (bool) $this->option('dry-run');
-        $counts = $mailings->sendBirthdayGreetings(dryRun: $dryRun);
+        $counts = $mailings->sendBirthdayGreetings();
 
         $this->info(sprintf(
-            '%sПоздравления с днём рождения: отправлено — %d, пропущено (уже отправлено в этом году) — %d.',
-            $dryRun ? '[dry-run] ' : '',
+            'Поздравления с днём рождения: отправлено — %d, пропущено (уже отправлено сегодня) — %d.',
             $counts['sent'],
             $counts['skipped'],
         ));
