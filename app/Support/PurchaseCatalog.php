@@ -5,6 +5,8 @@ namespace App\Support;
 use App\Enums\SubscriptionType;
 use App\Models\PricingCatalogItem;
 use App\Models\ProductPrice;
+use App\Models\User;
+use App\Services\PaymentService;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
@@ -111,6 +113,36 @@ class PurchaseCatalog
         $default = (int) config("purchases.products.{$key}.price", 0);
 
         return self::prices()[$key] ?? $default;
+    }
+
+    /**
+     * Каталог для конкретного клиента: одноразовые тарифы (пробное занятие),
+     * которые он уже оплачивал, из витрины убираем.
+     *
+     * @return array<string, list<array<string, mixed>>>
+     */
+    public static function groupedOnlineProductsFor(User $user): array
+    {
+        $grouped = [];
+
+        foreach (self::groupedOnlineProducts() as $category => $products) {
+            $available = array_values(array_filter(
+                $products,
+                fn (array $product): bool => ! PaymentService::isAlreadyUsedOnceOnlyProduct($user, $product['key']),
+            ));
+
+            if ($available !== []) {
+                $grouped[$category] = $available;
+            }
+        }
+
+        return $grouped;
+    }
+
+    /** Тариф продаётся клиенту только один раз за всё время (пробное занятие). */
+    public static function isOncePerClient(string $key): bool
+    {
+        return in_array($key, (array) config('purchases.once_per_client', []), true);
     }
 
     public static function forgetPrices(): void

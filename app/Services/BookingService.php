@@ -78,13 +78,24 @@ class BookingService
 
             $usageId = $this->chargeForBooking($user, $session, $subscription);
 
-            return Booking::query()->create([
-                'user_id' => $user->id,
-                'class_session_id' => $session->id,
-                'subscription_id' => $subscription->id,
-                'subscription_usage_id' => $usageId,
-                'status' => BookingStatus::Confirmed,
-            ]);
+            // Запись на занятие уникальна по паре «клиент + занятие»: если клиент
+            // раньше отписался, переиспользуем ту же строку, сбрасывая следы
+            // прошлой отмены, — иначе повторная запись упирается в unique-индекс.
+            return Booking::query()->updateOrCreate(
+                [
+                    'user_id' => $user->id,
+                    'class_session_id' => $session->id,
+                ],
+                [
+                    'subscription_id' => $subscription->id,
+                    'subscription_usage_id' => $usageId,
+                    'status' => BookingStatus::Confirmed,
+                    'attendance_status' => AttendanceStatus::Expected,
+                    'attended_at' => null,
+                    'cancellation_reason' => null,
+                    'cancelled_at' => null,
+                ],
+            );
         });
     }
 

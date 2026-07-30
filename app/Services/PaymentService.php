@@ -27,6 +27,23 @@ class PaymentService
         private AdminActivityNotifier $adminActivity,
     ) {}
 
+    /**
+     * Одноразовый тариф (пробное занятие) уже оплачен этим клиентом.
+     * Незавершённые платежи не блокируют — клиент мог просто закрыть оплату.
+     */
+    public static function isAlreadyUsedOnceOnlyProduct(User $user, string $productKey): bool
+    {
+        if (! PurchaseCatalog::isOncePerClient($productKey)) {
+            return false;
+        }
+
+        return Payment::query()
+            ->where('user_id', $user->id)
+            ->where('product_key', $productKey)
+            ->whereIn('status', [PaymentStatus::Succeeded, PaymentStatus::WaitingForCapture])
+            ->exists();
+    }
+
     public function initiate(User $user, string $productKey, Carbon $startsAt): Payment
     {
         if (! $this->yookassa->isConfigured()) {
@@ -35,6 +52,12 @@ class PaymentService
 
         $product = PurchaseCatalog::find($productKey);
         $startsAt = $startsAt->startOfDay();
+
+        if (self::isAlreadyUsedOnceOnlyProduct($user, $productKey)) {
+            throw new InvalidArgumentException(
+                '«'.$product['name'].'» можно приобрести только один раз. Выберите другой тариф.',
+            );
+        }
 
         if ($startsAt->lt(now()->startOfDay())) {
             throw new InvalidArgumentException('Дата начала абонемента не может быть в прошлом.');

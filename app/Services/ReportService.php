@@ -68,7 +68,12 @@ class ReportService
 
         $fromSubscriptionBalance = max(0, $subscription->sessions_used - $futureUsagesSpent);
 
-        return max($fromCompletedUsages, $fromSubscriptionBalance);
+        // Баланс абонемента — источник правды: если администратор откатил лишнее
+        // списание вручную, отчёт не должен показывать больше, чем в карточке.
+        return min(
+            $subscription->sessions_used,
+            max($fromCompletedUsages, $fromSubscriptionBalance),
+        );
     }
 
     /**
@@ -77,6 +82,17 @@ class ReportService
     public function sessionsRemainingAsOf(Subscription $subscription, ?Carbon $asOf = null): int
     {
         return max(0, $subscription->sessions_total - $this->completedSessionsUsed($subscription, $asOf));
+    }
+
+    /**
+     * Занятия, уже списанные под будущие записи клиента на дату отчёта.
+     *
+     * Это разница между балансом абонемента и фактически прошедшими занятиями:
+     * именно на неё «Остаток» в отчёте раньше расходился с карточкой абонемента.
+     */
+    public function reservedSessionsAsOf(Subscription $subscription, ?Carbon $asOf = null): int
+    {
+        return max(0, $subscription->sessions_used - $this->completedSessionsUsed($subscription, $asOf));
     }
 
     /**

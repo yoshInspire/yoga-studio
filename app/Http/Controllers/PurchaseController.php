@@ -12,10 +12,10 @@ use InvalidArgumentException;
 
 class PurchaseController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         return view('pages.purchase', [
-            'catalog' => PurchaseCatalog::groupedOnlineProducts(),
+            'catalog' => PurchaseCatalog::groupedOnlineProductsFor($request->user()),
         ]);
     }
 

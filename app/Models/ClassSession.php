@@ -100,6 +100,27 @@ class ClassSession extends Model
         return max(0, $this->capacity - $this->confirmedCount());
     }
 
+    /**
+     * Группа ещё не набралась, и занятие может быть отменено автоматически.
+     * Нужно, чтобы напоминание накануне не обещало занятие как состоявшееся.
+     */
+    public function awaitsGroupFill(?int $confirmed = null): bool
+    {
+        $config = config('studio.auto_cancel');
+
+        if (! ($config['enabled'] ?? true)) {
+            return false;
+        }
+
+        if ($this->status !== ClassSessionStatus::Scheduled || $this->type !== SubscriptionType::Group) {
+            return false;
+        }
+
+        $confirmed ??= $this->confirmedCount();
+
+        return $confirmed < (int) ($config['min_group_size'] ?? 2);
+    }
+
     public function isFull(): bool
     {
         return $this->freeSeats() === 0;

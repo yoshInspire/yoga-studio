@@ -13,9 +13,9 @@ use InvalidArgumentException;
 class PurchaseController extends Controller
 {
     /** Каталог абонементов для онлайн-оплаты. */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $grouped = PurchaseCatalog::groupedOnlineProducts();
+        $grouped = PurchaseCatalog::groupedOnlineProductsFor($request->user());
 
         $data = [];
         foreach ($grouped as $category => $products) {

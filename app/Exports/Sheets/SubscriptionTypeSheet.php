@@ -35,6 +35,7 @@ class SubscriptionTypeSheet implements FromCollection, ShouldAutoSize, WithHeadi
             'Телефон',
             'Всего занятий',
             'Использовано',
+            'Забронировано',
             'Остаток',
             'Дата покупки',
             'Начало действия',
@@ -55,7 +56,10 @@ class SubscriptionTypeSheet implements FromCollection, ShouldAutoSize, WithHeadi
                 $subscription->user->formattedPhone() ?? $subscription->user->phone ?? '',
                 $subscription->sessions_total,
                 $this->reports->completedSessionsUsed($subscription),
-                $this->reports->sessionsRemainingAsOf($subscription),
+                $this->reports->reservedSessionsAsOf($subscription),
+                // Остаток берём из самого абонемента, чтобы отчёт совпадал
+                // с карточкой в админке: всего − использовано − забронировано.
+                $subscription->sessionsRemaining(),
                 $subscription->purchased_at->format('d.m.Y'),
                 $subscription->starts_at->format('d.m.Y'),
                 $subscription->ends_at->format('d.m.Y'),

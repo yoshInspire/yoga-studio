@@ -34,7 +34,10 @@ class StudioMailingService
         $bookingsByUser = Booking::query()
             ->where('status', BookingStatus::Confirmed)
             ->whereHas('classSession', fn ($q) => $q->whereBetween('starts_at', [$tomorrow, $tomorrowEnd]))
-            ->with(['classSession.direction'])
+            ->with(['classSession' => fn ($q) => $q
+                ->with('direction')
+                ->withCount(['bookings as confirmed_count' => fn ($b) => $b->where('status', BookingStatus::Confirmed)]),
+            ])
             ->get()
             ->groupBy('user_id');
 
@@ -280,10 +283,21 @@ class StudioMailingService
                 .$tomorrow->format('d.m').':',
         ];
 
+        $awaitsGroupFill = false;
+
         foreach ($bookings as $booking) {
             $session = $booking->classSession;
             $lines[] = '📌 '.$session->title.' — в '.$session->formattedTime()
                 .' (адрес: '.$this->studioAddress().')';
+
+            if ($session->awaitsGroupFill($session->confirmed_count)) {
+                $awaitsGroupFill = true;
+                $lines[] = '⏳ Группа пока набирается — занятие подтвердим ближе к началу.';
+            }
+        }
+
+        if ($awaitsGroupFill) {
+            $lines[] = 'Если группа не наберётся, занятие отменится, а списанное занятие вернётся на ваш абонемент — мы сразу сообщим.';
         }
 
         $lines[] = 'Если не можете прийти — пожалуйста, отмените или перенесите запись прямо сейчас через личный кабинет, чтобы место освободилось для других.';
