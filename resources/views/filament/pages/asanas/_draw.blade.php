@@ -1,0 +1,265 @@
+@php
+    /** @var \App\Models\AsanaProgramItem|null $drawingItem */
+    $isItem = $drawingMode === 'item' && ($drawingItem ?? null) !== null;
+    $baseUrl = $isItem ? $drawingItem->imageUrl() : null;
+@endphp
+
+<div
+    class="as-draw"
+    wire:key="draw-{{ $drawingMode }}-{{ $drawingItemId ?? 'new' }}"
+    x-data="asanaCanvas({
+        baseUrl: @js($baseUrl),
+        isItem: @js($isItem),
+        itemId: @js($drawingItemId),
+    })"
+    x-on:keydown.escape.window="close()"
+>
+    <div class="as-draw__sheet" role="dialog" aria-modal="true" aria-label="Зарисовка позы">
+        <header class="as-draw__head">
+            <strong class="as-draw__title">
+                {{ $isItem ? 'Правка позы' : 'Новая поза' }}
+            </strong>
+            <button type="button" class="as-icon-btn" title="Закрыть" @click="close()">✕</button>
+        </header>
+
+        {{-- Холст. wire:ignore, иначе перерисовка Livewire стирает рисунок. --}}
+        <div class="as-draw__canvas-wrap" wire:ignore>
+            <canvas
+                x-ref="canvas"
+                class="as-draw__canvas"
+                x-on:pointerdown.prevent="start($event)"
+                x-on:pointermove.prevent="move($event)"
+                x-on:pointerup.prevent="end($event)"
+                x-on:pointercancel.prevent="end($event)"
+                x-on:pointerleave.prevent="end($event)"
+            ></canvas>
+        </div>
+
+        {{-- Инструменты --}}
+        <div class="as-draw__tools">
+            <div class="as-draw__group" role="group" aria-label="Инструмент">
+                <button
+                    type="button"
+                    class="as-tool"
+                    x-bind:class="tool === 'pen' && 'as-tool--on'"
+                    @click="tool = 'pen'"
+                >✎ Перо</button>
+                <button
+                    type="button"
+                    class="as-tool"
+                    x-bind:class="tool === 'eraser' && 'as-tool--on'"
+                    @click="tool = 'eraser'"
+                >⌫ Ластик</button>
+            </div>
+
+            <div class="as-draw__group" role="group" aria-label="Толщина линии">
+                <template x-for="w in widths" :key="w">
+                    <button
+                        type="button"
+                        class="as-tool as-tool--w"
+                        x-bind:class="width === w && 'as-tool--on'"
+                        @click="width = w"
+                    >
+                        <span class="as-dot" x-bind:style="`width:${w * 2}px;height:${w * 2}px`"></span>
+                    </button>
+                </template>
+            </div>
+
+            <div class="as-draw__group">
+                <button type="button" class="as-tool" @click="undo()" x-bind:disabled="! strokes.length">↶ Отменить</button>
+                <button type="button" class="as-tool" @click="clear()">Очистить</button>
+            </div>
+        </div>
+
+        {{-- Имя для новой позы --}}
+        <template x-if="! isItem">
+            <input
+                type="text"
+                class="as-input"
+                placeholder="Название позы (необязательно)"
+                x-model="name"
+                aria-label="Название позы"
+            />
+        </template>
+
+        <footer class="as-draw__foot">
+            <button type="button" class="as-btn as-btn--ghost" @click="close()">Отмена</button>
+            <button
+                type="button"
+                class="as-btn as-btn--primary"
+                @click="save()"
+                x-bind:disabled="saving"
+                x-text="saving ? 'Сохраняю…' : 'Сохранить'"
+            ></button>
+        </footer>
+    </div>
+</div>
+
+@script
+<script>
+    Alpine.data('asanaCanvas', (config) => ({
+        // Логический размер холста: крупнее исходной картинки, чтобы
+        // подписи стилусом не выглядели грубыми.
+        W: 640,
+        H: 480,
+
+        isItem: config.isItem,
+        itemId: config.itemId,
+        baseUrl: config.baseUrl,
+
+        tool: 'pen',
+        width: 3,
+        widths: [2, 3, 6, 12],
+        name: '',
+        saving: false,
+
+        strokes: [],
+        current: null,
+        base: null,
+
+        init() {
+            const canvas = this.$refs.canvas;
+            // Ретина: рисуем в увеличенном разрешении, показываем в CSS-пикселях.
+            const ratio = Math.min(window.devicePixelRatio || 1, 3);
+
+            canvas.width = this.W * ratio;
+            canvas.height = this.H * ratio;
+
+            this.ctx = canvas.getContext('2d');
+            this.ctx.scale(ratio, ratio);
+            this.ctx.lineCap = 'round';
+            this.ctx.lineJoin = 'round';
+
+            if (this.baseUrl) {
+                const img = new Image();
+                img.onload = () => {
+                    this.base = img;
+                    this.redraw();
+                };
+                // Тот же домен, поэтому холст не «портится» и toDataURL работает.
+                img.src = this.baseUrl;
+            }
+
+            this.redraw();
+        },
+
+        // Координаты указателя в логических пикселях холста.
+        point(event) {
+            const rect = this.$refs.canvas.getBoundingClientRect();
+
+            return {
+                x: (event.clientX - rect.left) * (this.W / rect.width),
+                y: (event.clientY - rect.top) * (this.H / rect.height),
+            };
+        },
+
+        start(event) {
+            this.$refs.canvas.setPointerCapture?.(event.pointerId);
+
+            this.current = {
+                tool: this.tool,
+                width: this.tool === 'eraser' ? this.width * 4 : this.width,
+                points: [this.point(event)],
+            };
+        },
+
+        move(event) {
+            if (! this.current) {
+                return;
+            }
+
+            this.current.points.push(this.point(event));
+            this.redraw();
+        },
+
+        end(event) {
+            if (! this.current) {
+                return;
+            }
+
+            this.$refs.canvas.releasePointerCapture?.(event.pointerId);
+
+            // Одиночное касание тоже должно оставлять точку.
+            if (this.current.points.length === 1) {
+                this.current.points.push({ ...this.current.points[0] });
+            }
+
+            this.strokes.push(this.current);
+            this.current = null;
+            this.redraw();
+        },
+
+        undo() {
+            this.strokes.pop();
+            this.redraw();
+        },
+
+        clear() {
+            this.strokes = [];
+            this.current = null;
+            this.redraw();
+        },
+
+        redraw() {
+            const ctx = this.ctx;
+
+            ctx.clearRect(0, 0, this.W, this.H);
+
+            // Белый фон: печатать и хранить удобнее без прозрачности.
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, this.W, this.H);
+
+            if (this.base) {
+                const scale = Math.min(this.W / this.base.width, this.H / this.base.height);
+                const w = this.base.width * scale;
+                const h = this.base.height * scale;
+                ctx.drawImage(this.base, (this.W - w) / 2, (this.H - h) / 2, w, h);
+            }
+
+            const all = this.current ? [...this.strokes, this.current] : this.strokes;
+
+            for (const stroke of all) {
+                ctx.beginPath();
+                ctx.lineWidth = stroke.width;
+                // Ластик стирает до белого фона, а не до прозрачности.
+                ctx.strokeStyle = stroke.tool === 'eraser' ? '#ffffff' : '#111827';
+
+                stroke.points.forEach((p, i) => {
+                    i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+                });
+
+                ctx.stroke();
+            }
+        },
+
+        async save() {
+            if (this.saving) {
+                return;
+            }
+
+            if (! this.isItem && ! this.strokes.length) {
+                window.alert('Нарисуйте позу перед сохранением.');
+
+                return;
+            }
+
+            this.saving = true;
+            const dataUrl = this.$refs.canvas.toDataURL('image/png');
+
+            try {
+                if (this.isItem) {
+                    await this.$wire.saveItemDrawing(this.itemId, dataUrl);
+                } else {
+                    await this.$wire.saveNewDrawing(dataUrl, this.name);
+                }
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        close() {
+            this.$wire.stopDrawing();
+        },
+    }));
+</script>
+@endscript

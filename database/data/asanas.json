@@ -1,0 +1,867 @@
+[
+    {
+        "name": "Агни стамбхасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/agni-stambhasana.png"
+    },
+    {
+        "name": "Ардха баддха падма пашчимоттанасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/ardha-baddha-padma-pashchimottanasana.png"
+    },
+    {
+        "name": "Ардха матсиендрасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/ardha-matsiendrasana.png"
+    },
+    {
+        "name": "Ардха матсиендрасана (вариация)",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/ardha-matsiendrasana-variatsiya.png"
+    },
+    {
+        "name": "Ардха падма матсиендрасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/ardha-padma-matsiendrasana.png"
+    },
+    {
+        "name": "Баддха конасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/baddha-konasana.png"
+    },
+    {
+        "name": "Баддха падмасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/baddha-padmasana.png"
+    },
+    {
+        "name": "Ваджрасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/vadzhrasana.png"
+    },
+    {
+        "name": "Вамадевасена",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/vamadevasena.png"
+    },
+    {
+        "name": "Вира паригхасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/vira-parighasana.png"
+    },
+    {
+        "name": "Вирасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/virasana.png"
+    },
+    {
+        "name": "Вытяжение бедра (сидя)",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/vytyazhenie-bedra-sidya.png"
+    },
+    {
+        "name": "Вытяжение бедра в эка пада раджа капотасане",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/vytyazhenie-bedra-v-eka-pada-radzha-kapotasane.png"
+    },
+    {
+        "name": "Вытяжение лежа (направление нога за голову)",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/vytyazhenie-lezha-napravlenie-noga-za-golovu.png"
+    },
+    {
+        "name": "Вытяжение ягодичных мм",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/vytyazhenie-yagodichnyh-mm.png"
+    },
+    {
+        "name": "Гомукха пашчиммотанасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/gomukha-pashchimmotanasana.png"
+    },
+    {
+        "name": "Гомукхасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/gomukhasana.png"
+    },
+    {
+        "name": "Джану ширшасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/dzhanu-shirshasana.png"
+    },
+    {
+        "name": "Йоганидрасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/yoganidrasana.png"
+    },
+    {
+        "name": "Краунчасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/kraunchasana.png"
+    },
+    {
+        "name": "Марджариасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/mardzhariasana.png"
+    },
+    {
+        "name": "Маричиасана А",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/marichiasana-a.png"
+    },
+    {
+        "name": "Падмасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/padmasana.png"
+    },
+    {
+        "name": "Паривритта джану ширшасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/parivritta-dzhanu-shirshasana.png"
+    },
+    {
+        "name": "Паривритта краунчасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/parivritta-kraunchasana.png"
+    },
+    {
+        "name": "Паршва упавиштха конасана I",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/parshva-upavishtha-konasana-i.png"
+    },
+    {
+        "name": "Паршва упавиштха конасана II",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/parshva-upavishtha-konasana-ii.png"
+    },
+    {
+        "name": "Паршва шашанкасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/parshva-shashankasana.png"
+    },
+    {
+        "name": "Пашчиммотанасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/pashchimmotanasana.png"
+    },
+    {
+        "name": "Самаконасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/samakonasana.png"
+    },
+    {
+        "name": "Сукхасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/sukhasana.png"
+    },
+    {
+        "name": "Супта вирасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/supta-virasana.png"
+    },
+    {
+        "name": "Супта падангуштхасана I",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/supta-padangushthasana-i.png"
+    },
+    {
+        "name": "Супта падангуштхасана II",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/supta-padangushthasana-ii.png"
+    },
+    {
+        "name": "Супта падангуштхасана III",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/supta-padangushthasana-iii.png"
+    },
+    {
+        "name": "Трианг мукхаикапада пашчиммотанасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/triang-mukhaikapada-pashchimmotanasana.png"
+    },
+    {
+        "name": "Убхаая падангуштхасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/ubhaaya-padangushthasana.png"
+    },
+    {
+        "name": "Упавиштха конасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/upavishtha-konasana.png"
+    },
+    {
+        "name": "Хануманасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/hanumanasana.png"
+    },
+    {
+        "name": "Шашанкасана",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/shashankasana.png"
+    },
+    {
+        "name": "Эка пада ширшасана (лежа)",
+        "category": "Асаны сидя и лежа",
+        "image_path": "images/asanas/library/asany-sidya-i-lezha/eka-pada-shirshasana-lezha.png"
+    },
+    {
+        "name": "Адхо мукха шванасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/adho-mukha-shvanasana.png"
+    },
+    {
+        "name": "Ардха баддха падмоттанасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/ardha-baddha-padmottanasana.png"
+    },
+    {
+        "name": "Ардха чандрасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/ardha-chandrasana.png"
+    },
+    {
+        "name": "Баддха натараджасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/baddha-nataradzhasana.png"
+    },
+    {
+        "name": "Вирабхадрасана I",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/virabhadrasana-i.png"
+    },
+    {
+        "name": "Вирабхадрасана I (вариация)",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/virabhadrasana-i-variatsiya.png"
+    },
+    {
+        "name": "Вирабхадрасана II",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/virabhadrasana-ii.png"
+    },
+    {
+        "name": "Вирабхадрасана III",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/virabhadrasana-iii.png"
+    },
+    {
+        "name": "Врикшасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/vrikshasana.png"
+    },
+    {
+        "name": "Вытяжение бедра",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/vytyazhenie-bedra.png"
+    },
+    {
+        "name": "Вытяжение бедра в балансе",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/vytyazhenie-bedra-v-balanse.png"
+    },
+    {
+        "name": "Гарудасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/garudasana.png"
+    },
+    {
+        "name": "Дурвасасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/durvasasana.png"
+    },
+    {
+        "name": "Натараджасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/nataradzhasana.png"
+    },
+    {
+        "name": "Нираламба паршваконасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/niralamba-parshvakonasana.png"
+    },
+    {
+        "name": "Падангуштха падма утткатасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/padangushtha-padma-uttkatasana.png"
+    },
+    {
+        "name": "Падангуштха падма утткатасана (баланс)",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/padangushtha-padma-uttkatasana-balans.png"
+    },
+    {
+        "name": "Падангуштхасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/padangushthasana.png"
+    },
+    {
+        "name": "Падахастасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/padahastasana.png"
+    },
+    {
+        "name": "Паривритта ардха чандрасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/parivritta-ardha-chandrasana.png"
+    },
+    {
+        "name": "Паривритта паршваконасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/parivritta-parshvakonasana.png"
+    },
+    {
+        "name": "Паривритта триконасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/parivritta-trikonasana.png"
+    },
+    {
+        "name": "Паривритта уттанасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/parivritta-uttanasana.png"
+    },
+    {
+        "name": "Паршва утткатасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/parshva-uttkatasana.png"
+    },
+    {
+        "name": "Паршва утткатасана (вариация)",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/parshva-uttkatasana-variatsiya.png"
+    },
+    {
+        "name": "Паршвоттанасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/parshvottanasana.png"
+    },
+    {
+        "name": "Прасарита вирабхадрасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/prasarita-virabhadrasana.png"
+    },
+    {
+        "name": "Прасаритта падоттанасана (вариация)",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/prasaritta-padottanasana-variatsiya.png"
+    },
+    {
+        "name": "Прасаритта падоттанасана I",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/prasaritta-padottanasana-i.png"
+    },
+    {
+        "name": "Прасаритта падоттанасана II",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/prasaritta-padottanasana-ii.png"
+    },
+    {
+        "name": "Прасаритта падоттанасана III",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/prasaritta-padottanasana-iii.png"
+    },
+    {
+        "name": "Прасаритта падоттанасана IV",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/prasaritta-padottanasana-iv.png"
+    },
+    {
+        "name": "Рудрасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/rudrasana.png"
+    },
+    {
+        "name": "Тадасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/tadasana.png"
+    },
+    {
+        "name": "Урдхва прасарита эка падасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/urdhva-prasarita-eka-padasana.png"
+    },
+    {
+        "name": "Урдхва хастасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/urdhva-hastasana.png"
+    },
+    {
+        "name": "Уттанасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/uttanasana.png"
+    },
+    {
+        "name": "Уттанасана с замком",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/uttanasana-s-zamkom.png"
+    },
+    {
+        "name": "Утткатасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/uttkatasana.png"
+    },
+    {
+        "name": "Уттхита ардха дханурасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/utthita-ardha-dhanurasana.png"
+    },
+    {
+        "name": "Уттхита паршваконасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/utthita-parshvakonasana.png"
+    },
+    {
+        "name": "Уттхита паршваконасана с замком",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/utthita-parshvakonasana-s-zamkom.png"
+    },
+    {
+        "name": "Уттхита триконасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/utthita-trikonasana.png"
+    },
+    {
+        "name": "Уттхита хаста падангуштхасана I",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/utthita-hasta-padangushthasana-i.png"
+    },
+    {
+        "name": "Уттхита хаста падангуштхасана I (удержание)",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/utthita-hasta-padangushthasana-i-uderzhanie.png"
+    },
+    {
+        "name": "Уттхита хаста падангуштхасана I в наклоне",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/utthita-hasta-padangushthasana-i-v-naklone.png"
+    },
+    {
+        "name": "Уттхита хаста падангуштхасана II",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/utthita-hasta-padangushthasana-ii.png"
+    },
+    {
+        "name": "Уттхита хаста падангуштхасана III",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/utthita-hasta-padangushthasana-iii.png"
+    },
+    {
+        "name": "Эка пада адхо мукха шванасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/eka-pada-adho-mukha-shvanasana.png"
+    },
+    {
+        "name": "Эка пада маласана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/eka-pada-malasana.png"
+    },
+    {
+        "name": "Эка пада хамса паршвоттанасана",
+        "category": "Асаны стоя",
+        "image_path": "images/asanas/library/asany-stoya/eka-pada-hamsa-parshvottanasana.png"
+    },
+    {
+        "name": "Аштавакрасана",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/ashtavakrasana.png"
+    },
+    {
+        "name": "Бакасана",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/bakasana.png"
+    },
+    {
+        "name": "Бхуджапидасана",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/bhudzhapidasana.png"
+    },
+    {
+        "name": "Дандасана (баланс)",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/dandasana-balans.png"
+    },
+    {
+        "name": "Куккутасана",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/kukkutasana.png"
+    },
+    {
+        "name": "Маюрасана",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/mayurasana.png"
+    },
+    {
+        "name": "Паривритта урдхва йогадандасана",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/parivritta-urdhva-yogadandasana.png"
+    },
+    {
+        "name": "Паршва бакасана",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/parshva-bakasana.png"
+    },
+    {
+        "name": "Титибхасана",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/titibhasana.png"
+    },
+    {
+        "name": "Титибхасана (вариация)",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/titibhasana-variatsiya.png"
+    },
+    {
+        "name": "Урдхва куккутасана",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/urdhva-kukkutasana.png"
+    },
+    {
+        "name": "Эка бхуджасана",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/eka-bhudzhasana.png"
+    },
+    {
+        "name": "Эка пада бакасана I",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/eka-pada-bakasana-i.png"
+    },
+    {
+        "name": "Эка пада бакасана II",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/eka-pada-bakasana-ii.png"
+    },
+    {
+        "name": "Эка пада галавасана",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/eka-pada-galavasana.png"
+    },
+    {
+        "name": "Эка пада каундиниасана I",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/eka-pada-kaundiniasana-i.png"
+    },
+    {
+        "name": "Эка пада каундиниасана II",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/eka-pada-kaundiniasana-ii.png"
+    },
+    {
+        "name": "Эка хаста бхуджасана",
+        "category": "Балансы на руках",
+        "image_path": "images/asanas/library/balansy-na-rukah/eka-hasta-bhudzhasana.png"
+    },
+    {
+        "name": "Адхо мукха врикшасана",
+        "category": "Перевернутые асаны",
+        "image_path": "images/asanas/library/perevernutye-asany/adho-mukha-vrikshasana.png"
+    },
+    {
+        "name": "Адхо мукха врикшасана (вариация)",
+        "category": "Перевернутые асаны",
+        "image_path": "images/asanas/library/perevernutye-asany/adho-mukha-vrikshasana-variatsiya.png"
+    },
+    {
+        "name": "Адхо мукха врикшасана (уголок)",
+        "category": "Перевернутые асаны",
+        "image_path": "images/asanas/library/perevernutye-asany/adho-mukha-vrikshasana-ugolok.png"
+    },
+    {
+        "name": "Адхо мукха шванасана",
+        "category": "Перевернутые асаны",
+        "image_path": "images/asanas/library/perevernutye-asany/adho-mukha-shvanasana.png"
+    },
+    {
+        "name": "Випарита карани",
+        "category": "Перевернутые асаны",
+        "image_path": "images/asanas/library/perevernutye-asany/viparita-karani.png"
+    },
+    {
+        "name": "Випарита карани мудра",
+        "category": "Перевернутые асаны",
+        "image_path": "images/asanas/library/perevernutye-asany/viparita-karani-mudra.png"
+    },
+    {
+        "name": "Карна пидасана",
+        "category": "Перевернутые асаны",
+        "image_path": "images/asanas/library/perevernutye-asany/karna-pidasana.png"
+    },
+    {
+        "name": "Пинча маюрасана",
+        "category": "Перевернутые асаны",
+        "image_path": "images/asanas/library/perevernutye-asany/pincha-mayurasana.png"
+    },
+    {
+        "name": "Саламба сарвангасана",
+        "category": "Перевернутые асаны",
+        "image_path": "images/asanas/library/perevernutye-asany/salamba-sarvangasana.png"
+    },
+    {
+        "name": "Саламба ширшасана",
+        "category": "Перевернутые асаны",
+        "image_path": "images/asanas/library/perevernutye-asany/salamba-shirshasana.png"
+    },
+    {
+        "name": "Саламба ширшасана (вариация)",
+        "category": "Перевернутые асаны",
+        "image_path": "images/asanas/library/perevernutye-asany/salamba-shirshasana-variatsiya.png"
+    },
+    {
+        "name": "Супта баддха конасана",
+        "category": "Перевернутые асаны",
+        "image_path": "images/asanas/library/perevernutye-asany/supta-baddha-konasana.png"
+    },
+    {
+        "name": "Супта конасана",
+        "category": "Перевернутые асаны",
+        "image_path": "images/asanas/library/perevernutye-asany/supta-konasana.png"
+    },
+    {
+        "name": "Урдхва мукха пашчиммотанасана",
+        "category": "Перевернутые асаны",
+        "image_path": "images/asanas/library/perevernutye-asany/urdhva-mukha-pashchimmotanasana.png"
+    },
+    {
+        "name": "Урдхва падмасана",
+        "category": "Перевернутые асаны",
+        "image_path": "images/asanas/library/perevernutye-asany/urdhva-padmasana.png"
+    },
+    {
+        "name": "Халасана",
+        "category": "Перевернутые асаны",
+        "image_path": "images/asanas/library/perevernutye-asany/halasana.png"
+    },
+    {
+        "name": "Накрасана",
+        "category": "Позы расслабления",
+        "image_path": "images/asanas/library/pozy-rasslableniya/nakrasana.png"
+    },
+    {
+        "name": "Супта баддха конасана",
+        "category": "Позы расслабления",
+        "image_path": "images/asanas/library/pozy-rasslableniya/supta-baddha-konasana.png"
+    },
+    {
+        "name": "Уттхита баласана",
+        "category": "Позы расслабления",
+        "image_path": "images/asanas/library/pozy-rasslableniya/utthita-balasana.png"
+    },
+    {
+        "name": "Шавасана",
+        "category": "Позы расслабления",
+        "image_path": "images/asanas/library/pozy-rasslableniya/shavasana.png"
+    },
+    {
+        "name": "Анджанейасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/andzhaneyasana.png"
+    },
+    {
+        "name": "Ардха бхуджангасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/ardha-bhudzhangasana.png"
+    },
+    {
+        "name": "Ардха дханурасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/ardha-dhanurasana.png"
+    },
+    {
+        "name": "Аштанга намаскара",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/ashtanga-namaskara.png"
+    },
+    {
+        "name": "Бхекасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/bhekasana.png"
+    },
+    {
+        "name": "Бхуджангасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/bhudzhangasana.png"
+    },
+    {
+        "name": "Дханурасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/dhanurasana.png"
+    },
+    {
+        "name": "Железный мост",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/zheleznyy-most.png"
+    },
+    {
+        "name": "Капотасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/kapotasana.png"
+    },
+    {
+        "name": "Матсьясана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/matsyasana.png"
+    },
+    {
+        "name": "Матсьясана (вариация)",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/matsyasana-variatsiya.png"
+    },
+    {
+        "name": "Падангуштха дханурасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/padangushtha-dhanurasana.png"
+    },
+    {
+        "name": "Пурвоттанасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/purvottanasana.png"
+    },
+    {
+        "name": "Раскрытие плечевых суставов (лежа)",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/raskrytie-plechevyh-sustavov-lezha.png"
+    },
+    {
+        "name": "Сету бандха сарвангасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/setu-bandha-sarvangasana.png"
+    },
+    {
+        "name": "Сукха гхерандасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/sukha-gherandasana.png"
+    },
+    {
+        "name": "Урдхва дханурасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/urdhva-dhanurasana.png"
+    },
+    {
+        "name": "Урдхва дханурасана (вариация)",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/urdhva-dhanurasana-variatsiya.png"
+    },
+    {
+        "name": "Урдхва мукха шванасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/urdhva-mukha-shvanasana.png"
+    },
+    {
+        "name": "Уттана падасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/uttana-padasana.png"
+    },
+    {
+        "name": "Уштрасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/ushtrasana.png"
+    },
+    {
+        "name": "Шалабхасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/shalabhasana.png"
+    },
+    {
+        "name": "Эка пада раджа капотасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/eka-pada-radzha-kapotasana.png"
+    },
+    {
+        "name": "Эка пада раджа капотасана (вариация)",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/eka-pada-radzha-kapotasana-variatsiya.png"
+    },
+    {
+        "name": "Эка пада урдхва дханурасана",
+        "category": "Прогибы",
+        "image_path": "images/asanas/library/progiby/eka-pada-urdhva-dhanurasana.png"
+    },
+    {
+        "name": "Ардха навасана",
+        "category": "Силовые асаны",
+        "image_path": "images/asanas/library/silovye-asany/ardha-navasana.png"
+    },
+    {
+        "name": "Баланс на боку",
+        "category": "Силовые асаны",
+        "image_path": "images/asanas/library/silovye-asany/balans-na-boku.png"
+    },
+    {
+        "name": "Баланс на боку (вариация)",
+        "category": "Силовые асаны",
+        "image_path": "images/asanas/library/silovye-asany/balans-na-boku-variatsiya.png"
+    },
+    {
+        "name": "Боковой упор",
+        "category": "Силовые асаны",
+        "image_path": "images/asanas/library/silovye-asany/bokovoy-upor.png"
+    },
+    {
+        "name": "Васиштхасана",
+        "category": "Силовые асаны",
+        "image_path": "images/asanas/library/silovye-asany/vasishthasana.png"
+    },
+    {
+        "name": "Васиштхасана (вариация 1)",
+        "category": "Силовые асаны",
+        "image_path": "images/asanas/library/silovye-asany/vasishthasana-variatsiya-1.png"
+    },
+    {
+        "name": "Васиштхасана (вариация 2)",
+        "category": "Силовые асаны",
+        "image_path": "images/asanas/library/silovye-asany/vasishthasana-variatsiya-2.png"
+    },
+    {
+        "name": "Вишвамитрасана",
+        "category": "Силовые асаны",
+        "image_path": "images/asanas/library/silovye-asany/vishvamitrasana.png"
+    },
+    {
+        "name": "Дандасана (вариация)",
+        "category": "Силовые асаны",
+        "image_path": "images/asanas/library/silovye-asany/dandasana-variatsiya.png"
+    },
+    {
+        "name": "Дви пада питха",
+        "category": "Силовые асаны",
+        "image_path": "images/asanas/library/silovye-asany/dvi-pada-pitha.png"
+    },
+    {
+        "name": "Джатхара паривартанасана",
+        "category": "Силовые асаны",
+        "image_path": "images/asanas/library/silovye-asany/dzhathara-parivartanasana.png"
+    },
+    {
+        "name": "Лоласана",
+        "category": "Силовые асаны",
+        "image_path": "images/asanas/library/silovye-asany/lolasana.png"
+    },
+    {
+        "name": "Парипурна навасана",
+        "category": "Силовые асаны",
+        "image_path": "images/asanas/library/silovye-asany/paripurna-navasana.png"
+    },
+    {
+        "name": "Толасана",
+        "category": "Силовые асаны",
+        "image_path": "images/asanas/library/silovye-asany/tolasana.png"
+    },
+    {
+        "name": "Урдхва чатуранга дандасана",
+        "category": "Силовые асаны",
+        "image_path": "images/asanas/library/silovye-asany/urdhva-chaturanga-dandasana.png"
+    },
+    {
+        "name": "Чатуранга дандасана",
+        "category": "Силовые асаны",
+        "image_path": "images/asanas/library/silovye-asany/chaturanga-dandasana.png"
+    },
+    {
+        "name": "Cурья намаскар AVI-II",
+        "category": "Сурья Намаскар",
+        "image_path": "images/asanas/library/surya-namaskar/curya-namaskar-avi-ii.png"
+    },
+    {
+        "name": "Сурья намаскар Шивананда",
+        "category": "Сурья Намаскар",
+        "image_path": "images/asanas/library/surya-namaskar/surya-namaskar-shivananda.png"
+    }
+]

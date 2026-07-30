@@ -18,6 +18,8 @@
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage
+# Свои зарисовки асан — создаются в админке, живут на сервере
+/public/images/asanas/custom
 /storage/*.key
 /storage/pail
 /vendor
