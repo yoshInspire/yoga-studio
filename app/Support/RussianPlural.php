@@ -14,6 +14,11 @@ final class RussianPlural
         return self::form($count, 'занятие', 'занятия', 'занятий');
     }
 
+    public static function poses(int $count): string
+    {
+        return self::form($count, 'поза', 'позы', 'поз');
+    }
+
     private static function form(int $count, string $one, string $few, string $many): string
     {
         $mod10 = $count % 10;

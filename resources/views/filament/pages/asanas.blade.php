@@ -7,11 +7,12 @@
         @else
             @include('filament.pages.asanas._folders')
         @endif
-    </div>
 
-    @if ($drawingMode !== null)
-        @include('filament.pages.asanas._draw')
-    @endif
+        {{-- Внутри .as, чтобы наследовать переменные темы; позиционируется fixed. --}}
+        @if ($drawingMode !== null)
+            @include('filament.pages.asanas._draw')
+        @endif
+    </div>
 
     @include('filament.pages.asanas._styles')
 </x-filament-panels::page>

@@ -14,15 +14,26 @@
     })"
     x-on:keydown.escape.window="close()"
 >
+    <div class="as-draw__backdrop" @click="close()"></div>
+
     <div class="as-draw__sheet" role="dialog" aria-modal="true" aria-label="Зарисовка позы">
+        <div class="as-draw__grabber" aria-hidden="true"></div>
+
         <header class="as-draw__head">
-            <strong class="as-draw__title">
-                {{ $isItem ? 'Правка позы' : 'Новая поза' }}
-            </strong>
-            <button type="button" class="as-icon-btn" title="Закрыть" @click="close()">✕</button>
+            <div>
+                <strong class="as-draw__title">{{ $isItem ? 'Правка позы' : 'Новая поза' }}</strong>
+                <p class="as-draw__sub">
+                    {{ $isItem
+                        ? 'Дорисуйте или подпишите — в базе поза останется прежней'
+                        : 'Нарисуйте человечка — он попадёт в вашу библиотеку' }}
+                </p>
+            </div>
+            <button type="button" class="as-icon-btn" title="Закрыть" @click="close()">
+                @include('filament.pages.asanas._icon', ['name' => 'close'])
+            </button>
         </header>
 
-        {{-- Холст. wire:ignore, иначе перерисовка Livewire стирает рисунок. --}}
+        {{-- wire:ignore обязателен: перерисовка Livewire стёрла бы холст --}}
         <div class="as-draw__canvas-wrap" wire:ignore>
             <canvas
                 x-ref="canvas"
@@ -35,43 +46,37 @@
             ></canvas>
         </div>
 
-        {{-- Инструменты --}}
         <div class="as-draw__tools">
-            <div class="as-draw__group" role="group" aria-label="Инструмент">
-                <button
-                    type="button"
-                    class="as-tool"
-                    x-bind:class="tool === 'pen' && 'as-tool--on'"
-                    @click="tool = 'pen'"
-                >✎ Перо</button>
-                <button
-                    type="button"
-                    class="as-tool"
-                    x-bind:class="tool === 'eraser' && 'as-tool--on'"
-                    @click="tool = 'eraser'"
-                >⌫ Ластик</button>
+            <div class="as-seg" role="group" aria-label="Инструмент">
+                <button type="button" class="as-seg__btn" x-bind:class="tool === 'pen' && 'as-seg__btn--on'" @click="tool = 'pen'">
+                    @include('filament.pages.asanas._icon', ['name' => 'pencil'])
+                    <span>Перо</span>
+                </button>
+                <button type="button" class="as-seg__btn" x-bind:class="tool === 'eraser' && 'as-seg__btn--on'" @click="tool = 'eraser'">
+                    @include('filament.pages.asanas._icon', ['name' => 'eraser'])
+                    <span>Ластик</span>
+                </button>
             </div>
 
-            <div class="as-draw__group" role="group" aria-label="Толщина линии">
+            <div class="as-seg" role="group" aria-label="Толщина линии">
                 <template x-for="w in widths" :key="w">
-                    <button
-                        type="button"
-                        class="as-tool as-tool--w"
-                        x-bind:class="width === w && 'as-tool--on'"
-                        @click="width = w"
-                    >
-                        <span class="as-dot" x-bind:style="`width:${w * 2}px;height:${w * 2}px`"></span>
+                    <button type="button" class="as-seg__btn as-seg__btn--w"
+                            x-bind:class="width === w && 'as-seg__btn--on'" @click="width = w">
+                        <span class="as-dot" x-bind:style="`width:${w * 2 + 2}px;height:${w * 2 + 2}px`"></span>
                     </button>
                 </template>
             </div>
 
-            <div class="as-draw__group">
-                <button type="button" class="as-tool" @click="undo()" x-bind:disabled="! strokes.length">↶ Отменить</button>
-                <button type="button" class="as-tool" @click="clear()">Очистить</button>
+            <div class="as-seg">
+                <button type="button" class="as-seg__btn" @click="undo()" x-bind:disabled="! strokes.length" title="Отменить штрих">
+                    @include('filament.pages.asanas._icon', ['name' => 'undo'])
+                </button>
+                <button type="button" class="as-seg__btn" @click="clear()" title="Очистить">
+                    @include('filament.pages.asanas._icon', ['name' => 'trash'])
+                </button>
             </div>
         </div>
 
-        {{-- Имя для новой позы --}}
         <template x-if="! isItem">
             <input
                 type="text"
@@ -84,13 +89,9 @@
 
         <footer class="as-draw__foot">
             <button type="button" class="as-btn as-btn--ghost" @click="close()">Отмена</button>
-            <button
-                type="button"
-                class="as-btn as-btn--primary"
-                @click="save()"
-                x-bind:disabled="saving"
-                x-text="saving ? 'Сохраняю…' : 'Сохранить'"
-            ></button>
+            <button type="button" class="as-btn as-btn--primary" @click="save()" x-bind:disabled="saving">
+                <span x-text="saving ? 'Сохраняю…' : 'Сохранить'"></span>
+            </button>
         </footer>
     </div>
 </div>
@@ -98,8 +99,7 @@
 @script
 <script>
     Alpine.data('asanaCanvas', (config) => ({
-        // Логический размер холста: крупнее исходной картинки, чтобы
-        // подписи стилусом не выглядели грубыми.
+        // Холст крупнее исходной картинки: подписи стилусом не выглядят грубыми.
         W: 640,
         H: 480,
 
@@ -119,7 +119,6 @@
 
         init() {
             const canvas = this.$refs.canvas;
-            // Ретина: рисуем в увеличенном разрешении, показываем в CSS-пикселях.
             const ratio = Math.min(window.devicePixelRatio || 1, 3);
 
             canvas.width = this.W * ratio;
@@ -136,14 +135,13 @@
                     this.base = img;
                     this.redraw();
                 };
-                // Тот же домен, поэтому холст не «портится» и toDataURL работает.
+                // Ссылка от корня сайта — тот же origin, холст не «портится».
                 img.src = this.baseUrl;
             }
 
             this.redraw();
         },
 
-        // Координаты указателя в логических пикселях холста.
         point(event) {
             const rect = this.$refs.canvas.getBoundingClientRect();
 
@@ -154,13 +152,20 @@
         },
 
         start(event) {
-            this.$refs.canvas.setPointerCapture?.(event.pointerId);
-
             this.current = {
                 tool: this.tool,
                 width: this.tool === 'eraser' ? this.width * 4 : this.width,
                 points: [this.point(event)],
             };
+
+            // Захват удерживает рисование, если палец ушёл за край холста.
+            // Это удобство, а не необходимость: если браузер откажет, штрих
+            // всё равно должен начаться, поэтому ошибку глотаем.
+            try {
+                this.$refs.canvas.setPointerCapture?.(event.pointerId);
+            } catch (e) {
+                // без захвата рисуем как есть
+            }
         },
 
         move(event) {
@@ -177,7 +182,11 @@
                 return;
             }
 
-            this.$refs.canvas.releasePointerCapture?.(event.pointerId);
+            try {
+                this.$refs.canvas.releasePointerCapture?.(event.pointerId);
+            } catch (e) {
+                // захвата могло и не быть
+            }
 
             // Одиночное касание тоже должно оставлять точку.
             if (this.current.points.length === 1) {
@@ -204,8 +213,6 @@
             const ctx = this.ctx;
 
             ctx.clearRect(0, 0, this.W, this.H);
-
-            // Белый фон: печатать и хранить удобнее без прозрачности.
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, this.W, this.H);
 
