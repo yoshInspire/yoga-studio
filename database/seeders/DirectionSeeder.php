@@ -12,7 +12,10 @@ class DirectionSeeder extends Seeder
         $items = config('directions.items', []);
 
         foreach ($items as $index => $item) {
-            Direction::query()->updateOrCreate(
+            // Только создаём недостающие направления. Названия, описания и фото
+            // редактируются в админке, и перезапись из конфига на каждом деплое
+            // затирала правки администратора.
+            Direction::query()->firstOrCreate(
                 ['slug' => $item['slug']],
                 [
                     'num' => $item['num'],

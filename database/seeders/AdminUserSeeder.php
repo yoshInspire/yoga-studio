@@ -15,7 +15,9 @@ class AdminUserSeeder extends Seeder
         $phone = PhoneNormalizer::normalize(env('ADMIN_PHONE', '79000000000'));
         $password = env('ADMIN_PASSWORD', 'StudioAdmin2026!');
 
-        User::query()->updateOrCreate(
+        // Только заводим учётку, если её ещё нет. Перезапись на каждом деплое
+        // сбрасывала администратору имя, телефон и пароль на значения из env.
+        User::query()->firstOrCreate(
             ['email' => $email],
             [
                 'first_name' => 'Администратор',

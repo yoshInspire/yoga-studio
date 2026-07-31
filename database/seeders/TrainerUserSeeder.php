@@ -15,7 +15,9 @@ class TrainerUserSeeder extends Seeder
         $phone = PhoneNormalizer::normalize(env('TRAINER_PHONE', '79000000001'));
         $password = env('TRAINER_PASSWORD', 'StudioTrainer2026!');
 
-        User::query()->updateOrCreate(
+        // Только заводим учётку, если её ещё нет: иначе деплой сбрасывал
+        // тренеру имя, телефон и пароль на значения из env.
+        User::query()->firstOrCreate(
             ['email' => $email],
             [
                 'first_name' => 'Александр',
