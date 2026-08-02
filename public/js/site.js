@@ -174,7 +174,7 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
     actionEl.innerHTML = '';
 
     if (slot.is_reschedule_source) {
-      actionEl.innerHTML = '<span class="btn btn--ghost" style="pointer-events:none;width:100%">Текущая запись</span>';
+      actionEl.innerHTML = '<span class="btn btn--ghost" style="pointer-events:none;width:100%">Текущее бронирование</span>';
     } else if (slot.can_reschedule_here && cfg.rescheduleUrl) {
       actionEl.innerHTML = `
         <form action="${cfg.rescheduleUrl}" method="post">
@@ -183,16 +183,16 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
           <button type="submit" class="btn btn--solid">Перенести сюда</button>
         </form>`;
     } else if (slot.user_booked) {
-      actionEl.innerHTML = '<span class="btn btn--ghost" style="pointer-events:none;width:100%">Вы записаны</span>';
+      actionEl.innerHTML = '<span class="btn btn--ghost" style="pointer-events:none;width:100%">Место забронировано</span>';
     } else if (slot.status === 'open' && slot.bookable && cfg.isClient) {
       actionEl.innerHTML = `
         <form action="${cfg.bookUrl}" method="post">
           <input type="hidden" name="_token" value="${cfg.csrf}" />
           <input type="hidden" name="class_session_id" value="${slot.id}" />
-          <button type="submit" class="btn btn--solid">Записаться</button>
+          <button type="submit" class="btn btn--solid">Забронировать</button>
         </form>`;
     } else if (slot.status === 'open' && slot.bookable) {
-      actionEl.innerHTML = `<a href="${cfg.loginUrl}" class="btn btn--solid">Войти и записаться</a>`;
+      actionEl.innerHTML = `<a href="${cfg.loginUrl}" class="btn btn--solid">Войти и забронировать</a>`;
     } else if (slot.status === 'full') {
       actionEl.innerHTML = '<button type="button" class="btn btn--ghost" disabled style="width:100%">Мест нет</button>';
     } else {

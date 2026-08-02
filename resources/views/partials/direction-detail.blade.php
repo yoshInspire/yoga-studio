@@ -47,7 +47,7 @@
 
     <div class="dir-detail__actions">
       <a href="{{ route('schedule') }}" class="btn btn--solid btn--lg">Расписание</a>
-      <a href="{{ route('login') }}" class="btn btn--line btn--lg">Записаться</a>
+      <a href="{{ route('login') }}" class="btn btn--line btn--lg">Забронировать</a>
     </div>
   </div>
 </article>

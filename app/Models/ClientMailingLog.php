@@ -15,6 +15,9 @@ class ClientMailingLog extends Model
 
     public const TYPE_BIRTHDAY = 'birthday';
 
+    /** Памятка «К вашему визиту» — один раз при первом бронировании. */
+    public const TYPE_WELCOME = 'welcome_visit';
+
     protected $fillable = [
         'user_id',
         'type',

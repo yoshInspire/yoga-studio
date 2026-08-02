@@ -59,7 +59,7 @@ class ScheduleController extends Controller
                     ->with('lk_section', 'bookings')
                     ->withErrors([
                         'booking' => $rescheduleFrom?->rescheduleBlockedMessage()
-                            ?? 'Не удалось перенести эту запись.',
+                            ?? 'Не удалось перенести это бронирование.',
                     ]);
             }
         }

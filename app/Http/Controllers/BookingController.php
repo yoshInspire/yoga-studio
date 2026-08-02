@@ -32,7 +32,7 @@ class BookingController extends Controller
             return back()->withErrors(['booking' => $e->getMessage()]);
         }
 
-        return back()->with('status', 'Вы записаны на занятие «'.$session->title.'».');
+        return back()->with('status', 'Место на занятие «'.$session->title.'» забронировано.');
     }
 
     public function reschedule(Request $request, Booking $booking, BookingService $bookings): RedirectResponse
@@ -58,7 +58,7 @@ class BookingController extends Controller
         return redirect()
             ->route('account')
             ->with('lk_section', 'bookings')
-            ->with('status', 'Запись перенесена на «'.$session->title.'» '.$session->formattedDateTime().'.');
+            ->with('status', 'Бронирование перенесено на «'.$session->title.'» '.$session->formattedDateTime().'.');
     }
 
     public function cancel(Booking $booking, BookingService $bookings): RedirectResponse
@@ -81,6 +81,6 @@ class BookingController extends Controller
         return redirect()
             ->route('account')
             ->with('lk_section', 'bookings')
-            ->with('status', 'Запись отменена. Занятие возвращено на абонемент.');
+            ->with('status', 'Бронирование отменено. Занятие возвращено на абонемент.');
     }
 }

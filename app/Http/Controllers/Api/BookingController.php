@@ -34,7 +34,7 @@ class BookingController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return response()->json(['message' => 'Вы записаны на занятие «'.$session->title.'».']);
+        return response()->json(['message' => 'Место на занятие «'.$session->title.'» забронировано.']);
     }
 
     /** Отменить свою запись. */
@@ -52,7 +52,7 @@ class BookingController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return response()->json(['message' => 'Запись отменена. Занятие возвращено на абонемент.']);
+        return response()->json(['message' => 'Бронирование отменено. Занятие возвращено на абонемент.']);
     }
 
     /** Перенести запись на другое занятие. */
@@ -76,6 +76,6 @@ class BookingController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return response()->json(['message' => 'Запись перенесена на «'.$session->title.'».']);
+        return response()->json(['message' => 'Бронирование перенесено на «'.$session->title.'».']);
     }
 }

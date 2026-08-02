@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Services\BirthdayGreetingService;
+use App\Services\WelcomeMessageService;
 use App\Services\StudioMailingService;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -19,6 +20,8 @@ use InvalidArgumentException;
 
 class Mailings extends Page
 {
+    public string $welcomeBody = '';
+
     public string $customHeading = '';
 
     public string $customBody = '';
@@ -36,6 +39,8 @@ class Mailings extends Page
 
     public function mount(): void
     {
+        $this->welcomeBody = app(WelcomeMessageService::class)->body();
+
         $bodies = app(BirthdayGreetingService::class)->orderedBodies();
 
         $this->birthdayGreetings = array_map(
@@ -82,6 +87,34 @@ class Mailings extends Page
                             ->color('success')
                             ->action(function () {
                                 $this->saveBirthdayGreetings();
+                            }),
+                    ]),
+                ]),
+            Section::make('Памятка «К вашему визиту»')
+                ->description('Уходит клиенту один раз — когда он впервые забронировал место (email и Telegram). '
+                    .'Напоминание про одежду, носки и здоровье. Текст можно менять в любой момент.')
+                ->schema([
+                    Textarea::make('welcomeBody')
+                        ->label('Текст памятки')
+                        ->rows(12)
+                        ->required()
+                        ->maxLength(4000)
+                        ->helperText('Каждая строка уходит отдельным абзацем. Пустые строки не отправляются.'),
+                    Actions::make([
+                        Action::make('saveWelcomeBody')
+                            ->label('Сохранить текст')
+                            ->icon(Heroicon::OutlinedBookmarkSquare)
+                            ->color('success')
+                            ->action(function () {
+                                $this->saveWelcomeBody();
+                            }),
+                        Action::make('resetWelcomeBody')
+                            ->label('Вернуть текст по умолчанию')
+                            ->icon(Heroicon::OutlinedArrowPath)
+                            ->color('gray')
+                            ->requiresConfirmation()
+                            ->action(function () {
+                                $this->welcomeBody = app(WelcomeMessageService::class)->defaultBody();
                             }),
                     ]),
                 ]),
@@ -169,6 +202,22 @@ class Mailings extends Page
                     ]),
                 ]),
         ]);
+    }
+
+    private function saveWelcomeBody(): void
+    {
+        $this->validate([
+            'welcomeBody' => ['required', 'string', 'max:4000'],
+        ], [
+            'welcomeBody.required' => 'Текст памятки не может быть пустым.',
+        ]);
+
+        app(WelcomeMessageService::class)->saveBody($this->welcomeBody);
+
+        Notification::make()
+            ->title('Текст памятки сохранён')
+            ->success()
+            ->send();
     }
 
     private function saveBirthdayGreetings(): void

@@ -20,11 +20,11 @@
             <button type="button" class="lk__navlink is-active" data-sec="profile">Профиль</button>
             <button type="button" class="lk__navlink" data-sec="subs">Мои абонементы</button>
             <a href="{{ route('purchase.index') }}" class="lk__navlink lk__navlink--buy">Купить абонемент</a>
-            <button type="button" class="lk__navlink" data-sec="bookings">Мои записи</button>
+            <button type="button" class="lk__navlink" data-sec="bookings">Мои бронирования</button>
             <button type="button" class="lk__navlink" data-sec="history">История посещений</button>
             <button type="button" class="lk__navlink" data-sec="cancelled">Отменённые занятия</button>
             <button type="button" class="lk__navlink" data-sec="oferta">Договор-оферта</button>
-            <a href="{{ route('schedule') }}" class="lk__navlink lk__navlink--out">Расписание и запись</a>
+            <a href="{{ route('schedule') }}" class="lk__navlink lk__navlink--out">Расписание и бронирование</a>
             <form action="{{ route('logout') }}" method="post" class="lk__logout">
               @csrf
               <button type="submit" class="lk__navlink lk__navlink--exit">Выйти</button>
@@ -36,7 +36,7 @@
         <div class="lk__content">
           @if (! $user->hasAcceptedOffer())
             <div class="auth__alert auth__alert--error lk__alert">
-              <p>Чтобы записываться на занятия и покупать абонементы, примите договор-оферту в разделе «Договор-оферта».</p>
+              <p>Чтобы бронировать места и покупать абонементы, примите договор-оферту в разделе «Договор-оферта».</p>
             </div>
           @endif
           {{-- Профиль --}}
@@ -288,7 +288,7 @@
           {{-- Абонементы --}}
           <div class="lk__panel is-hidden" data-panel="subs">
             <h1 class="lk__title">Мои абонементы</h1>
-            <p class="lk__lead">Групповой абонемент нельзя тратить на индивидуальное занятие и наоборот — при записи подходящий тип выбирается автоматически.</p>
+            <p class="lk__lead">Групповой абонемент нельзя тратить на индивидуальное занятие и наоборот — при бронировании подходящий тип выбирается автоматически.</p>
             <div class="subs">
               @forelse($subscriptions as $sub)
                 @php
@@ -316,10 +316,10 @@
             </div>
           </div>
 
-          {{-- Мои записи --}}
+          {{-- Мои бронирования --}}
           <div class="lk__panel is-hidden" data-panel="bookings">
-            <h1 class="lk__title">Мои записи</h1>
-            <p class="lk__lead">Записи на ближайшую неделю. Отменить или перенести запись без списания можно в те же сроки, что указаны в правилах на странице расписания.</p>
+            <h1 class="lk__title">Мои бронирования</h1>
+            <p class="lk__lead">Бронирования на ближайшую неделю. Отменить или перенести бронирование без списания можно в те же сроки, что указаны в правилах на странице расписания.</p>
             @if ($errors->has('booking'))
               <div class="auth__alert auth__alert--error" style="margin-bottom: 16px">{{ $errors->first('booking') }}</div>
             @endif
@@ -352,10 +352,10 @@
                   </div>
                 </div>
               @empty
-                <p class="lk__empty">Пока нет активных записей. <a href="{{ route('schedule') }}">Посмотреть расписание</a></p>
+                <p class="lk__empty">Пока нет активных бронирований. <a href="{{ route('schedule') }}">Посмотреть расписание</a></p>
               @endforelse
             </div>
-            <a href="{{ route('schedule') }}" class="btn btn--solid" style="margin-top: 6px">Записаться на занятие</a>
+            <a href="{{ route('schedule') }}" class="btn btn--solid" style="margin-top: 6px">Забронировать место</a>
           </div>
 
           {{-- История --}}

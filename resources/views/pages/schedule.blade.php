@@ -1,7 +1,7 @@
 @extends('layouts.site')
 
 @section('title', 'Расписание занятий — Студия йоги Ирины Коленцевой')
-@section('meta_description', 'Расписание занятий йоги в студии Ирины Коленцевой (Коньково, Москва): групповые и индивидуальные классы. Запись через личный кабинет.')
+@section('meta_description', 'Расписание занятий йоги в студии Ирины Коленцевой (Коньково, Москва): групповые и индивидуальные классы. Бронирование через личный кабинет.')
 @section('canonical', route('schedule'))
 
 @section('content')
@@ -19,8 +19,8 @@
           <p class="eyebrow">Расписание</p>
           <h1 class="section__title">Расписание занятий</h1>
           <p class="sched__note">
-            Открытие записи на&nbsp;неделю вперёд — по воскресеньям до&nbsp;14:00. Расписание доступно всем —
-            чтобы записаться, войдите в <a href="{{ route('login') }}">личный кабинет</a>.
+            Открытие бронирования на&nbsp;неделю вперёд — по воскресеньям до&nbsp;14:00. Расписание доступно всем —
+            чтобы забронировать место, войдите в <a href="{{ route('login') }}">личный кабинет</a>.
           </p>
         </div>
         <div class="sched__range" aria-label="Период расписания">
@@ -37,7 +37,7 @@
 
       @if ($rescheduleFrom ?? null)
         <div class="auth__alert auth__alert--ok reveal" style="margin-bottom: 20px">
-          Перенос записи с «{{ $rescheduleFrom->classSession->title }}»
+          Перенос бронирования с «{{ $rescheduleFrom->classSession->title }}»
           {{ $rescheduleFrom->classSession->formattedDateTime() }}.
           Выберите новое занятие и нажмите «Перенести сюда».
           <a href="{{ route('schedule', $navQuery($offset)) }}" class="auth__minor" style="margin-left: 8px">Отменить перенос</a>
@@ -51,15 +51,15 @@
       </div>
 
       <div class="faq reveal">
-        <h2 class="faq__title">Правила записи</h2>
+        <h2 class="faq__title">Правила бронирования</h2>
         <div class="faq__list" id="faqList">
           <div class="faq__item">
-            <button type="button" class="faq__q">Как записаться на занятие<span class="faq__icon">+</span></button>
-            <div class="faq__a"><p>Запись доступна в личном кабинете после входа. Выберите день и занятие на ближайшую неделю — система спишет занятие с подходящего абонемента и покажет остаток свободных мест.</p></div>
+            <button type="button" class="faq__q">Как забронировать место<span class="faq__icon">+</span></button>
+            <div class="faq__a"><p>Бронирование доступно в личном кабинете после входа. Выберите день и занятие на ближайшую неделю — система спишет занятие с подходящего абонемента и покажет остаток свободных мест.</p></div>
           </div>
           <div class="faq__item">
-            <button type="button" class="faq__q">Отмена записи<span class="faq__icon">+</span></button>
-            <div class="faq__a"><p>Отменить запись можно заранее, тогда занятие вернётся на абонемент. Для занятий <b>до&nbsp;12:00</b> — не позднее чем за&nbsp;14&nbsp;часов до начала, для занятий <b>с&nbsp;12:00</b> — не позднее чем за&nbsp;4&nbsp;часа. При более поздней отмене занятие списывается. В те же сроки можно <b>перенести</b> запись на другое время: в «Мои записи» нажмите «Перенести» и выберите новое занятие в расписании.</p></div>
+            <button type="button" class="faq__q">Отмена бронирования<span class="faq__icon">+</span></button>
+            <div class="faq__a"><p>Отменить бронирование можно заранее, тогда занятие вернётся на абонемент. Для занятий <b>до&nbsp;12:00</b> — не позднее чем за&nbsp;14&nbsp;часов до начала, для занятий <b>с&nbsp;12:00</b> — не позднее чем за&nbsp;4&nbsp;часа. При более поздней отмене занятие списывается. В те же сроки можно <b>перенести</b> бронирование на другое время: в «Мои бронирования» нажмите «Перенести» и выберите новое занятие в расписании.</p></div>
           </div>
           <div class="faq__item">
             <button type="button" class="faq__q">Сколько человек в группе<span class="faq__icon">+</span></button>
@@ -67,7 +67,7 @@
           </div>
           <div class="faq__item">
             <button type="button" class="faq__q">Что если группа не набралась<span class="faq__icon">+</span></button>
-            <div class="faq__a"><p>Если на групповое занятие записалось меньше&nbsp;2&nbsp;человек, оно может быть отменено заранее. Запись аннулируется, занятие возвращается на абонемент, а вам приходит уведомление на почту и&nbsp;в&nbsp;Telegram (если они привязаны).</p></div>
+            <div class="faq__a"><p>Если на групповое занятие забронировано меньше&nbsp;2&nbsp;мест, оно может быть отменено заранее. Бронирование аннулируется, занятие возвращается на абонемент, а вам приходит уведомление на почту и&nbsp;в&nbsp;Telegram (если они привязаны).</p></div>
           </div>
           <div class="faq__item">
             <button type="button" class="faq__q">Абонементы и разовые занятия<span class="faq__icon">+</span></button>

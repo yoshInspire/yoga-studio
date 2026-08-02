@@ -26,7 +26,7 @@
 
       <div class="price-table__actions">
         @php($btnClass = $key === 'individual' ? 'btn--solid' : 'btn--line')
-        <a href="{{ route('schedule') }}" class="btn {{ $btnClass }} btn--full">Записаться</a>
+        <a href="{{ route('schedule') }}" class="btn {{ $btnClass }} btn--full">Забронировать</a>
         <a href="{{ route('purchase.index') }}" class="btn {{ $btnClass }} btn--full">Купить абонемент</a>
       </div>
     </article>

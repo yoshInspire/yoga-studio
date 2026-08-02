@@ -20,6 +20,16 @@ class StudioNotificationsTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Бронирование в подготовке шлёт клиенту памятку «К вашему визиту».
+        // Здесь проверяется автоотмена занятий, поэтому памятку выключаем —
+        // иначе она попадает в подсчёт отправленных писем.
+        config(['studio.mailings.welcome_visit.enabled' => false]);
+    }
+
     private function client(string $phone = '+79990000001', ?string $email = 'client@example.com'): User
     {
         return User::create([

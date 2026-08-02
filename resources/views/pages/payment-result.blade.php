@@ -10,10 +10,10 @@
         @if ($success)
           <div class="payment-result__icon payment-result__icon--ok" aria-hidden="true">✓</div>
           <h1 class="lk__title">Оплата прошла успешно</h1>
-          <p class="lk__lead">Абонемент «{{ $payment->description }}» добавлен в ваш личный кабинет. Можно записываться на занятия.</p>
+          <p class="lk__lead">Абонемент «{{ $payment->description }}» добавлен в ваш личный кабинет. Можно бронировать места на занятия.</p>
           <div class="payment-result__actions">
             <a href="{{ route('account') }}" class="btn btn--solid">Перейти в кабинет</a>
-            <a href="{{ route('schedule') }}" class="btn btn--line">Записаться на занятие</a>
+            <a href="{{ route('schedule') }}" class="btn btn--line">Забронировать место</a>
           </div>
         @elseif (!empty($pending))
           <div class="payment-result__icon payment-result__icon--wait" aria-hidden="true">…</div>

@@ -147,7 +147,7 @@ class BookingServiceTest extends TestCase
             $this->service->book($user, $session);
             $this->fail('Expected InvalidArgumentException');
         } catch (InvalidArgumentException $e) {
-            $this->assertStringContainsString('недоступна', $e->getMessage());
+            $this->assertStringContainsString('недоступно', $e->getMessage());
         }
 
         $booking = $this->service->bookForAdmin($user, $session);

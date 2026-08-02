@@ -25,6 +25,10 @@ class AdminActivityNotificationsTest extends TestCase
         config([
             'studio.admin_email' => 'admin@example.com',
             'studio.admin_activity_notifications.enabled' => true,
+            // Первое бронирование в подготовке шлёт клиенту памятку «К вашему
+            // визиту». Здесь проверяются уведомления администратору, поэтому
+            // лишнее письмо только мешает считать отправки.
+            'studio.mailings.welcome_visit.enabled' => false,
         ]);
     }
 

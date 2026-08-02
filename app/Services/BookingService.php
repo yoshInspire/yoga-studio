@@ -18,6 +18,7 @@ class BookingService
 {
     public function __construct(
         private SubscriptionService $subscriptions,
+        private WelcomeMessageService $welcomeMessages,
     ) {}
 
     public function book(User $user, ClassSession $session, ?Subscription $subscription = null): Booking
@@ -32,7 +33,7 @@ class BookingService
 
     private function bookInternal(User $user, ClassSession $session, ?Subscription $subscription, bool $forAdmin): Booking
     {
-        return DB::transaction(function () use ($user, $session, $subscription, $forAdmin) {
+        $booking = DB::transaction(function () use ($user, $session, $subscription, $forAdmin) {
             $session = ClassSession::query()->lockForUpdate()->findOrFail($session->id);
 
             $this->assertCanBook($user, $session, forAdmin: $forAdmin);
@@ -97,6 +98,13 @@ class BookingService
                 ],
             );
         });
+
+        // Памятка «К вашему визиту» — только после успешного коммита, иначе
+        // при откате транзакции клиент получил бы письмо о несостоявшейся брони.
+        // Отсюда покрыты все пути: сайт, приложение и запись администратором.
+        $this->welcomeMessages->sendOnFirstBooking($user);
+
+        return $booking;
     }
 
     /**
@@ -233,7 +241,7 @@ class BookingService
     public function rescheduleByClient(Booking $booking, ClassSession $newSession): Booking
     {
         if ($booking->user_id !== auth()->id()) {
-            throw new InvalidArgumentException('Нельзя перенести чужую запись.');
+            throw new InvalidArgumentException('Нельзя перенести чужое бронирование.');
         }
 
         if (! $booking->canBeRescheduledByClient()) {
@@ -249,13 +257,13 @@ class BookingService
             }
 
             if ($booking->class_session_id === $newSession->id) {
-                throw new InvalidArgumentException('Вы уже записаны на это занятие.');
+                throw new InvalidArgumentException('Вы уже забронировали место на это занятие.');
             }
 
             $subscription = $booking->subscription;
 
             if ($subscription === null) {
-                throw new InvalidArgumentException('Не удалось определить абонемент записи.');
+                throw new InvalidArgumentException('Не удалось определить абонемент бронирования.');
             }
 
             if (! $this->subscriptions->typesMatch($subscription->type, $newSession->type)) {
@@ -285,7 +293,7 @@ class BookingService
     public function cancelByClient(Booking $booking): Booking
     {
         if ($booking->user_id !== auth()->id()) {
-            throw new InvalidArgumentException('Нельзя отменить чужую запись.');
+            throw new InvalidArgumentException('Нельзя отменить чужое бронирование.');
         }
 
         if (! $booking->canBeCancelledByClient()) {
@@ -417,14 +425,14 @@ class BookingService
     {
         if ($forAdmin) {
             if ($session->status !== ClassSessionStatus::Scheduled) {
-                throw new InvalidArgumentException('Занятие отменено или недоступно для записи.');
+                throw new InvalidArgumentException('Занятие отменено или недоступно для бронирования.');
             }
 
             if ($session->isFull()) {
                 throw new InvalidArgumentException('На занятии не осталось свободных мест.');
             }
         } elseif (! $session->isBookable()) {
-            throw new InvalidArgumentException('Запись на это занятие недоступна.');
+            throw new InvalidArgumentException('Бронирование на это занятие недоступно.');
         }
 
         if (Booking::query()
@@ -433,7 +441,7 @@ class BookingService
             ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId))
             ->where('status', BookingStatus::Confirmed)
             ->exists()) {
-            throw new InvalidArgumentException('Вы уже записаны на это занятие.');
+            throw new InvalidArgumentException('Вы уже забронировали место на это занятие.');
         }
 
         if (! $forAdmin) {
@@ -445,7 +453,7 @@ class BookingService
                 ->count();
 
             if ($dayBookings >= (int) config('studio.max_bookings_per_day')) {
-                throw new InvalidArgumentException('В один день можно записаться максимум на '.config('studio.max_bookings_per_day').' занятия.');
+                throw new InvalidArgumentException('В один день можно забронировать максимум '.config('studio.max_bookings_per_day').' занятия.');
             }
         }
     }
