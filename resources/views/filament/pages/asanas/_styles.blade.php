@@ -356,15 +356,61 @@
     }
 
     @media print {
+        @page { size: A4 portrait; margin: 12mm; }
+
         .fi-topbar, .fi-sidebar, .fi-header, .fi-footer,
         .as-crumbs, .as-panel, .as-seq, .as-bar, .as-draw, .as-libhead { display: none !important; }
-        .as { padding: 0; }
-        .as-print { display: block !important; }
-        .as-print__title { margin: 0 0 4px; font-size: 18pt; }
-        .as-print__note { margin: 0 0 12px; font-size: 10pt; color: #444; }
-        .as-print__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-        .as-print__cell { margin: 0; break-inside: avoid; text-align: center; }
-        .as-print__cell img { width: 100%; height: auto; }
-        .as-print__cell figcaption { font-size: 8pt; line-height: 1.2; }
+
+        /* Сбрасываем экранные ограничения: печать не должна зависеть от того,
+           с телефона её запустили или с компьютера. */
+        .as { display: block; padding: 0; margin: 0; max-width: none; gap: 0; }
+        .as-print { display: block !important; width: 100%; color: #000; }
+
+        .as-print__title { margin: 0 0 3mm; font-size: 16pt; font-weight: 700; }
+        .as-print__note { margin: 0 0 5mm; font-size: 10pt; line-height: 1.4; color: #333; }
+
+        /* Три колонки: человечек крупный, но лист не раздувается на десяток
+           страниц. Панорамные листы занимают всю ширину — иначе от них
+           остаётся нечитаемая полоска. */
+        .as-print__grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6mm 5mm;
+            align-items: start;
+        }
+        .as-print__cell {
+            margin: 0;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            text-align: center;
+        }
+        .as-print__cell--wide { grid-column: 1 / -1; }
+
+        .as-print__cell img {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-height: 60mm;
+            object-fit: contain;
+            margin: 0 auto 1.5mm;
+        }
+        /* На всю ширину листа самая «высокая» панорама выходит ~56 мм,
+           так что ограничение её не режет — оно только страхует от
+           неожиданно крупной картинки. */
+        .as-print__cell--wide img { max-height: 62mm; }
+
+        .as-print__cell figcaption {
+            font-size: 9.5pt;
+            line-height: 1.3;
+            text-align: center;
+        }
+        .as-print__num { font-weight: 700; }
+        .as-print__name { font-weight: 600; }
+        .as-print__note-item {
+            display: block;
+            margin-top: 0.8mm;
+            font-size: 8.5pt;
+            color: #444;
+        }
     }
 </style>

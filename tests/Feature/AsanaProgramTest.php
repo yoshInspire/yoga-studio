@@ -37,6 +37,13 @@ class AsanaProgramTest extends TestCase
             }
         }
 
+        // Пустая папка от тестовых картинок не должна оставаться в репозитории.
+        $testDir = public_path('images/asanas/library/__test');
+
+        if (File::isDirectory($testDir) && File::files($testDir) === []) {
+            File::deleteDirectory($testDir);
+        }
+
         parent::tearDown();
     }
 
@@ -340,6 +347,61 @@ class AsanaProgramTest extends TestCase
         $program->delete();
 
         $this->assertSame(0, AsanaProgramItem::count());
+    }
+
+    /** Панорамный лист вроде «Сурья намаскар» печатается на всю ширину строки. */
+    public function test_panoramic_image_is_detected_as_wide(): void
+    {
+        if (! function_exists('imagecreatetruecolor')) {
+            $this->markTestSkipped('Нужен GD для создания тестовой картинки.');
+        }
+
+        $program = $this->program();
+
+        $wide = $this->makeImage('wide', 596, 178);
+        $normal = $this->makeImage('normal', 143, 106);
+
+        $wideItem = $this->service->addAsana($program, Asana::create([
+            'name' => 'Сурья намаскар', 'image_path' => $wide,
+        ]));
+        $normalItem = $this->service->addAsana($program, Asana::create([
+            'name' => 'Тадасана', 'image_path' => $normal,
+        ]));
+
+        $this->assertSame(3.348, $wideItem->aspectRatio());
+        $this->assertTrue($wideItem->isWideImage());
+
+        $this->assertSame(1.349, $normalItem->aspectRatio());
+        $this->assertFalse($normalItem->isWideImage());
+    }
+
+    public function test_item_without_image_is_not_wide(): void
+    {
+        $item = AsanaProgramItem::create([
+            'program_id' => $this->program()->id,
+            'asana_id' => null,
+            'position' => 1,
+        ]);
+
+        $this->assertSame(0.0, $item->aspectRatio());
+        $this->assertFalse($item->isWideImage());
+    }
+
+    /** Создаёт настоящий PNG заданного размера и возвращает путь от public/. */
+    private function makeImage(string $name, int $width, int $height): string
+    {
+        $relative = 'images/asanas/library/__test/'.$name.'-'.$width.'x'.$height.'.png';
+        $absolute = public_path($relative);
+
+        File::ensureDirectoryExists(dirname($absolute));
+
+        $image = imagecreatetruecolor($width, $height);
+        imagepng($image, $absolute);
+        imagedestroy($image);
+
+        $this->track($relative);
+
+        return $relative;
     }
 
     public function test_image_url_is_root_relative(): void

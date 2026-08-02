@@ -140,14 +140,15 @@
                 @endif
                 <div class="as-print__grid">
                     @foreach ($items as $index => $item)
-                        <figure class="as-print__cell">
+                        <figure class="as-print__cell @if ($item->isWideImage()) as-print__cell--wide @endif">
                             @if ($item->imageUrl())
                                 <img src="{{ $item->imageUrl() }}" alt="" />
                             @endif
                             <figcaption>
-                                <strong>{{ $index + 1 }}.</strong> {{ $item->title() }}
+                                <span class="as-print__num">{{ $index + 1 }}.</span>
+                                <span class="as-print__name">{{ $item->title() }}</span>
                                 @if (filled($item->note))
-                                    <span>— {{ $item->note }}</span>
+                                    <span class="as-print__note-item">{{ $item->note }}</span>
                                 @endif
                             </figcaption>
                         </figure>
