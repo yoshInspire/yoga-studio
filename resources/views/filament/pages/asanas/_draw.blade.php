@@ -239,6 +239,74 @@
             }
         },
 
+        /**
+         * Обрезать пустые поля вокруг рисунка и отдать картинку в тех же
+         * пропорциях, что и готовые асаны (4:3).
+         *
+         * Без этого своя зарисовка уезжала в PDF «в мини-формате»: фигурка
+         * занимает часть холста, а белые поля вокруг едут в файл и при печати
+         * съедают место, поэтому рядом с библиотечной позой она выглядит мелкой.
+         */
+        exportImage() {
+            const canvas = this.$refs.canvas;
+            const dpr = canvas.width / this.W;
+            // Контекст берём у самого холста: getContext возвращает тот же
+            // объект, и это не зависит от того, как вызван метод.
+            const pixels = canvas.getContext('2d')
+                .getImageData(0, 0, canvas.width, canvas.height).data;
+
+            let minX = canvas.width, minY = canvas.height, maxX = -1, maxY = -1;
+
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const i = (y * canvas.width + x) * 4;
+
+                    // Фон заливается белым, поэтому содержимое — всё заметно темнее.
+                    if (pixels[i] < 240 || pixels[i + 1] < 240 || pixels[i + 2] < 240) {
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
+                    }
+                }
+            }
+
+            // Холст пуст — отдаём как есть.
+            if (maxX < 0) {
+                return canvas.toDataURL('image/png');
+            }
+
+            const pad = Math.round(10 * dpr);
+            minX = Math.max(0, minX - pad);
+            minY = Math.max(0, minY - pad);
+            maxX = Math.min(canvas.width - 1, maxX + pad);
+            maxY = Math.min(canvas.height - 1, maxY + pad);
+
+            let w = maxX - minX + 1;
+            let h = maxY - minY + 1;
+            const cx = minX + w / 2;
+            const cy = minY + h / 2;
+
+            // Дотягиваем до 4:3, расширяя меньшую сторону от центра рисунка.
+            const target = this.W / this.H;
+            if (w / h < target) {
+                w = h * target;
+            } else {
+                h = w / target;
+            }
+
+            const out = document.createElement('canvas');
+            out.width = 600;
+            out.height = Math.round(600 / target);
+
+            const octx = out.getContext('2d');
+            octx.fillStyle = '#ffffff';
+            octx.fillRect(0, 0, out.width, out.height);
+            octx.drawImage(canvas, cx - w / 2, cy - h / 2, w, h, 0, 0, out.width, out.height);
+
+            return out.toDataURL('image/png');
+        },
+
         async save() {
             if (this.saving) {
                 return;
@@ -251,7 +319,7 @@
             }
 
             this.saving = true;
-            const dataUrl = this.$refs.canvas.toDataURL('image/png');
+            const dataUrl = this.exportImage();
 
             try {
                 if (this.isItem) {
