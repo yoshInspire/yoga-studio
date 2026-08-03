@@ -288,12 +288,12 @@ class Asanas extends Page
     }
 
     /** Новая поза с нуля — попадает в личную библиотеку и в конец программы. */
-    public function saveNewDrawing(string $dataUrl, string $name = ''): void
+    public function saveNewDrawing(string $dataUrl, string $name = '', string $category = ''): void
     {
         $service = app(AsanaProgramService::class);
 
         try {
-            $asana = $service->storeCustomAsana($dataUrl, $name);
+            $asana = $service->storeCustomAsana($dataUrl, $name, $category);
         } catch (InvalidArgumentException $e) {
             $this->notify($e->getMessage(), danger: true);
 
@@ -344,6 +344,22 @@ class Asanas extends Page
 
         app(AsanaProgramService::class)->resetItemDrawing($item);
         $this->notify('Возвращена исходная поза');
+    }
+
+    /** Переложить свою зарисовку в раздел библиотеки. */
+    public function setAsanaCategory(int $asanaId, string $category = ''): void
+    {
+        $asana = Asana::find($asanaId);
+
+        if ($asana === null || ! $asana->is_custom) {
+            return;
+        }
+
+        $asana = app(AsanaProgramService::class)->setCustomAsanaCategory($asana, $category);
+
+        $this->notify($asana->category === null
+            ? $asana->name.' — без раздела'
+            : $asana->name.' → '.$asana->category);
     }
 
     public function deleteCustomAsana(int $asanaId): void
@@ -410,6 +426,8 @@ class Asanas extends Page
             'drawingItem' => $this->drawingItemId === null
                 ? null
                 : $this->findItem($this->drawingItemId),
+            // Нужны окну рисования: куда положить новую позу.
+            'libraryCategories' => app(AsanaProgramService::class)->libraryCategories(),
         ];
     }
 
@@ -418,6 +436,8 @@ class Asanas extends Page
         return [
             'program' => $this->currentProgram(),
             'categories' => $this->categories(),
+            // Разделы, куда можно положить свою зарисовку.
+            'libraryCategories' => app(AsanaProgramService::class)->libraryCategories(),
             'asanas' => Asana::query()
                 ->when(
                     $this->categoryFilter === Asana::CUSTOM_CATEGORY,

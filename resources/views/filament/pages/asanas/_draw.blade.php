@@ -77,7 +77,8 @@
             </div>
         </div>
 
-        <template x-if="! isItem">
+        {{-- Для новой позы: название и раздел библиотеки --}}
+        @if (! $isItem)
             <input
                 type="text"
                 class="as-input"
@@ -85,7 +86,17 @@
                 x-model="name"
                 aria-label="Название позы"
             />
-        </template>
+
+            <label class="as-field">
+                <span class="as-field__label">Положить в раздел</span>
+                <select class="as-input as-select" x-model="category" aria-label="Раздел библиотеки">
+                    <option value="">Мои зарисовки</option>
+                    @foreach ($libraryCategories ?? [] as $category)
+                        <option value="{{ $category }}">{{ $category }}</option>
+                    @endforeach
+                </select>
+            </label>
+        @endif
 
         <footer class="as-draw__foot">
             <button type="button" class="as-btn as-btn--ghost" @click="close()">Отмена</button>
@@ -111,6 +122,7 @@
         width: 3,
         widths: [2, 3, 6, 12],
         name: '',
+        category: '',
         saving: false,
 
         strokes: [],
@@ -325,7 +337,7 @@
                 if (this.isItem) {
                     await this.$wire.saveItemDrawing(this.itemId, dataUrl);
                 } else {
-                    await this.$wire.saveNewDrawing(dataUrl, this.name);
+                    await this.$wire.saveNewDrawing(dataUrl, this.name, this.category);
                 }
             } finally {
                 this.saving = false;

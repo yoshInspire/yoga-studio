@@ -254,6 +254,21 @@
     }
     .as-card__del .as-i { width: 12px; height: 12px; stroke-width: 2.5; }
 
+    /* Раздел своей зарисовки прямо в карточке: нативный select даёт
+       системный список — на телефоне это удобнее любого своего меню. */
+    .as-card__cat {
+        width: 100%; margin-top: 4px; padding: 5px 6px; border-radius: 7px;
+        border: 1px solid var(--as-line); background: var(--as-soft); color: var(--as-muted);
+        font-size: .66rem; line-height: 1.2; cursor: pointer;
+        min-height: 32px; touch-action: manipulation;
+    }
+    .as-card__cat:focus { outline: none; border-color: var(--primary-500); }
+
+    /* Поле с подписью в окне рисования */
+    .as-field { display: flex; flex-direction: column; gap: 5px; }
+    .as-field__label { font-size: .78rem; font-weight: 600; color: var(--as-muted); }
+    .as-select { appearance: auto; cursor: pointer; }
+
     .as-hint { margin: 0; text-align: center; font-size: .8rem; color: var(--as-muted); }
 
     /* --- Пустые состояния --- */

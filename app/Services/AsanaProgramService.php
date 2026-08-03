@@ -90,17 +90,62 @@ class AsanaProgramService
         $item->delete();
     }
 
-    /** Сохранить зарисовку как новую позу в личной библиотеке. */
-    public function storeCustomAsana(string $dataUrl, ?string $name = null): Asana
+    /**
+     * Сохранить зарисовку как новую позу в личной библиотеке.
+     *
+     * Категорию можно указать — тогда своя поза встанет в общий раздел рядом
+     * с готовыми («Асаны стоя» и прочие), а не только в «Мои зарисовки».
+     */
+    public function storeCustomAsana(string $dataUrl, ?string $name = null, ?string $category = null): Asana
     {
         $path = $this->storeImage($dataUrl);
 
         return Asana::create([
             'name' => trim((string) $name) ?: 'Своя поза',
-            'category' => null,
+            'category' => $this->normalizeCategory($category),
             'image_path' => $path,
             'is_custom' => true,
         ]);
+    }
+
+    /** Переложить свою зарисовку в другой раздел библиотеки. */
+    public function setCustomAsanaCategory(Asana $asana, ?string $category): Asana
+    {
+        if (! $asana->is_custom) {
+            throw new InvalidArgumentException('Раздел можно менять только у своих зарисовок.');
+        }
+
+        $asana->update(['category' => $this->normalizeCategory($category)]);
+
+        return $asana->refresh();
+    }
+
+    /**
+     * Разделы библиотеки — те, что пришли с готовыми асанами.
+     *
+     * @return list<string>
+     */
+    public function libraryCategories(): array
+    {
+        return Asana::query()
+            ->whereNotNull('category')
+            ->where('is_custom', false)
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category')
+            ->all();
+    }
+
+    /** Пускаем только существующий раздел, иначе — без раздела. */
+    private function normalizeCategory(?string $category): ?string
+    {
+        $category = trim((string) $category);
+
+        if ($category === '' || ! in_array($category, $this->libraryCategories(), true)) {
+            return null;
+        }
+
+        return $category;
     }
 
     /**

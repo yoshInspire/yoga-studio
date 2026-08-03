@@ -79,6 +79,21 @@
                                 }
                             "
                         >@include('filament.pages.asanas._icon', ['name' => 'close'])</button>
+
+                        {{-- Раздел своей зарисовки: можно переложить к готовым позам --}}
+                        <select
+                            class="as-card__cat"
+                            aria-label="Раздел для «{{ $asana->name }}»"
+                            title="В каком разделе показывать"
+                            wire:change="setAsanaCategory({{ $asana->id }}, $event.target.value)"
+                        >
+                            <option value="" @selected($asana->category === null)>Мои зарисовки</option>
+                            @foreach ($libraryCategories ?? [] as $category)
+                                <option value="{{ $category }}" @selected($asana->category === $category)>
+                                    {{ $category }}
+                                </option>
+                            @endforeach
+                        </select>
                     @endif
                 </div>
             @endforeach
