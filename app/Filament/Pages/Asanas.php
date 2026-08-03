@@ -7,6 +7,7 @@ use App\Models\AsanaFolder;
 use App\Models\AsanaProgram;
 use App\Models\AsanaProgramItem;
 use App\Services\AsanaProgramService;
+use App\Support\AsanaPrintLayout;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -40,6 +41,9 @@ class Asanas extends Page
     public string $newFolderName = '';
 
     public string $newProgramTitle = '';
+
+    /** На сколько листов A4 уместить занятие при печати. 0 — как поместится. */
+    public int $printPages = 0;
 
     /** null | 'new' (зарисовать позу с нуля) | 'item' (поправить позу в занятии) */
     public ?string $drawingMode = null;
@@ -418,10 +422,12 @@ class Asanas extends Page
     private function programViewData(): array
     {
         $program = $this->currentProgram();
+        $items = $program?->items()->with('asana')->get() ?? collect();
 
         return [
             'program' => $program,
-            'items' => $program?->items()->with('asana')->get() ?? collect(),
+            'items' => $items,
+            'printLayout' => AsanaPrintLayout::forItems($items, $this->printPages),
             'breadcrumbs' => $program?->folder?->breadcrumbs() ?? [],
             'drawingItem' => $this->drawingItemId === null
                 ? null

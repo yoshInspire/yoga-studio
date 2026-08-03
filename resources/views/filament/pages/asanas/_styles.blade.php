@@ -269,6 +269,16 @@
     .as-field__label { font-size: .78rem; font-weight: 600; color: var(--as-muted); }
     .as-select { appearance: auto; cursor: pointer; }
 
+    /* Выбор раскладки печати */
+    .as-printbar {
+        display: flex; flex-direction: column; gap: 8px; padding: 12px;
+        border-radius: var(--as-radius); background: var(--as-surface);
+        border: 1px solid var(--as-line);
+    }
+    .as-printbar__field { display: flex; flex-direction: column; gap: 5px; }
+    .as-printbar__hint { margin: 0; font-size: .8rem; line-height: 1.4; color: var(--as-muted); }
+    .as-printbar__hint strong { color: var(--as-text); }
+
     .as-hint { margin: 0; text-align: center; font-size: .8rem; color: var(--as-muted); }
 
     /* --- Пустые состояния --- */
@@ -387,9 +397,11 @@
         /* Три колонки: человечек крупный, но лист не раздувается на десяток
            страниц. Панорамные листы занимают всю ширину — иначе от них
            остаётся нечитаемая полоска. */
+        /* Число колонок и высота картинки подбираются под выбранное
+           количество листов — значения приходят в переменных. */
         .as-print__grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(var(--as-print-cols, 3), 1fr);
             gap: 6mm 5mm;
             align-items: start;
         }
@@ -405,7 +417,7 @@
             display: block;
             width: 100%;
             height: auto;
-            max-height: 60mm;
+            max-height: var(--as-print-img, 60mm);
             object-fit: contain;
             margin: 0 auto 1.5mm;
         }
