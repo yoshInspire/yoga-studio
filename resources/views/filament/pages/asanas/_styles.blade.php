@@ -384,7 +384,8 @@
         @page { size: A4 portrait; margin: 12mm; }
 
         .fi-topbar, .fi-sidebar, .fi-header, .fi-footer,
-        .as-crumbs, .as-panel, .as-seq, .as-bar, .as-draw, .as-libhead { display: none !important; }
+        .as-crumbs, .as-panel, .as-seq, .as-bar, .as-draw, .as-libhead,
+        .as-printbar { display: none !important; }
 
         /* Сбрасываем экранные ограничения: печать не должна зависеть от того,
            с телефона её запустили или с компьютера. */
