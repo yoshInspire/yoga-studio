@@ -323,8 +323,15 @@
     .as-draw__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
     .as-draw__title { font-size: 1.02rem; color: var(--as-text); }
     .as-draw__sub { margin: 3px 0 0; font-size: .78rem; line-height: 1.4; color: var(--as-muted); }
+    /* Лист «в точку», как в тетради: по точкам легче держать пропорции и
+       рисовать ровнее. Сетка лежит под холстом и в сохранённый файл не
+       попадает — холст прозрачный, белый фон подставляется при сохранении. */
     .as-draw__canvas-wrap {
-        border-radius: 12px; overflow: hidden; border: 1px solid var(--as-line); background: #fff;
+        border-radius: 12px; overflow: hidden; border: 1px solid var(--as-line);
+        background-color: #fff;
+        background-image: radial-gradient(circle, rgba(17, 24, 39, .22) 1px, transparent 1.2px);
+        background-size: 18px 18px;
+        background-position: 9px 9px;
     }
     .as-draw__canvas {
         display: block; width: 100%; aspect-ratio: 4 / 3;

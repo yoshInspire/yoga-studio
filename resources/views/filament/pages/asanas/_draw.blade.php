@@ -224,9 +224,10 @@
         redraw() {
             const ctx = this.ctx;
 
+            // Холст держим прозрачным: сетка точек лежит под ним и служит
+            // только подсказкой при рисовании. Белый фон подставляется при
+            // сохранении, поэтому в файл точки не попадают.
             ctx.clearRect(0, 0, this.W, this.H);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, this.W, this.H);
 
             if (this.base) {
                 const scale = Math.min(this.W / this.base.width, this.H / this.base.height);
@@ -240,8 +241,11 @@
             for (const stroke of all) {
                 ctx.beginPath();
                 ctx.lineWidth = stroke.width;
-                // Ластик стирает до белого фона, а не до прозрачности.
-                ctx.strokeStyle = stroke.tool === 'eraser' ? '#ffffff' : '#111827';
+                // На прозрачном холсте белым не сотрёшь — стираем пиксели.
+                ctx.globalCompositeOperation = stroke.tool === 'eraser'
+                    ? 'destination-out'
+                    : 'source-over';
+                ctx.strokeStyle = '#111827';
 
                 stroke.points.forEach((p, i) => {
                     i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
@@ -249,6 +253,8 @@
 
                 ctx.stroke();
             }
+
+            ctx.globalCompositeOperation = 'source-over';
         },
 
         /**
@@ -259,6 +265,19 @@
          * занимает часть холста, а белые поля вокруг едут в файл и при печати
          * съедают место, поэтому рядом с библиотечной позой она выглядит мелкой.
          */
+        /** Белый лист нужного формата — когда рисовать было нечего. */
+        blankImage() {
+            const out = document.createElement('canvas');
+            out.width = 600;
+            out.height = Math.round(600 / (this.W / this.H));
+
+            const octx = out.getContext('2d');
+            octx.fillStyle = '#ffffff';
+            octx.fillRect(0, 0, out.width, out.height);
+
+            return out.toDataURL('image/png');
+        },
+
         exportImage() {
             const canvas = this.$refs.canvas;
             const dpr = canvas.width / this.W;
@@ -273,8 +292,8 @@
                 for (let x = 0; x < canvas.width; x++) {
                     const i = (y * canvas.width + x) * 4;
 
-                    // Фон заливается белым, поэтому содержимое — всё заметно темнее.
-                    if (pixels[i] < 240 || pixels[i + 1] < 240 || pixels[i + 2] < 240) {
+                    // Холст прозрачный, значит содержимое — всё непрозрачное.
+                    if (pixels[i + 3] > 10) {
                         if (x < minX) minX = x;
                         if (x > maxX) maxX = x;
                         if (y < minY) minY = y;
@@ -283,9 +302,9 @@
                 }
             }
 
-            // Холст пуст — отдаём как есть.
+            // Холст пуст — отдаём белый лист нужного формата, а не прозрачный.
             if (maxX < 0) {
-                return canvas.toDataURL('image/png');
+                return this.blankImage();
             }
 
             const pad = Math.round(10 * dpr);
