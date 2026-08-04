@@ -143,16 +143,6 @@
                         <option value="3">на 3 страницы</option>
                     </select>
                 </label>
-                <p class="as-printbar__hint">
-                    Выйдет
-                    <strong>{{ $printLayout['pages'] }}</strong>
-                    {{ \App\Support\RussianPlural::pages($printLayout['pages']) }},
-                    по {{ $printLayout['columns'] }} в ряд,
-                    человечек примерно <strong>{{ round($printLayout['cell_mm']) }} мм</strong>.
-                    @if ($printPages > 0 && $printLayout['pages'] > $printPages)
-                        Меньше уместить не получается — поз слишком много.
-                    @endif
-                </p>
             </div>
 
             {{-- Версия для печати --}}

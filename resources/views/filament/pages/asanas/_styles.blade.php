@@ -276,8 +276,6 @@
         border: 1px solid var(--as-line);
     }
     .as-printbar__field { display: flex; flex-direction: column; gap: 5px; }
-    .as-printbar__hint { margin: 0; font-size: .8rem; line-height: 1.4; color: var(--as-muted); }
-    .as-printbar__hint strong { color: var(--as-text); }
 
     .as-hint { margin: 0; text-align: center; font-size: .8rem; color: var(--as-muted); }
 
