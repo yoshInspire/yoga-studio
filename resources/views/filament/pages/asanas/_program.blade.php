@@ -147,7 +147,8 @@
                     Выйдет
                     <strong>{{ $printLayout['pages'] }}</strong>
                     {{ \App\Support\RussianPlural::pages($printLayout['pages']) }},
-                    по {{ $printLayout['columns'] }} в ряд.
+                    по {{ $printLayout['columns'] }} в ряд,
+                    человечек примерно <strong>{{ round($printLayout['cell_mm']) }} мм</strong>.
                     @if ($printPages > 0 && $printLayout['pages'] > $printPages)
                         Меньше уместить не получается — поз слишком много.
                     @endif
@@ -161,8 +162,14 @@
                     <p class="as-print__note">{{ $program->note }}</p>
                 @endif
                 <div
-                    class="as-print__grid"
-                    style="--as-print-cols: {{ $printLayout['columns'] }}; --as-print-img: {{ $printLayout['image_mm'] }}mm;"
+                    class="as-print__grid @if ($printLayout['columns'] >= 8) as-print__grid--dense @endif"
+                    style="
+                        --as-print-cols: {{ $printLayout['columns'] }};
+                        --as-print-img: {{ $printLayout['image_mm'] }}mm;
+                        --as-print-gap-x: {{ $printLayout['gap_x_mm'] }}mm;
+                        --as-print-gap-y: {{ $printLayout['gap_y_mm'] }}mm;
+                        --as-print-font: {{ $printLayout['caption_pt'] }}pt;
+                    "
                 >
                     @foreach ($items as $index => $item)
                         <figure class="as-print__cell @if ($item->isWideImage()) as-print__cell--wide @endif">

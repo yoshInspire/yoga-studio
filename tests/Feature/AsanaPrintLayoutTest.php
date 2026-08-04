@@ -102,12 +102,12 @@ class AsanaPrintLayoutTest extends TestCase
         $this->assertGreaterThan(60, $layout['image_mm']);
     }
 
-    /** Ровно на границе: шесть поз в две колонки уже не влезают на лист. */
+    /** Как только в две колонки не влезает — сетка становится плотнее. */
     public function test_layout_steps_down_when_two_columns_overflow(): void
     {
-        $layout = AsanaPrintLayout::forItems($this->items(6), 1);
+        $layout = AsanaPrintLayout::forItems($this->items(8), 1);
 
-        $this->assertSame(3, $layout['columns']);
+        $this->assertGreaterThan(2, $layout['columns']);
         $this->assertSame(1, $layout['pages']);
     }
 
@@ -132,10 +132,10 @@ class AsanaPrintLayoutTest extends TestCase
 
     public function test_impossible_request_falls_back_to_densest_grid(): void
     {
-        // Столько поз на один лист не влезет даже мелкой сеткой.
-        $layout = AsanaPrintLayout::forItems($this->items(200), 1);
+        // Столько поз на один лист не влезет даже самой плотной сеткой.
+        $layout = AsanaPrintLayout::forItems($this->items(400), 1);
 
-        $this->assertSame(6, $layout['columns']);
+        $this->assertSame(14, $layout['columns']);
         $this->assertGreaterThan(1, $layout['pages'], 'Честно сообщаем, что листов будет больше.');
     }
 
@@ -157,12 +157,37 @@ class AsanaPrintLayoutTest extends TestCase
 
     public function test_image_height_matches_column_width(): void
     {
-        foreach ([2, 3, 4] as $target) {
-            $layout = AsanaPrintLayout::forItems($this->items(6), $target === 2 ? 1 : 0);
-            $columns = $layout['columns'];
-            $cellWidth = (186 - 5 * ($columns - 1)) / $columns;
+        $layout = AsanaPrintLayout::forItems($this->items(6), 0);
 
-            $this->assertEqualsWithDelta($cellWidth * 3 / 4, $layout['image_mm'], 0.2);
-        }
+        $this->assertEqualsWithDelta($layout['cell_mm'] * 3 / 4, $layout['image_mm'], 0.2);
+    }
+
+    /** Ради чего всё: целая практика должна влезать на один лист. */
+    public function test_hundred_poses_fit_on_a_single_page(): void
+    {
+        $layout = AsanaPrintLayout::forItems($this->items(100), 1);
+
+        $this->assertSame(1, $layout['pages']);
+        $this->assertGreaterThanOrEqual(10, $layout['columns']);
+        $this->assertGreaterThan(10, $layout['cell_mm'], 'Человечек не должен схлопнуться в точку.');
+    }
+
+    public function test_seventy_poses_fit_on_a_single_page(): void
+    {
+        $layout = AsanaPrintLayout::forItems($this->items(70), 1);
+
+        $this->assertSame(1, $layout['pages']);
+        $this->assertGreaterThan(12, $layout['cell_mm']);
+    }
+
+    /** Плотная сетка ужимает и подписи, иначе они не помещаются в ячейку. */
+    public function test_dense_grid_shrinks_captions_and_gaps(): void
+    {
+        $loose = AsanaPrintLayout::forItems($this->items(6), 0);
+        $dense = AsanaPrintLayout::forItems($this->items(100), 1);
+
+        $this->assertLessThan($loose['caption_pt'], $dense['caption_pt']);
+        $this->assertLessThan($loose['gap_x_mm'], $dense['gap_x_mm']);
+        $this->assertGreaterThanOrEqual(4.5, $dense['caption_pt'], 'Мельче 4.5 pt читать нечего.');
     }
 }

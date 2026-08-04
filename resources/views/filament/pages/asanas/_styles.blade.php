@@ -388,11 +388,27 @@
     }
 
     @media print {
-        @page { size: A4 portrait; margin: 12mm; }
+        @page { size: A4 portrait; margin: 10mm; }
 
         .fi-topbar, .fi-sidebar, .fi-header, .fi-footer,
         .as-crumbs, .as-panel, .as-seq, .as-bar, .as-draw, .as-libhead,
         .as-printbar { display: none !important; }
+
+        /* Обёртки Filament держат свои отступы и предельную ширину. На печати
+           из-за них сетка выезжала за поле листа и правый столбец срезался,
+           поэтому всю цепочку до страницы распрямляем. */
+        html, body,
+        .fi-body, .fi-layout, .fi-main-ctn, .fi-main,
+        .fi-page, .fi-page-header-main-ctn, .fi-page-main, .fi-page-content {
+            display: block !important;
+            width: auto !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            background: #fff !important;
+        }
 
         /* Сбрасываем экранные ограничения: печать не должна зависеть от того,
            с телефона её запустили или с компьютера. */
@@ -409,9 +425,10 @@
            количество листов — значения приходят в переменных. */
         .as-print__grid {
             display: grid;
-            grid-template-columns: repeat(var(--as-print-cols, 3), 1fr);
-            gap: 6mm 5mm;
+            grid-template-columns: repeat(var(--as-print-cols, 3), minmax(0, 1fr));
+            gap: var(--as-print-gap-y, 6mm) var(--as-print-gap-x, 5mm);
             align-items: start;
+            width: 100%;
         }
         .as-print__cell {
             margin: 0;
@@ -435,17 +452,20 @@
         .as-print__cell--wide img { max-height: 62mm; }
 
         .as-print__cell figcaption {
-            font-size: 9.5pt;
-            line-height: 1.3;
+            font-size: var(--as-print-font, 9.5pt);
+            line-height: 1.2;
             text-align: center;
+            overflow-wrap: anywhere;
         }
         .as-print__num { font-weight: 700; }
         .as-print__name { font-weight: 600; }
         .as-print__note-item {
             display: block;
-            margin-top: 0.8mm;
-            font-size: 8.5pt;
+            margin-top: 0.6mm;
+            font-size: calc(var(--as-print-font, 9.5pt) * 0.9);
             color: #444;
         }
+        /* В плотной сетке подпись к позе только мешает — прячем её. */
+        .as-print__grid--dense .as-print__note-item { display: none; }
     }
 </style>
