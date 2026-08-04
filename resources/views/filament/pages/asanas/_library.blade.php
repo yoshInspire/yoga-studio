@@ -21,7 +21,7 @@
             />
         </div>
 
-        <div class="as-chips" role="group" aria-label="Категории">
+        <div class="as-chips" role="group" aria-label="Разделы">
             <button
                 type="button"
                 class="as-chip @if ($categoryFilter === null) as-chip--on @endif"
@@ -34,7 +34,65 @@
                     wire:click="$set('categoryFilter', @js($category))"
                 >{{ $category }}</button>
             @endforeach
+            <button
+                type="button"
+                class="as-chip as-chip--manage @if ($managingCategories) as-chip--on @endif"
+                title="Настроить разделы"
+                wire:click="toggleCategoryManager"
+            >@include('filament.pages.asanas._icon', ['name' => 'pencil']) Разделы</button>
         </div>
+
+        {{-- Управление разделами --}}
+        @if ($managingCategories)
+            <div class="as-cats">
+                <div class="as-cats__add">
+                    <input
+                        type="text"
+                        class="as-input as-input--sm"
+                        placeholder="Новый раздел — например, Скрутки"
+                        wire:model="newCategoryName"
+                        wire:keydown.enter.prevent="createCategory"
+                        aria-label="Название нового раздела"
+                    />
+                    <button type="button" class="as-btn as-btn--primary" wire:click="createCategory">
+                        @include('filament.pages.asanas._icon', ['name' => 'plus'])
+                        Создать
+                    </button>
+                </div>
+
+                @forelse ($categoryRows as $row)
+                    <div class="as-cats__row" wire:key="cat-{{ $row->id }}">
+                        <span class="as-cats__name">{{ $row->name }}</span>
+                        <span class="as-cats__count">{{ $row->asanaCount() }}</span>
+                        <button
+                            type="button"
+                            class="as-icon-btn"
+                            title="Переименовать раздел"
+                            @click="
+                                const name = window.prompt('Название раздела', @js($row->name));
+                                if (name && name.trim()) $wire.renameCategory({{ $row->id }}, name);
+                            "
+                        >@include('filament.pages.asanas._icon', ['name' => 'pencil'])</button>
+                        <button
+                            type="button"
+                            class="as-icon-btn as-icon-btn--danger"
+                            title="Удалить раздел"
+                            @click="
+                                if (window.confirm(@js('Удалить раздел «'.$row->name.'»? Позы останутся, но окажутся без раздела.'))) {
+                                    $wire.deleteCategory({{ $row->id }});
+                                }
+                            "
+                        >@include('filament.pages.asanas._icon', ['name' => 'trash'])</button>
+                    </div>
+                @empty
+                    <p class="as-hint">Разделов пока нет — создайте первый.</p>
+                @endforelse
+
+                <p class="as-hint">
+                    Позы при удалении раздела не пропадают — они просто останутся без него.
+                </p>
+            </div>
+        @endif
     </div>
 
     @if ($asanas->isEmpty())

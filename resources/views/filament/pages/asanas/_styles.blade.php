@@ -277,6 +277,31 @@
     }
     .as-printbar__field { display: flex; flex-direction: column; gap: 5px; }
 
+    /* Управление разделами библиотеки */
+    .as-chip--manage { display: inline-flex; align-items: center; gap: 5px; }
+    .as-chip--manage .as-i { width: 14px; height: 14px; }
+
+    .as-cats {
+        display: flex; flex-direction: column; gap: 7px; padding: 11px;
+        border-radius: var(--as-radius); background: var(--as-soft);
+        border: 1px solid var(--as-line);
+    }
+    .as-cats__add { display: flex; gap: 7px; }
+    .as-cats__add .as-input { flex: 1 1 auto; min-width: 0; background: var(--as-surface); }
+    .as-cats__add .as-btn { flex: 0 0 auto; }
+    .as-cats__row {
+        display: flex; align-items: center; gap: 7px; padding: 6px 8px;
+        border-radius: 10px; background: var(--as-surface); border: 1px solid var(--as-line);
+    }
+    .as-cats__name {
+        flex: 1 1 auto; min-width: 0; font-size: .88rem; font-weight: 600; color: var(--as-text);
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .as-cats__count {
+        flex: 0 0 auto; padding: 2px 8px; border-radius: 999px; background: var(--as-soft);
+        font-size: .72rem; font-weight: 600; color: var(--as-muted);
+    }
+
     .as-hint { margin: 0; text-align: center; font-size: .8rem; color: var(--as-muted); }
 
     /* --- Пустые состояния --- */

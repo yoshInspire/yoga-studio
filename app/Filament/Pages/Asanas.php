@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Asana;
+use App\Models\AsanaCategory;
 use App\Models\AsanaFolder;
 use App\Models\AsanaProgram;
 use App\Models\AsanaProgramItem;
@@ -39,6 +40,11 @@ class Asanas extends Page
     public ?string $categoryFilter = null;
 
     public string $newFolderName = '';
+
+    /** Открыт ли блок управления разделами библиотеки. */
+    public bool $managingCategories = false;
+
+    public string $newCategoryName = '';
 
     public string $newProgramTitle = '';
 
@@ -366,6 +372,72 @@ class Asanas extends Page
             : $asana->name.' → '.$asana->category);
     }
 
+    // --- Разделы библиотеки -------------------------------------------
+
+    public function toggleCategoryManager(): void
+    {
+        $this->managingCategories = ! $this->managingCategories;
+        $this->newCategoryName = '';
+    }
+
+    public function createCategory(): void
+    {
+        $category = app(AsanaProgramService::class)->createCategory($this->newCategoryName);
+
+        if ($category === null) {
+            $this->notify('Такой раздел уже есть или название пустое', danger: true);
+
+            return;
+        }
+
+        $this->newCategoryName = '';
+        $this->notify('Раздел «'.$category->name.'» создан');
+    }
+
+    public function renameCategory(int $categoryId, string $name): void
+    {
+        $category = AsanaCategory::find($categoryId);
+
+        if ($category === null) {
+            return;
+        }
+
+        $was = $category->name;
+
+        if (! app(AsanaProgramService::class)->renameCategory($category, $name)) {
+            $this->notify('Не удалось переименовать: такое название уже занято', danger: true);
+
+            return;
+        }
+
+        // Если сейчас открыт переименованный раздел — не теряем его из виду.
+        if ($this->categoryFilter === $was) {
+            $this->categoryFilter = $category->fresh()->name;
+        }
+
+        $this->notify('Раздел переименован');
+    }
+
+    public function deleteCategory(int $categoryId): void
+    {
+        $category = AsanaCategory::find($categoryId);
+
+        if ($category === null) {
+            return;
+        }
+
+        $name = $category->name;
+        $affected = app(AsanaProgramService::class)->deleteCategory($category);
+
+        if ($this->categoryFilter === $name) {
+            $this->categoryFilter = null;
+        }
+
+        $this->notify($affected > 0
+            ? 'Раздел удалён, поз без раздела: '.$affected
+            : 'Раздел удалён');
+    }
+
     public function deleteCustomAsana(int $asanaId): void
     {
         $asana = Asana::find($asanaId);
@@ -444,6 +516,7 @@ class Asanas extends Page
             'categories' => $this->categories(),
             // Разделы, куда можно положить свою зарисовку.
             'libraryCategories' => app(AsanaProgramService::class)->libraryCategories(),
+            'categoryRows' => AsanaCategory::query()->ordered()->get(),
             'asanas' => Asana::query()
                 ->when(
                     $this->categoryFilter === Asana::CUSTOM_CATEGORY,
@@ -460,15 +533,16 @@ class Asanas extends Page
         ];
     }
 
-    /** @return Collection<int, string> */
+    /**
+     * Фильтры над сеткой. Берём разделы из справочника, а не из самих поз:
+     * иначе только что созданный пустой раздел было бы не видно и некуда
+     * складывать зарисовки.
+     *
+     * @return Collection<int, string>
+     */
     private function categories(): Collection
     {
-        $categories = Asana::query()
-            ->whereNotNull('category')
-            ->where('is_custom', false)
-            ->distinct()
-            ->orderBy('category')
-            ->pluck('category');
+        $categories = AsanaCategory::query()->ordered()->pluck('name');
 
         if (Asana::query()->where('is_custom', true)->exists()) {
             $categories->push(Asana::CUSTOM_CATEGORY);

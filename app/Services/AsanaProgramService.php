@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Asana;
+use App\Models\AsanaCategory;
 use App\Models\AsanaProgram;
 use App\Models\AsanaProgramItem;
 use Illuminate\Support\Facades\DB;
@@ -121,19 +122,85 @@ class AsanaProgramService
     }
 
     /**
-     * Разделы библиотеки — те, что пришли с готовыми асанами.
+     * Разделы библиотеки в заданном порядке.
      *
      * @return list<string>
      */
     public function libraryCategories(): array
     {
-        return Asana::query()
-            ->whereNotNull('category')
-            ->where('is_custom', false)
-            ->distinct()
-            ->orderBy('category')
-            ->pluck('category')
-            ->all();
+        return AsanaCategory::query()->ordered()->pluck('name')->all();
+    }
+
+    /**
+     * Завести свой раздел. Возвращает null, если такой уже есть или имя пустое.
+     */
+    public function createCategory(string $name): ?AsanaCategory
+    {
+        $name = $this->cleanName($name);
+
+        if ($name === null || AsanaCategory::query()->where('name', $name)->exists()) {
+            return null;
+        }
+
+        return AsanaCategory::create([
+            'name' => $name,
+            'sort' => (int) AsanaCategory::query()->max('sort') + 1,
+        ]);
+    }
+
+    /**
+     * Переименовать раздел. Название хранится и у самих поз, поэтому меняем
+     * его сразу в обоих местах — иначе позы потеряют свой раздел.
+     */
+    public function renameCategory(AsanaCategory $category, string $name): bool
+    {
+        $name = $this->cleanName($name);
+
+        if ($name === null || $name === $category->name) {
+            return false;
+        }
+
+        $taken = AsanaCategory::query()
+            ->where('name', $name)
+            ->whereKeyNot($category->getKey())
+            ->exists();
+
+        if ($taken) {
+            return false;
+        }
+
+        DB::transaction(function () use ($category, $name) {
+            Asana::query()->where('category', $category->name)->update(['category' => $name]);
+            $category->update(['name' => $name]);
+        });
+
+        return true;
+    }
+
+    /**
+     * Удалить раздел. Позы остаются, но лишаются раздела: удалять вместе
+     * с разделом чужие библиотечные позы было бы слишком.
+     *
+     * @return int Сколько поз осталось без раздела
+     */
+    public function deleteCategory(AsanaCategory $category): int
+    {
+        return DB::transaction(function () use ($category) {
+            $affected = Asana::query()
+                ->where('category', $category->name)
+                ->update(['category' => null]);
+
+            $category->delete();
+
+            return $affected;
+        });
+    }
+
+    private function cleanName(string $name): ?string
+    {
+        $name = trim(preg_replace('/\s+/u', ' ', $name) ?? '');
+
+        return $name === '' ? null : mb_substr($name, 0, 120);
     }
 
     /** Пускаем только существующий раздел, иначе — без раздела. */
