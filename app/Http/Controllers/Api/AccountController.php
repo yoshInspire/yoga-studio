@@ -46,6 +46,7 @@ class AccountController extends Controller
                 'session_id' => $b->class_session_id,
                 'title' => $b->classSession->title,
                 'direction' => $b->classSession->direction?->title,
+                'direction_slug' => $b->classSession->direction?->slug,
                 'topic' => $b->classSession->topic,
                 'trainer' => $b->classSession->trainerName(),
                 'type' => $b->classSession->type->badgeClass(),

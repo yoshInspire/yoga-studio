@@ -652,6 +652,10 @@ class BookingService
             'start_minutes' => $startMinutes,
             'title' => $session->title,
             'direction' => $session->direction?->title,
+            // Слаг нужен мобильному приложению: по нему выбирается цвет семейства
+            // и иконка направления. По названию сопоставлять ненадёжно —
+            // тренер может завести занятие с произвольной темой.
+            'direction_slug' => $session->direction?->slug,
             'topic' => $session->topic,
             'description' => $session->description,
             'trainer' => $session->trainerName(),
