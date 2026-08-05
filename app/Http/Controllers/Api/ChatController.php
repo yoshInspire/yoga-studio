@@ -45,6 +45,7 @@ class ChatController extends Controller
             'messages' => MessageResource::collection($messages, $request->user()),
             'has_more' => $this->chat->hasMoreBefore($conversation, $messages->first()?->id),
             'unread' => $conversation->unreadFromStudio()->count(),
+            'read_through' => $this->chat->readThrough($conversation, $request->user()),
         ]);
     }
 
@@ -108,10 +109,17 @@ class ChatController extends Controller
      */
     public static function validateMessageRequest(Request $request): void
     {
+        // Приложение приводит снимок к JPEG перед отправкой, но принимаем и
+        // остальные распространённые форматы: с веб-админки файл приходит
+        // как есть, да и старая версия приложения может быть у кого-то на руках.
         $request->validate([
             'body' => ['nullable', 'string', 'max:4000'],
-            'photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,heic', 'max:12288'],
-        ], [], [
+            'photo' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp,gif,heic,heif', 'max:12288'],
+        ], [
+            'photo.mimes' => 'Такой формат не поддерживается. Подойдут JPEG, PNG, WEBP или HEIC.',
+            'photo.max' => 'Фотография слишком большая — до 12 МБ.',
+            'body.max' => 'Сообщение слишком длинное — до 4000 символов.',
+        ], [
             'body' => 'сообщение',
             'photo' => 'фотография',
         ]);

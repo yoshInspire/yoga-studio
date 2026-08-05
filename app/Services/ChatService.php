@@ -66,6 +66,25 @@ class ChatService
         return $query->orderByDesc('id')->limit(self::PAGE)->get()->reverse()->values();
     }
 
+    /**
+     * Наибольший номер собственного сообщения, которое собеседник уже прочитал.
+     *
+     * Нужен для галочек. Опрос забирает только новое (`after`), поэтому у
+     * сообщений, которые уже лежат на экране, статус прочтения сам по себе
+     * никогда не менялся бы: отправитель так и видел бы одну галочку.
+     * Отмечаем прочтение всегда пачкой, поэтому одного числа достаточно —
+     * всё, что не новее его, прочитано.
+     */
+    public function readThrough(Conversation $conversation, User $viewer): ?int
+    {
+        $id = $conversation->messages()
+            ->where('sender_id', $viewer->id)
+            ->whereNotNull('read_at')
+            ->max('id');
+
+        return $id !== null ? (int) $id : null;
+    }
+
     /** Есть ли что-то ещё выше указанного сообщения. */
     public function hasMoreBefore(Conversation $conversation, ?int $oldestId): bool
     {
@@ -204,8 +223,12 @@ class ChatService
 
         $source = @imagecreatefromstring((string) file_get_contents($photo->getRealPath()));
 
+        // GD не знает HEIC с айфонов и часть экзотики. Это не повод терять
+        // сообщение — кладём файл как есть, размеры остаются неизвестными.
         if ($source === false) {
-            throw new InvalidArgumentException('Не удалось прочитать изображение.');
+            $path = $photo->storeAs($directory, $name.'.'.$photo->extension(), Message::DISK);
+
+            return ['path' => $path, 'width' => null, 'height' => null];
         }
 
         $width = imagesx($source);

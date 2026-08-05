@@ -178,6 +178,51 @@ class ChatApiTest extends TestCase
         $this->actingAs($stranger, 'sanctum')->get($path)->assertForbidden();
     }
 
+    public function test_read_through_lets_the_sender_see_the_second_tick(): void
+    {
+        $client = $this->client();
+        $admin = $this->admin();
+
+        $this->actingAs($client, 'sanctum')->postJson('/api/v1/chat', ['body' => 'Вопрос']);
+        $sentId = Message::query()->latest('id')->firstOrFail()->id;
+
+        // Пока студия не прочитала — отметки нет.
+        $this->actingAs($client, 'sanctum')
+            ->getJson("/api/v1/chat?after={$sentId}")
+            ->assertOk()
+            ->assertJsonPath('read_through', null);
+
+        $this->actingAs($admin, 'sanctum')->postJson("/api/v1/admin/chats/{$client->id}/read");
+
+        // Опрос отдаёт «прочитано до», хотя новых сообщений нет: иначе
+        // отправитель никогда бы не увидел вторую галочку на уже показанном.
+        $this->actingAs($client, 'sanctum')
+            ->getJson("/api/v1/chat?after={$sentId}")
+            ->assertOk()
+            ->assertJsonCount(0, 'messages')
+            ->assertJsonPath('read_through', $sentId);
+    }
+
+    public function test_non_image_file_is_rejected_with_a_russian_message(): void
+    {
+        $this->actingAs($this->client(), 'sanctum')
+            ->post('/api/v1/chat', ['photo' => UploadedFile::fake()->create('practice.pdf', 40, 'application/pdf')])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('photo')
+            ->assertJsonPath('errors.photo.0', 'Такой формат не поддерживается. Подойдут JPEG, PNG, WEBP или HEIC.');
+    }
+
+    public function test_png_screenshot_is_accepted(): void
+    {
+        if (! function_exists('imagecreatetruecolor')) {
+            $this->markTestSkipped('Нужно расширение GD.');
+        }
+
+        $this->actingAs($this->client(), 'sanctum')
+            ->post('/api/v1/chat', ['photo' => UploadedFile::fake()->image('screen.png', 1200, 900)])
+            ->assertCreated();
+    }
+
     public function test_admin_search_filters_conversations_by_client(): void
     {
         $maria = $this->client(['first_name' => 'Мария', 'last_name' => 'Иванова']);

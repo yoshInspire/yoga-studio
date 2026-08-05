@@ -70,6 +70,7 @@ class AdminChatController extends Controller
             ],
             'messages' => MessageResource::collection($messages, $request->user()),
             'has_more' => $this->chat->hasMoreBefore($conversation, $messages->first()?->id),
+            'read_through' => $this->chat->readThrough($conversation, $request->user()),
         ]);
     }
 
