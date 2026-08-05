@@ -28,7 +28,7 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 
-# Локальные данные сервера (пароли) — не коммитить
-/deploy/SERVER.local.txt
-/deploy/*.local.*
+# Всё, что касается сервера и выкладки, живёт только локально:
+# скрипты деплоя и диагностики, пароли, инструкции, договоры.
+/deploy
 **/SERVER.local.txt
