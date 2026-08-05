@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Auth\TelegramAuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\DirectionController;
@@ -82,6 +83,13 @@ Route::get('/oferta', [OfferController::class, 'show'])
 Route::get('/payments/{payment}/return', [PaymentController::class, 'return'])
     ->middleware(['signed', 'noindex'])
     ->name('payments.return');
+
+// Фотографии из чата для веб-админки. Отдельно от api-маршрута: там сессия
+// не работает, а здесь администратор авторизован обычным входом на сайт.
+// Путь намеренно не под /admin — там свои маршруты у Filament.
+Route::get('/chat-attachments/{message}', [ChatController::class, 'attachment'])
+    ->middleware(['auth', 'role:admin', 'noindex'])
+    ->name('chat.attachment');
 
 Route::middleware(['auth', 'role:client', 'noindex'])->group(function () {
     Route::get('/account', AccountController::class)->name('account');

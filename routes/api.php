@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\AdminChatController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\ContentController;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\PasswordResetController;
@@ -42,8 +44,17 @@ Route::prefix('v1')->group(function () {
         Route::get('/me', [AuthController::class, 'me'])->name('api.me');
         Route::post('/logout', [AuthController::class, 'logout'])->name('api.logout');
 
+        // Чат: общее для обеих ролей
+        Route::get('/chat/unread', [ChatController::class, 'unread']);
+        Route::get('/chat/attachments/{message}', [ChatController::class, 'attachment'])
+            ->name('api.chat.attachment');
+
         // Клиент
         Route::middleware('role:client')->group(function () {
+            Route::get('/chat', [ChatController::class, 'index']);
+            Route::post('/chat', [ChatController::class, 'store'])->middleware('throttle:30,1');
+            Route::post('/chat/read', [ChatController::class, 'read']);
+
             Route::get('/account', [AccountController::class, 'show']);
             Route::post('/bookings', [BookingController::class, 'store']);
             Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel']);
@@ -76,6 +87,11 @@ Route::prefix('v1')->group(function () {
             Route::post('/clients', [AdminController::class, 'createClient']);
             Route::post('/subscriptions', [AdminController::class, 'issueSubscription']);
             Route::get('/payments', [AdminController::class, 'payments']);
+
+            Route::get('/chats', [AdminChatController::class, 'index']);
+            Route::get('/chats/{client}', [AdminChatController::class, 'show']);
+            Route::post('/chats/{client}', [AdminChatController::class, 'store'])->middleware('throttle:60,1');
+            Route::post('/chats/{client}/read', [AdminChatController::class, 'read']);
         });
     });
 });

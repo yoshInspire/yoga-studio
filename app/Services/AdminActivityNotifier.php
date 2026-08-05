@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Booking;
 use App\Models\ClassSession;
+use App\Models\Message;
 use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\User;
@@ -168,6 +169,22 @@ class AdminActivityNotifier
             ],
             'Клиент оплатил абонемент',
         );
+    }
+
+    public function clientWroteMessage(User $user, Message $message): void
+    {
+        $lines = [
+            ...$this->clientLines($user),
+            'Действие: сообщение в чате приложения',
+        ];
+
+        $text = $message->preview(300);
+
+        if ($text !== '') {
+            $lines[] = 'Сообщение: «'.$text.'»';
+        }
+
+        $this->notify('Сообщение в чате', $lines, 'Клиент написал в чат');
     }
 
     public function clientLinkedTelegram(User $user): void

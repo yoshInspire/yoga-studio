@@ -18,6 +18,10 @@
         </include>
     </source>
     <php>
+        <!-- Весь набор идёт одним процессом и к концу занимает под сотню
+             мегабайт. Обработка фотографий в чате разворачивает снимок в GD,
+             и на стандартных 128 МБ прогон падал с исчерпанием памяти. -->
+        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_TIMEZONE" value="Europe/Moscow"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
