@@ -30,12 +30,14 @@ class NewsNotificationService
         $message = $this->buildMessage($news);
         $sent = 0;
 
-        $this->eligibleClients()->each(function (User $user) use ($message, &$sent) {
+        $this->eligibleClients()->each(function (User $user) use ($message, $news, &$sent) {
             $this->notifications->notifyUser(
                 $user,
                 $message['heading'],
                 $message['lines'],
                 $message['subject'],
+                type: 'news',
+                payload: ['news_slug' => $news->slug],
             );
             $sent++;
         });

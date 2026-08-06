@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\ContentController;
 use App\Http\Controllers\Api\LeadController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\PurchaseController;
@@ -45,6 +46,14 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [AuthController::class, 'me'])->name('api.me');
         Route::post('/logout', [AuthController::class, 'logout'])->name('api.logout');
+
+        // Уведомления и пуши: не привязаны к роли — сейчас их получают клиенты,
+        // тренерские лягут сюда же без правки маршрутов.
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::get('/notifications/unread', [NotificationController::class, 'unread']);
+        Route::post('/notifications/read', [NotificationController::class, 'read']);
+        Route::post('/push-tokens', [NotificationController::class, 'storeToken']);
+        Route::delete('/push-tokens', [NotificationController::class, 'destroyToken']);
 
         // Чат: общее для обеих ролей
         Route::get('/chat/unread', [ChatController::class, 'unread']);

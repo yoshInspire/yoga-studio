@@ -109,6 +109,8 @@ class CancelUnderfilledClasses extends Command
                     'Занятие возвращено на ваш абонемент — вы можете записаться на другое время.',
                 ],
                 subject: 'Занятие отменено',
+                type: 'session_cancelled',
+                payload: ['session_id' => $session->id],
             );
         }
     }

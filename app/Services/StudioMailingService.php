@@ -76,6 +76,7 @@ class StudioMailingService
                 $message['heading'],
                 $message['lines'],
                 $message['subject'],
+                type: 'reminder',
             );
 
             $this->markSent($user, ClientMailingLog::TYPE_DAILY_EVENING, $mailingKey);
@@ -134,6 +135,7 @@ class StudioMailingService
                 $message['heading'],
                 $message['lines'],
                 $message['subject'],
+                type: 'schedule',
             );
 
             $this->markSent($user, ClientMailingLog::TYPE_WEEKLY_SCHEDULE, $mailingKey);
@@ -176,6 +178,7 @@ class StudioMailingService
                 $heading,
                 $lines,
                 $heading,
+                type: 'announcement',
             );
 
             $this->markSent($user, ClientMailingLog::TYPE_CUSTOM, $mailingKey);
@@ -227,6 +230,7 @@ class StudioMailingService
                     '🎂 С днём рождения!',
                     [$body],
                     'С днём рождения!',
+                    type: 'birthday',
                 );
 
                 $this->markSent($user, ClientMailingLog::TYPE_BIRTHDAY, $mailingKey);

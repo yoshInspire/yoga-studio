@@ -69,6 +69,7 @@ class SendSubscriptionReminders extends Command
                         'Чтобы не прерывать практику, не забудьте приобрести новый абонемент.',
                     ],
                     subject: 'Абонемент заканчивается',
+                    type: 'subscription_low',
                 );
 
                 $subscription->update(['low_sessions_notified_at' => now()]);
@@ -120,6 +121,7 @@ class SendSubscriptionReminders extends Command
                         'Успейте использовать или продлите абонемент в студии.',
                     ],
                     subject: 'Срок абонемента заканчивается',
+                    type: 'subscription_expiring',
                 );
 
                 $subscription->update(['expiring_notified_at' => now()]);

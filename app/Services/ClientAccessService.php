@@ -35,7 +35,7 @@ class ClientAccessService
         $phone = $user->formattedPhone() ?? $user->phone ?? '—';
         [$heading, $lines, $subject] = $this->accessMessage($user, $password, $phone);
 
-        $delivery = $this->notifications->notifyUser($user, $heading, $lines, $subject);
+        $delivery = $this->notifications->notifyUser($user, $heading, $lines, $subject, type: 'access');
 
         return [
             'password' => $password,

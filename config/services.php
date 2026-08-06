@@ -43,4 +43,14 @@ return [
         'curl_resolve' => env('TELEGRAM_CURL_RESOLVE', 'api.telegram.org:443:149.154.167.220'),
     ],
 
+    /**
+     * Пуш-уведомления в мобильное приложение.
+     * `expo` — Expo Push Service (текущее приложение на React Native),
+     * `null` — не отправлять (тесты, аварийное выключение без выката кода).
+     * После переезда на Flutter здесь появится `fcm`.
+     */
+    'push' => [
+        'driver' => env('PUSH_DRIVER', 'expo'),
+    ],
+
 ];

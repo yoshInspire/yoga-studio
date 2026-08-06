@@ -74,6 +74,7 @@ class WelcomeMessageService
             self::HEADING,
             $this->lines($body),
             self::HEADING,
+            type: 'welcome',
         );
 
         ClientMailingLog::query()->create([

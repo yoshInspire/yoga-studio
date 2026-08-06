@@ -282,6 +282,18 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(ClassSession::class, 'trainer_id');
     }
 
+    /** Лента уведомлений в мобильном приложении. */
+    public function clientNotifications(): HasMany
+    {
+        return $this->hasMany(ClientNotification::class);
+    }
+
+    /** Устройства, на которые уходят пуши. */
+    public function pushTokens(): HasMany
+    {
+        return $this->hasMany(PushToken::class);
+    }
+
     public static function findByPhone(?string $phone): ?self
     {
         $normalized = PhoneNormalizer::normalize($phone);
