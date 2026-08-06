@@ -37,6 +37,8 @@ Route::prefix('v1')->group(function () {
     Route::get('/news', [ContentController::class, 'news']);
     Route::get('/news/{slug}', [ContentController::class, 'newsItem']);
     Route::get('/schedule', [ContentController::class, 'schedule']);
+    Route::get('/pricing', [ContentController::class, 'pricing']);
+    Route::get('/rules', [ContentController::class, 'rules']);
     Route::post('/lead', [LeadController::class, 'store'])->middleware('throttle:6,1');
 
     // --- Требуют токен ---

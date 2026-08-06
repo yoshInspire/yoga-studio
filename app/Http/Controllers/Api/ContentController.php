@@ -7,6 +7,8 @@ use App\Models\Direction;
 use App\Models\News;
 use App\Services\BookingService;
 use App\Support\DirectionMedia;
+use App\Support\PricingDisplay;
+use App\Support\StudioRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -83,6 +85,42 @@ class ContentController extends Controller
                 'image' => $n->imageUrl(),
                 'date' => $n->formattedDate(),
             ],
+        ]);
+    }
+
+    /**
+     * Цены (публично) — то же, что в блоке «Услуги и цены» на главной сайта.
+     *
+     * Прайс собирается из config/pricing.php и каталога в админке, поэтому
+     * приложение обязано получать его с сервера, а не хранить у себя.
+     */
+    public function pricing(): JsonResponse
+    {
+        $blocks = collect(PricingDisplay::blocks())
+            ->map(fn (array $block, string $key) => [
+                'key' => $key,
+                'title' => $block['title'],
+                'sections' => array_map(fn (array $section) => [
+                    'title' => $section['title'] ?? null,
+                    'items' => array_map(fn (array $item) => [
+                        'name' => $item['name'],
+                        'price' => (int) ($item['price'] ?? 0),
+                        'highlight' => (bool) ($item['highlight'] ?? false),
+                    ], $section['items']),
+                ], $block['sections']),
+                'notes' => array_values($block['notes']),
+            ])
+            ->values();
+
+        return response()->json(['data' => $blocks]);
+    }
+
+    /** Правила студии (публично) — тот же текст, что в FAQ на странице расписания. */
+    public function rules(): JsonResponse
+    {
+        return response()->json([
+            'lead' => StudioRules::lead(),
+            'data' => StudioRules::plain(),
         ]);
     }
 
