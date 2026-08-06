@@ -15,6 +15,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\URL;
 use Mockery;
 use Tests\TestCase;
+use YooKassa\Model\Metadata;
+use YooKassa\Model\MonetaryAmount;
 use YooKassa\Model\Payment\PaymentInterface;
 use YooKassa\Model\Payment\PaymentStatus as YooPaymentStatus;
 
@@ -100,31 +102,18 @@ class PaymentFlowTest extends TestCase
             'paid_at' => now(),
         ]);
 
+        // Metadata и MonetaryAmount — настоящие из SDK: у getMetadata() и
+        // getAmount() строгие типы возврата, и анонимная заглушка падала на
+        // них раньше, чем тест доходил до проверяемой логики.
+        $metadata = new Metadata;
+        $metadata->offsetSet('payment_id', (string) $payment->id);
+
         $remote = Mockery::mock(PaymentInterface::class);
         $remote->shouldReceive('getStatus')->andReturn(YooPaymentStatus::SUCCEEDED);
-        $remote->shouldReceive('getMetadata')->andReturn(new class($payment)
-        {
-            public function __construct(private Payment $payment) {}
-
-            public function toArray(): array
-            {
-                return ['payment_id' => (string) $this->payment->id];
-            }
-        });
-        $remote->shouldReceive('getAmount')->andReturn(new class($payment)
-        {
-            public function __construct(private Payment $payment) {}
-
-            public function getValue(): string
-            {
-                return number_format($this->payment->amount, 2, '.', '');
-            }
-
-            public function getCurrency(): string
-            {
-                return $this->payment->currency;
-            }
-        });
+        $remote->shouldReceive('getMetadata')->andReturn($metadata);
+        $remote->shouldReceive('getAmount')->andReturn(
+            new MonetaryAmount(number_format($payment->amount, 2, '.', ''), $payment->currency),
+        );
 
         $service = app(PaymentService::class);
         $first = $service->fulfill($payment, $remote);

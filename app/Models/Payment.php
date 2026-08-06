@@ -6,6 +6,7 @@ use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'user_id',
@@ -41,6 +42,15 @@ class Payment extends Model
     public function subscription(): BelongsTo
     {
         return $this->belongsTo(Subscription::class);
+    }
+
+    /**
+     * Состав заказа. Пишется всегда, даже когда куплен один тариф, — чтобы у
+     * выдачи абонементов был один путь, а не два похожих.
+     */
+    public function items(): HasMany
+    {
+        return $this->hasMany(PaymentItem::class);
     }
 
     public function formattedAmount(): string

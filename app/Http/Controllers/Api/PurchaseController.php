@@ -39,15 +39,20 @@ class PurchaseController extends Controller
     /** Инициировать оплату → вернуть ссылку на форму YooKassa. */
     public function store(Request $request, PaymentService $payments): JsonResponse
     {
+        // product_keys — несколько абонементов одним платежом (мобильное
+        // приложение). product_key оставлен для совместимости: так ходит сайт
+        // и старые версии приложения, которые ещё не обновились.
         $validated = $request->validate([
-            'product_key' => ['required', 'string', 'max:64'],
+            'product_keys' => ['sometimes', 'array', 'min:1', 'max:10'],
+            'product_keys.*' => ['required', 'string', 'max:64'],
+            'product_key' => ['required_without:product_keys', 'string', 'max:64'],
             'starts_at' => ['required', 'date'],
         ]);
 
         try {
             $payment = $payments->initiate(
                 $request->user(),
-                $validated['product_key'],
+                $validated['product_keys'] ?? $validated['product_key'],
                 Carbon::parse($validated['starts_at']),
             );
         } catch (InvalidArgumentException $e) {

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\PaymentStatus;
 use App\Enums\SubscriptionType;
 use App\Models\Payment;
+use App\Models\PaymentItem;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Support\PaymentReceiptBuilder;
@@ -44,19 +45,39 @@ class PaymentService
             ->exists();
     }
 
-    public function initiate(User $user, string $productKey, Carbon $startsAt): Payment
+    /**
+     * Создать платёж на один или несколько тарифов.
+     *
+     * Несколько — потому что клиент вправе взять сразу, например, групповой
+     * абонемент и индивидуальный: держать два абонемента система умеет давно
+     * (SubscriptionService списывает из купленного раньше), а вот оплатить их
+     * одним платежом до этого было нельзя.
+     *
+     * @param  string|list<string>  $productKeys  один ключ или набор разных
+     */
+    public function initiate(User $user, string|array $productKeys, Carbon $startsAt): Payment
     {
         if (! $this->yookassa->isConfigured()) {
             throw new InvalidArgumentException('Онлайн-оплата временно недоступна. Обратитесь в студию.');
         }
 
-        $product = PurchaseCatalog::find($productKey);
+        // Набор, а не список: количеств у абонементов нет, два одинаковых
+        // тарифа в одном заказе — это ошибка ввода, а не намерение.
+        $keys = array_values(array_unique((array) $productKeys));
+
+        if ($keys === []) {
+            throw new InvalidArgumentException('Выберите хотя бы один абонемент.');
+        }
+
+        $products = array_map(PurchaseCatalog::find(...), $keys);
         $startsAt = $startsAt->startOfDay();
 
-        if (self::isAlreadyUsedOnceOnlyProduct($user, $productKey)) {
-            throw new InvalidArgumentException(
-                '«'.$product['name'].'» можно приобрести только один раз. Выберите другой тариф.',
-            );
+        foreach ($keys as $i => $key) {
+            if (self::isAlreadyUsedOnceOnlyProduct($user, $key)) {
+                throw new InvalidArgumentException(
+                    '«'.$products[$i]['name'].'» можно приобрести только один раз. Выберите другой тариф.',
+                );
+            }
         }
 
         if ($startsAt->lt(now()->startOfDay())) {
@@ -67,21 +88,40 @@ class PaymentService
             throw new InvalidArgumentException('Дату начала можно выбрать не более чем на 3 месяца вперёд.');
         }
 
+        $total = array_sum(array_column($products, 'price'));
+
         $payment = Payment::query()->create([
             'user_id' => $user->id,
-            'product_key' => $productKey,
-            'amount' => $product['price'],
+            // Для покупки из одной позиции колонка заполняется как раньше —
+            // на неё опираются прежние платежи, админка и отчёты.
+            'product_key' => $keys[0],
+            'amount' => $total,
             'currency' => config('yookassa.currency', 'RUB'),
             'status' => PaymentStatus::Pending,
             'starts_at' => $startsAt,
-            'description' => $product['name'],
+            'description' => $this->orderDescription($products),
             'idempotence_key' => (string) Str::uuid(),
         ]);
+
+        // PurchaseCatalog::find() возвращает тариф без собственного ключа —
+        // берём его из исходного списка по тому же индексу.
+        foreach ($products as $i => $product) {
+            $payment->items()->create([
+                'product_key' => $keys[$i],
+                'name' => $product['name'],
+                'type' => $product['type'],
+                'price' => $product['price'],
+                'sessions' => $product['sessions'],
+                'validity_days' => $product['validity_days'],
+            ]);
+        }
 
         try {
             $response = $this->yookassa->createPayment([
                 'amount' => [
-                    'value' => $this->formatAmount($product['price']),
+                    // Сумма и позиции чека считаются по одному и тому же
+                    // списку: если они разойдутся, ЮKassa отклонит чек.
+                    'value' => $this->formatAmount($total),
                     'currency' => config('yookassa.currency', 'RUB'),
                 ],
                 'confirmation' => [
@@ -89,13 +129,14 @@ class PaymentService
                     'return_url' => $this->signedReturnUrl($payment),
                 ],
                 'capture' => true,
-                'description' => $this->paymentDescription($user, $product['name']),
+                'description' => $this->paymentDescription($user, $payment->description),
                 'metadata' => [
                     'payment_id' => (string) $payment->id,
                     'user_id' => (string) $user->id,
-                    'product_key' => $productKey,
+                    'product_key' => $keys[0],
+                    'product_keys' => implode(',', $keys),
                 ],
-                'receipt' => PaymentReceiptBuilder::build($user, $product),
+                'receipt' => PaymentReceiptBuilder::build($user, $products),
             ], $payment->idempotence_key);
         } catch (ApiException $e) {
             $payment->delete();
@@ -195,27 +236,100 @@ class PaymentService
 
             $this->assertRemotePaymentMatches($payment, $remote);
 
-            $product = PurchaseCatalog::find($payment->product_key);
-            $subscription = $this->subscriptions->createFromPurchase(
-                $payment->user,
-                $product['type'],
-                $product['sessions'],
-                $payment->starts_at,
-                now(),
-                $product['validity_days'],
-                'Онлайн-оплата · '.$product['name'].' · платёж #'.$payment->id,
-            );
+            // По абонементу на каждую позицию заказа. Параметры берём из самой
+            // позиции, а не из каталога: пока клиент оплачивал, студия могла
+            // поменять цену или число занятий в админке — выдать нужно то,
+            // за что заплатили.
+            $items = $payment->items()->orderBy('id')->get();
+
+            // Платёж, созданный до появления позиций (например, клиент открыл
+            // оплату до выката, а завершил после), — достраиваем состав из
+            // однотоварных колонок, чтобы выдача не сорвалась.
+            if ($items->isEmpty()) {
+                $items = collect([$this->backfillItem($payment)]);
+            }
+
+            $first = null;
+
+            foreach ($items as $item) {
+                $subscription = $this->subscriptions->createFromPurchase(
+                    $payment->user,
+                    $item->type,
+                    $item->sessions,
+                    $payment->starts_at,
+                    now(),
+                    $item->validity_days,
+                    'Онлайн-оплата · '.$item->name.' · платёж #'.$payment->id,
+                );
+
+                $item->update(['subscription_id' => $subscription->id]);
+                $first ??= $subscription;
+            }
+
+            if ($first === null) {
+                throw new InvalidArgumentException('В платеже нет ни одной позиции.');
+            }
 
             $payment->update([
-                'subscription_id' => $subscription->id,
+                // Колонка осталась однозначной: в ней первый абонемент заказа.
+                // Полный состав — в payment_items.
+                'subscription_id' => $first->id,
                 'paid_at' => now(),
                 'status' => PaymentStatus::Succeeded,
             ]);
 
-            $this->adminActivity->clientPaidSubscription($payment->user, $payment->refresh(), $subscription);
+            $this->adminActivity->clientPaidSubscription($payment->user, $payment->refresh(), $first);
 
-            return $subscription;
+            return $first;
         });
+    }
+
+    /**
+     * Достроить позицию для платежа, созданного до появления payment_items.
+     * Цену берём из самого платежа, остальное — из каталога: сумма важнее,
+     * по ней сходится чек и проверка совпадения с ЮKassa.
+     */
+    private function backfillItem(Payment $payment): PaymentItem
+    {
+        $product = PurchaseCatalog::find($payment->product_key);
+
+        return $payment->items()->create([
+            'product_key' => $payment->product_key,
+            'name' => $product['name'],
+            'type' => $product['type'],
+            'price' => $payment->amount,
+            'sessions' => $product['sessions'],
+            'validity_days' => $product['validity_days'],
+        ]);
+    }
+
+    /** «Абонемент · 8 занятий» или «Абонемент · 8 занятий и ещё 1 тариф». */
+    private function orderDescription(array $products): string
+    {
+        $first = (string) $products[0]['name'];
+        $rest = count($products) - 1;
+
+        if ($rest === 0) {
+            return $first;
+        }
+
+        return $first.' и ещё '.$rest.' '.$this->tariffWord($rest);
+    }
+
+    private function tariffWord(int $n): string
+    {
+        $mod100 = $n % 100;
+        $mod10 = $n % 10;
+
+        if ($mod100 >= 11 && $mod100 <= 14) {
+            return 'тарифов';
+        }
+
+        return match (true) {
+            $mod10 === 1 => 'тариф',
+            $mod10 >= 2 && $mod10 <= 4 => 'тарифа',
+            default => 'тарифов',
+        };
     }
 
     private function assertRemotePaymentMatches(Payment $payment, PaymentInterface $remote): void
