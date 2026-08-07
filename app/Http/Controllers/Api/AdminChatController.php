@@ -32,6 +32,7 @@ class AdminChatController extends Controller
                 'name' => $c->user->fullName(),
                 'phone' => $c->user->formattedPhone() ?? $c->user->phone,
                 'initials' => $c->user->initials(),
+                'avatar' => $c->user->avatarUrl(),
                 'last_message' => $c->latestMessage?->preview(),
                 'last_from_client' => $c->latestMessage !== null
                     ? $c->latestMessage->sender_id === $c->user_id
@@ -67,6 +68,7 @@ class AdminChatController extends Controller
                 'name' => $client->fullName(),
                 'phone' => $client->formattedPhone() ?? $client->phone,
                 'initials' => $client->initials(),
+                'avatar' => $client->avatarUrl(),
             ],
             'messages' => MessageResource::collection($messages, $request->user()),
             'has_more' => $this->chat->hasMoreBefore($conversation, $messages->first()?->id),

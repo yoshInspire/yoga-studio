@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AdminChatController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AvatarController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\ContentController;
@@ -54,6 +55,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/notifications/read', [NotificationController::class, 'read']);
         Route::post('/push-tokens', [NotificationController::class, 'storeToken']);
         Route::delete('/push-tokens', [NotificationController::class, 'destroyToken']);
+
+        // Фотография профиля: своя есть у любой роли.
+        Route::post('/account/avatar', [AvatarController::class, 'store'])->middleware('throttle:20,1');
+        Route::delete('/account/avatar', [AvatarController::class, 'destroy']);
 
         // Чат: общее для обеих ролей
         Route::get('/chat/unread', [ChatController::class, 'unread']);

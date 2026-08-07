@@ -10,12 +10,18 @@
         {{-- Боковая навигация --}}
         <aside class="lk__aside">
           <div class="lk__user">
-            <span class="lk__avatar">{{ $user->initials() }}</span>
+            @include('partials.avatar-editor', ['avatarUser' => $user])
             <div>
               <strong class="lk__user-name">{{ $user->shortName() }}</strong>
               <span class="lk__user-role">Клиент студии</span>
+              <button type="button" class="lk__user-photo" data-avatar-open>
+                {{ $user->hasAvatar() ? 'Сменить фото' : 'Добавить фото' }}
+              </button>
             </div>
           </div>
+          @if ($errors->has('photo'))
+            <p class="avatar__error">{{ $errors->first('photo') }}</p>
+          @endif
           <nav class="lk__nav" id="lkNav" data-initial-section="{{ $lkSection ?? '' }}">
             <button type="button" class="lk__navlink is-active" data-sec="profile">Профиль</button>
             <button type="button" class="lk__navlink" data-sec="subs">Мои абонементы</button>

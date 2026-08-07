@@ -668,3 +668,45 @@ if (profileView && profileEdit && profileEditForm) {
 
   syncProfileEmailState();
 }
+
+// ===== Фотография профиля =====
+// Файл уходит сразу после выбора: отдельная кнопка «Сохранить» рядом с
+// кружком выглядела бы лишним шагом. До ответа сервера показываем выбранный
+// снимок на месте прежнего, чтобы клик не оставался без отклика.
+const avatarBlock = document.querySelector('[data-avatar]');
+
+if (avatarBlock) {
+  const avatarForm = avatarBlock.querySelector('[data-avatar-form]');
+  const avatarInput = avatarBlock.querySelector('[data-avatar-input]');
+  const avatarPreview = avatarBlock.querySelector('[data-avatar-preview]');
+  const avatarInitials = avatarBlock.querySelector('[data-avatar-initials]');
+  const avatarOpenBtn = document.querySelector('[data-avatar-open]');
+
+  // 12 МБ — столько же принимает сервер. Проверяем здесь, чтобы не гнать
+  // впустую тяжёлый файл по мобильной сети.
+  const AVATAR_MAX_BYTES = 12 * 1024 * 1024;
+
+  avatarOpenBtn?.addEventListener('click', () => avatarInput?.click());
+
+  avatarInput?.addEventListener('change', () => {
+    const file = avatarInput.files && avatarInput.files[0];
+    if (!file) return;
+
+    if (file.size > AVATAR_MAX_BYTES) {
+      avatarInput.value = '';
+      const notice = document.createElement('p');
+      notice.className = 'avatar__error';
+      notice.textContent = 'Фотография слишком большая — до 12 МБ.';
+      avatarBlock.parentElement?.appendChild(notice);
+      return;
+    }
+
+    if (avatarPreview) {
+      avatarPreview.src = URL.createObjectURL(file);
+      avatarPreview.classList.remove('is-hidden');
+      avatarInitials?.classList.add('is-hidden');
+    }
+
+    avatarForm?.submit();
+  });
+}

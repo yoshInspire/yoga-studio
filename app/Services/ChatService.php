@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
+use App\Support\ImageMemoryGuard;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
@@ -266,51 +267,24 @@ class ChatService
     /**
      * Хватит ли памяти, чтобы распаковать снимок и собрать уменьшенный.
      *
-     * GD держит картинку по 4 байта на пиксель, и оригинал с уменьшенной
-     * копией какое-то время лежат в памяти одновременно. Считаем это заранее
-     * по заголовку файла: разворачивать снимок, чтобы узнать, что он не
-     * помещается, уже поздно — процесс к тому моменту падает.
+     * Сам расчёт — в ImageMemoryGuard, он общий с аватарами. Здесь только
+     * прикидываем размер уменьшенной копии: стороны ужимаются пропорционально.
      */
     private function fitsInMemory(UploadedFile $photo): bool
     {
-        $size = @getimagesize($photo->getRealPath());
+        $dimensions = ImageMemoryGuard::dimensions($photo->getRealPath());
 
-        if ($size === false) {
+        if ($dimensions === null) {
             return false;
         }
 
-        [$width, $height] = $size;
+        [$width, $height] = $dimensions;
 
         $scale = min(1, self::MAX_PHOTO_SIDE / max($width, $height));
-        $needed = ($width * $height + ($width * $scale) * ($height * $scale)) * 4;
 
-        $limit = $this->memoryLimitBytes();
-
-        // Без ограничения памяти считаем, что места достаточно.
-        if ($limit <= 0) {
-            return true;
-        }
-
-        // Половина оставшегося — запас на всё остальное в запросе.
-        return $needed < ($limit - memory_get_usage(true)) / 2;
-    }
-
-    /** memory_limit в байтах; -1 (без ограничения) отдаём как есть. */
-    private function memoryLimitBytes(): int
-    {
-        $raw = trim((string) ini_get('memory_limit'));
-
-        if ($raw === '' || $raw === '-1') {
-            return -1;
-        }
-
-        $value = (int) $raw;
-
-        return match (strtolower(substr($raw, -1))) {
-            'g' => $value * 1024 * 1024 * 1024,
-            'm' => $value * 1024 * 1024,
-            'k' => $value * 1024,
-            default => $value,
-        };
+        return ImageMemoryGuard::fits(
+            $width * $height,
+            (int) round($width * $scale) * (int) round($height * $scale),
+        );
     }
 }

@@ -1378,9 +1378,34 @@ a { color: inherit; text-decoration: none; }
 .lk__grid { display: grid; grid-template-columns: 270px 1fr; gap: 28px; align-items: start; }
 .lk__aside { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 20px; position: sticky; top: 96px; }
 .lk__user { display: flex; align-items: center; gap: 13px; padding-bottom: 18px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
-.lk__avatar { flex-shrink: 0; width: 46px; height: 46px; border-radius: 50%; background: var(--sage); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; }
 .lk__user-name { display: block; font-size: 15.5px; }
-.lk__user-role { font-size: 12.5px; color: var(--muted); }
+.lk__user-role { display: block; font-size: 12.5px; color: var(--muted); }
+.lk__user-photo { background: none; border: none; padding: 0; margin-top: 4px; cursor: pointer; font-family: var(--sans); font-size: 12.5px; font-weight: 600; color: var(--clay); }
+.lk__user-photo:hover { text-decoration: underline; }
+
+/* ---- Фотография профиля ---- */
+.avatar { position: relative; flex-shrink: 0; width: 56px; height: 56px; }
+.avatar__form { width: 100%; height: 100%; }
+/* Подложка тёмная (--sage-deep), а не светлый шалфей: на светлом белые
+   инициалы дают контраст 3.6 при норме 4.5 — то же правило, что в приложении. */
+.avatar__pick { position: relative; display: block; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; cursor: pointer; background: var(--sage-deep); }
+.avatar__img { width: 100%; height: 100%; object-fit: cover; }
+.avatar__initials { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 18px; }
+.avatar__input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+/* Подпись поверх кружка: на десктопе всплывает по наведению — постоянная
+   плашка на аватаре мешала бы смотреть на фотографию. */
+.avatar__overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; background: rgba(42, 46, 27, .55); opacity: 0; transition: opacity .25s var(--ease); }
+.avatar__pick:hover .avatar__overlay, .avatar__pick:focus-within .avatar__overlay { opacity: 1; }
+.avatar__remove-form { position: absolute; right: -4px; bottom: -4px; }
+.avatar__remove { display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); color: var(--muted); cursor: pointer; transition: color .25s var(--ease), border-color .25s var(--ease); }
+.avatar__remove:hover { color: var(--clay); border-color: var(--clay); }
+.avatar__error { margin-top: 10px; font-size: 12.5px; color: #a2452f; }
+
+/* На телефоне наведения нет — подсказку показываем всегда, но приглушённой. */
+@media (hover: none) {
+  .avatar__overlay { opacity: 1; background: rgba(42, 46, 27, .35); }
+  .avatar.has-photo .avatar__overlay { background: linear-gradient(to top, rgba(42, 46, 27, .55), transparent 60%); align-items: flex-end; padding-bottom: 4px; }
+}
 .lk__nav { display: flex; flex-direction: column; gap: 2px; }
 .lk__navlink { text-align: left; background: none; border: none; cursor: pointer; font-family: var(--sans); font-size: 14.5px; font-weight: 500; color: var(--ink-soft); padding: 11px 14px; border-radius: var(--radius-sm); transition: background .25s var(--ease), color .25s var(--ease); }
 .lk__navlink:hover { background: var(--bg); color: var(--ink); }

@@ -69,6 +69,8 @@
             font-weight: 700;
             font-size: .8rem;
         }
+        /* Тот же кружок, но с фотографией клиента вместо инициалов. */
+        img.chat__avatar { object-fit: cover; }
 
         .chat__rowBody { flex: 1; min-width: 0; }
         .chat__rowTop, .chat__rowBottom { display: flex; align-items: center; gap: .5rem; }

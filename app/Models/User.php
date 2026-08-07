@@ -21,6 +21,7 @@ use Laravel\Sanctum\HasApiTokens;
     'first_name',
     'last_name',
     'patronymic',
+    'avatar_path',
     'email',
     'phone',
     'telegram_id',
@@ -187,6 +188,26 @@ class User extends Authenticatable implements FilamentUser
     public function trainerDisplayName(): string
     {
         return trim("{$this->first_name} {$this->last_name}");
+    }
+
+    public function hasAvatar(): bool
+    {
+        return $this->avatar_path !== null;
+    }
+
+    /**
+     * Ссылка на фотографию пользователя.
+     *
+     * Абсолютная: её берёт и вёрстка сайта, и мобильное приложение, которое
+     * ходит на сервер по сети и относительный путь развернуть не может.
+     */
+    public function avatarUrl(): ?string
+    {
+        if (! $this->avatar_path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->avatar_path);
     }
 
     public function trainerPhotoUrl(): ?string

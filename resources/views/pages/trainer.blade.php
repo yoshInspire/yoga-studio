@@ -23,10 +23,16 @@
       </div>
 
       <div class="trainer__user reveal">
-        <span class="lk__avatar">{{ $trainer->initials() }}</span>
+        @include('partials.avatar-editor', ['avatarUser' => $trainer])
         <div>
           <strong>{{ $trainer->shortName() }}</strong>
           <span class="trainer__role">Тренер студии</span>
+          <button type="button" class="lk__user-photo" data-avatar-open>
+            {{ $trainer->hasAvatar() ? 'Сменить фото' : 'Добавить фото' }}
+          </button>
+          @if ($errors->has('photo'))
+            <p class="avatar__error">{{ $errors->first('photo') }}</p>
+          @endif
         </div>
         <form action="{{ route('logout') }}" method="post" class="trainer__logout">
           @csrf

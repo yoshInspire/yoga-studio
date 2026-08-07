@@ -22,7 +22,11 @@
                     wire:click="selectClient({{ $conversation->user_id }})"
                     class="chat__row @if ($isActive) chat__row--active @endif @if ($unread) chat__row--unread @endif"
                 >
-                    <span class="chat__avatar">{{ $conversation->user->initials() }}</span>
+                    @if ($conversation->user->hasAvatar())
+                        <img class="chat__avatar" src="{{ $conversation->user->avatarUrl() }}" alt="">
+                    @else
+                        <span class="chat__avatar">{{ $conversation->user->initials() }}</span>
+                    @endif
 
                     <span class="chat__rowBody">
                         <span class="chat__rowTop">
@@ -58,7 +62,11 @@
                 <p class="chat__empty">Выберите клиента слева.</p>
             @else
                 <header class="chat__head">
-                    <span class="chat__avatar">{{ $selected->initials() }}</span>
+                    @if ($selected->hasAvatar())
+                        <img class="chat__avatar" src="{{ $selected->avatarUrl() }}" alt="">
+                    @else
+                        <span class="chat__avatar">{{ $selected->initials() }}</span>
+                    @endif
                     <span>
                         <strong>{{ $selected->fullName() }}</strong>
                         @if ($selected->formattedPhone())

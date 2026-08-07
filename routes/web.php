@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Account\AvatarController;
 use App\Http\Controllers\Account\OfferAcceptanceController;
 use App\Http\Controllers\Account\PasswordController;
 use App\Http\Controllers\Account\ProfileController;
@@ -90,6 +91,16 @@ Route::get('/payments/{payment}/return', [PaymentController::class, 'return'])
 Route::get('/chat-attachments/{message}', [ChatController::class, 'attachment'])
     ->middleware(['auth', 'role:admin', 'noindex'])
     ->name('chat.attachment');
+
+// Фотография профиля: своя есть и у клиента, и у тренера, поэтому маршрут
+// общий для всех вошедших, а возврат идёт на ту страницу, откуда пришли.
+Route::middleware(['auth', 'noindex'])->group(function () {
+    Route::post('/account/avatar', [AvatarController::class, 'store'])
+        ->middleware('throttle:20,1')
+        ->name('account.avatar.store');
+    Route::delete('/account/avatar', [AvatarController::class, 'destroy'])
+        ->name('account.avatar.destroy');
+});
 
 Route::middleware(['auth', 'role:client', 'noindex'])->group(function () {
     Route::get('/account', AccountController::class)->name('account');
