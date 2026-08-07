@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Support\ImageThumbnailer;
 use App\Support\RussianDate;
 use App\Support\Seo;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -61,6 +62,25 @@ class News extends Model
     public function imageUrl(): ?string
     {
         return $this->image_path ? Storage::disk('public')->url($this->image_path) : null;
+    }
+
+    /**
+     * Ссылка на уменьшенную копию — для приложения.
+     *
+     * Копию делает NewsObserver при сохранении, здесь только смотрим, есть ли
+     * она: обработка картинки в обычном запросе на чтение недопустима. Копии
+     * нет (маленький оригинал, старая новость до команды `news:thumbnails`) —
+     * отдаём оригинал, картинка не должна пропадать из-за этого.
+     */
+    public function imageThumbUrl(): ?string
+    {
+        if ($this->image_path === null) {
+            return null;
+        }
+
+        $thumb = ImageThumbnailer::existing($this->image_path);
+
+        return Storage::disk('public')->url($thumb ?? $this->image_path);
     }
 
     public function formattedDate(): string

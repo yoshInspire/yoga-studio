@@ -65,6 +65,10 @@ class ContentController extends Controller
                 'title' => $n->title,
                 'excerpt' => $n->readableExcerpt(),
                 'image' => $n->imageUrl(),
+                // Приложение показывает картинки в карточках, а не во всю
+                // страницу, и грузило бы оригиналы по мегабайту. Оригинал
+                // оставлен в ответе: он нужен сайту и старым версиям приложения.
+                'image_thumb' => $n->imageThumbUrl(),
                 'date' => $n->formattedDate(),
             ]);
 
@@ -83,6 +87,7 @@ class ContentController extends Controller
                 'title' => $n->title,
                 'body' => $n->body,
                 'image' => $n->imageUrl(),
+                'image_thumb' => $n->imageThumbUrl(),
                 'date' => $n->formattedDate(),
             ],
         ]);
