@@ -19,7 +19,6 @@
         <a href="{{ route('schedule') }}" class="btn btn--line btn--lg">Расписание</a>
       </div>
     </div>
-    <a href="#directions" class="hero__scroll" aria-label="Вниз"><span></span></a>
   </section>
 
   <div class="marquee" aria-hidden="true">
