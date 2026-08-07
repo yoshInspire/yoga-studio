@@ -10,6 +10,7 @@ use App\Support\RussianDate;
 use App\Support\Seo;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -81,6 +82,44 @@ class News extends Model
         $thumb = ImageThumbnailer::existing($this->image_path);
 
         return Storage::disk('public')->url($thumb ?? $this->image_path);
+    }
+
+    /**
+     * Соотношение сторон снимка (ширина / высота).
+     *
+     * Нужно приложению, чтобы бокс под фотографию принимал форму самого
+     * снимка, а не наоборот. Студия выкладывает кадры из инстаграма — почти
+     * всегда квадратные, — и в горизонтальном боксе у них срезало треть кадра
+     * вместе с надписью на стене и головами.
+     *
+     * Размеры читаются с диска, поэтому результат кэшируется: ключ включает
+     * время правки файла, так что замена картинки в админке сама сбрасывает
+     * старое значение.
+     */
+    public function imageRatio(): ?float
+    {
+        if ($this->image_path === null) {
+            return null;
+        }
+
+        $disk = Storage::disk('public');
+        $path = ImageThumbnailer::existing($this->image_path) ?? $this->image_path;
+
+        if (! $disk->exists($path)) {
+            return null;
+        }
+
+        $key = 'news_ratio:'.md5($path.':'.$disk->lastModified($path));
+
+        return Cache::remember($key, now()->addDays(30), function () use ($disk, $path): ?float {
+            $size = @getimagesize($disk->path($path));
+
+            if ($size === false || empty($size[1])) {
+                return null;
+            }
+
+            return round($size[0] / $size[1], 4);
+        });
     }
 
     public function formattedDate(): string

@@ -108,6 +108,30 @@ class NewsThumbnailTest extends TestCase
             ->assertJsonPath('data.image_thumb', $item['image_thumb']);
     }
 
+    public function test_api_gives_the_shape_of_the_picture(): void
+    {
+        $news = $this->publishedNews($this->storeImage(1920, 1440, 'wide.jpg'));
+
+        $ratio = $this->getJson('/api/v1/news')->assertOk()->json('data.0.image_ratio');
+
+        // Приложение подгоняет высоту карточки под эту цифру, поэтому важна
+        // форма исходника, а не размеры уменьшенной копии.
+        $this->assertEqualsWithDelta(4 / 3, $ratio, 0.01);
+
+        $this->getJson('/api/v1/news/'.$news->slug)
+            ->assertOk()
+            ->assertJsonPath('data.image_ratio', $ratio);
+    }
+
+    public function test_news_without_a_picture_has_no_shape(): void
+    {
+        $this->publishedNews(null);
+
+        $this->getJson('/api/v1/news')
+            ->assertOk()
+            ->assertJsonPath('data.0.image_ratio', null);
+    }
+
     public function test_news_without_a_copy_falls_back_to_the_original(): void
     {
         $news = $this->publishedNews($this->storeImage(600, 600, 'tiny.jpg'));

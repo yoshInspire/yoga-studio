@@ -70,6 +70,10 @@ class ContentController extends Controller
                 // страницу, и грузило бы оригиналы по мегабайту. Оригинал
                 // оставлен в ответе: он нужен сайту и старым версиям приложения.
                 'image_thumb' => $n->imageThumbUrl(),
+                // Форма снимка: приложение подгоняет бокс под неё, иначе
+                // квадратные кадры из инстаграма режутся в горизонтальных
+                // карточках вместе с головами и вывеской студии.
+                'image_ratio' => $n->imageRatio(),
                 'date' => $n->formattedDate(),
             ]);
 
@@ -89,6 +93,7 @@ class ContentController extends Controller
                 'body' => $n->body,
                 'image' => $n->imageUrl(),
                 'image_thumb' => $n->imageThumbUrl(),
+                'image_ratio' => $n->imageRatio(),
                 'date' => $n->formattedDate(),
             ],
         ]);
