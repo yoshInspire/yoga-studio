@@ -537,6 +537,7 @@ a { color: inherit; text-decoration: none; }
 .footer__bottom-inner { display: flex; justify-content: flex-start; align-items: center; font-size: 13px; color: #8b8578; flex-wrap: wrap; gap: 10px; }
 .footer__copy { display: flex; flex-direction: column; gap: 4px; }
 .footer__credit {
+  display: block;
   font-family: var(--sans);
   font-size: 10px;
   font-weight: 600;
@@ -2018,3 +2019,55 @@ a { color: inherit; text-decoration: none; }
 }
 .soon-modal__title { font-family: var(--serif); font-size: 26px; font-weight: 600; color: var(--sage-deep); margin-bottom: 10px; }
 .soon-modal__text { color: var(--ink-soft); font-size: 15.5px; line-height: 1.65; margin-bottom: 22px; }
+
+/* ============================================================
+   Правовые документы: оферта, политика, удаление аккаунта.
+   Одна колонка, крупная межстрочная — эти страницы читают
+   с телефона внутри приложения, а не пролистывают.
+   ============================================================ */
+.legal { padding: 96px 0 88px; }
+.legal__title { margin-bottom: 10px; }
+.legal__meta { color: var(--muted); font-size: 14.5px; line-height: 1.6; margin-bottom: 26px; }
+.legal__file { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 34px; }
+.legal__file-note { color: var(--muted); font-size: 13.5px; }
+.legal__cta { margin: 26px 0 32px; }
+
+.legal__body { color: var(--ink-soft); font-size: 16px; line-height: 1.75; }
+.legal__body h2 {
+  font-family: var(--serif); font-weight: 600; font-size: 26px; line-height: 1.25;
+  color: var(--sage-deep); margin: 40px 0 14px;
+}
+.legal__body h3 {
+  font-family: var(--serif); font-weight: 600; font-size: 21px;
+  color: var(--ink); margin: 28px 0 10px;
+}
+.legal__body p { margin-bottom: 14px; }
+.legal__body ul { margin: 0 0 16px; padding-left: 22px; }
+.legal__body li { margin-bottom: 8px; }
+.legal__body b { color: var(--ink); font-weight: 600; }
+.legal__body a { color: var(--clay); text-decoration: underline; text-underline-offset: 3px; }
+.legal__body a:hover { color: var(--sage-deep); }
+
+.legal__facts { list-style: none; padding: 20px 22px; margin-bottom: 18px;
+  background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); }
+.legal__facts li { margin-bottom: 6px; }
+.legal__facts li:last-child { margin-bottom: 0; }
+
+.legal__table-wrap { overflow-x: auto; margin: 0 0 18px; }
+.legal__table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 15px; }
+.legal__table th, .legal__table td {
+  text-align: left; vertical-align: top; padding: 11px 14px; border: 1px solid var(--line);
+}
+.legal__table th { background: var(--bg-soft); color: var(--ink); font-weight: 600; }
+
+.legal__rule { border: 0; border-top: 1px solid var(--line); margin: 48px 0 8px; }
+.legal__closing {
+  margin-top: 34px; padding-top: 20px; border-top: 1px solid var(--line);
+  color: var(--muted); font-size: 15px;
+}
+
+@media (max-width: 640px) {
+  .legal { padding: 72px 0 64px; }
+  .legal__body { font-size: 15.5px; }
+  .legal__body h2 { font-size: 23px; margin-top: 32px; }
+}

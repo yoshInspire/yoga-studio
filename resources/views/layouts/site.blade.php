@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=47" />
+  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=49" />
   @stack('head')
 </head>
 <body>
@@ -82,6 +82,8 @@
           <a href="{{ route('directions') }}">Направления</a>
           <a href="{{ route('login') }}">Личный кабинет</a>
           <a href="https://t.me/yogAvLife" target="_blank" rel="noopener">Telegram студии</a>
+          <a href="{{ route('legal.offer') }}">Договор-оферта</a>
+          <a href="{{ route('legal.privacy') }}">Персональные данные</a>
         </div>
         <div class="footer__col">
           <h4>Контакты</h4>
