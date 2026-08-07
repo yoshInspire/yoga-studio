@@ -94,8 +94,10 @@
     </div>
     <div class="footer__bottom">
       <div class="container footer__bottom-inner">
-        <span>© {{ date('Y') }} Студия йоги Ирины Коленцевой</span>
-        <span class="footer__credit">Made by <a href="https://t.me/yoshinspire" target="_blank" rel="noopener">Alexey</a></span>
+        <div class="footer__copy">
+          <span>© {{ date('Y') }} Студия йоги Ирины Коленцевой</span>
+          <span class="footer__credit">Made by <a href="https://t.me/yoshinspire" target="_blank" rel="noopener">Alexey</a></span>
+        </div>
       </div>
     </div>
   </footer>
