@@ -8,6 +8,7 @@ use App\Models\News;
 use App\Services\BookingService;
 use App\Support\DirectionMedia;
 use App\Support\PricingDisplay;
+use App\Support\LegalDocuments;
 use App\Support\StudioRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -127,6 +128,17 @@ class ContentController extends Controller
             'lead' => StudioRules::lead(),
             'data' => StudioRules::plain(),
         ]);
+    }
+
+    /**
+     * Правовые документы для экрана «Документы».
+     *
+     * Приложение получает адреса с сервера и не хранит их у себя: сменится
+     * домен или появится новый документ — обновлять сборку не придётся.
+     */
+    public function legal(): JsonResponse
+    {
+        return response()->json(['data' => LegalDocuments::items()]);
     }
 
     /**

@@ -14,16 +14,32 @@
                     </div>
                 </div>
 
-                <div>
+                <div class="flex flex-wrap items-center gap-2">
                     <a
                         href="{{ $offerUrl }}"
                         target="_blank"
                         rel="noopener"
                         class="fi-btn fi-btn-size-md inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-500"
                     >
-                        Открыть оферту
+                        Открыть страницу оферты
+                    </a>
+                    <a
+                        href="{{ $pdfUrl }}"
+                        target="_blank"
+                        rel="noopener"
+                        class="fi-btn fi-btn-size-md inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 ring-1 ring-gray-950/10 hover:bg-gray-50 dark:text-gray-200 dark:ring-white/20"
+                    >
+                        Открыть загруженный PDF
                     </a>
                 </div>
+
+                <p class="rounded-lg bg-warning-50 p-3 text-sm text-warning-700 dark:bg-warning-500/10 dark:text-warning-300">
+                    Клиенты читают <b>текстовую версию</b> договора на странице сайта: PDF в браузере
+                    телефона на Android не открывается, а скачивается файлом. Загруженный сюда PDF —
+                    оригинал документа, ссылка на него стоит на той же странице. Если вы заменили PDF
+                    новой редакцией, попросите разработчика обновить и текст на странице, иначе
+                    версии разойдутся.
+                </p>
             </div>
         @else
             <div class="text-center text-gray-500 dark:text-gray-400">

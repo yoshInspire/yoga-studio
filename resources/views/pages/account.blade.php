@@ -48,7 +48,12 @@
           {{-- Профиль --}}
           @php
             $profileMonths = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-            $profileEditing = (bool) ($profileEditOpen ?? false) || $errors->getBag('password')->any();
+            // ?delete=1 приходит со страницы «Удаление аккаунта»: там кнопка ведёт
+            // прямо к форме, а она живёт в режиме редактирования профиля.
+            $profileEditing = (bool) ($profileEditOpen ?? false)
+                || $errors->getBag('password')->any()
+                || $errors->getBag('deleteAccount')->any()
+                || request()->boolean('delete');
             $profilePatronymic = old('patronymic', $user->patronymic);
           @endphp
           <div class="lk__panel" data-panel="profile">
@@ -280,6 +285,46 @@
                   <button type="submit" form="profilePasswordForm" class="btn btn--line">Сохранить пароль</button>
                 </div>
               </div>
+
+              {{-- Удаление аккаунта. Обязательный пункт для публикации приложения
+                   в App Store и Google Play, на сайте — та же точка входа. --}}
+              <div class="lk-profile-form__section lk-danger" id="danger">
+                <h2 class="lk-profile-form__heading">Удаление аккаунта</h2>
+                @if ($errors->getBag('deleteAccount')->any())
+                  <div class="auth__alert auth__alert--error lk__alert">
+                    @foreach ($errors->getBag('deleteAccount')->all() as $error)
+                      <p>{{ $error }}</p>
+                    @endforeach
+                  </div>
+                @endif
+                <p class="lk-danger__text">
+                  Профиль, переписка со студией и записи на занятия будут удалены без возможности
+                  восстановления, неиспользованные занятия абонемента сгорят. Сведения об оплатах
+                  сохранятся в обезличенном виде — этого требует закон.
+                  <a href="{{ route('legal.account-delete') }}" target="_blank" rel="noopener">Подробнее</a>.
+                </p>
+                <form id="profileDeleteForm" action="{{ route('account.destroy') }}" method="post">
+                  @csrf
+                  @method('DELETE')
+                  <div class="lk-profile-form__field">
+                    <label class="lk-profile-form__label" for="profile-delete-password">Пароль</label>
+                    @include('partials.password-field', [
+                      'id' => 'profile-delete-password',
+                      'name' => 'password',
+                      'placeholder' => 'Текущий пароль',
+                      'autocomplete' => 'current-password',
+                      'required' => true,
+                    ])
+                  </div>
+                  <label class="lk-danger__confirm">
+                    <input type="checkbox" name="confirm" value="1" required />
+                    <span>Понимаю, что данные будут удалены безвозвратно</span>
+                  </label>
+                  <div class="lk-profile-form__actions">
+                    <button type="submit" class="btn btn--danger">Удалить аккаунт</button>
+                  </div>
+                </form>
+              </div>
               </div>
 
               <form id="profileEmailSendForm" action="{{ route('account.profile.email.send') }}" method="post" hidden>
@@ -429,7 +474,7 @@
                 <span>Просмотр в защищённом режиме, без прямого скачивания.</span>
               </div>
               @if ($offerAvailable)
-                <a href="{{ route('offer.show') }}" target="_blank" rel="noopener" class="btn btn--solid">Открыть оферту</a>
+                <a href="{{ route('legal.offer') }}" target="_blank" rel="noopener" class="btn btn--solid">Открыть оферту</a>
               @else
                 <button type="button" class="btn btn--solid" data-soon="Договор-оферта появится здесь, как только студия загрузит документ. Загляните чуть позже.">Открыть оферту</button>
               @endif
@@ -442,7 +487,7 @@
                   <input type="checkbox" name="offer_accepted" value="1" @checked(old('offer_accepted')) required />
                   Соглашаюсь с условиями
                   @if ($offerAvailable)
-                    <a href="{{ route('offer.show') }}" class="auth__minor" target="_blank" rel="noopener">договора-оферты</a>
+                    <a href="{{ route('legal.offer') }}" class="auth__minor" target="_blank" rel="noopener">договора-оферты</a>
                   @else
                     договора-оферты
                   @endif

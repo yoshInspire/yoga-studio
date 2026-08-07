@@ -2045,7 +2045,9 @@ a { color: inherit; text-decoration: none; }
 .legal__body ul { margin: 0 0 16px; padding-left: 22px; }
 .legal__body li { margin-bottom: 8px; }
 .legal__body b { color: var(--ink); font-weight: 600; }
-.legal__body a { color: var(--clay); text-decoration: underline; text-underline-offset: 3px; }
+/* --clay на кремовом даёт 3.58 при норме 4.5, поэтому ссылки в документах
+   идут затемнённым терракотом (4.68) — читать их приходится подолгу. */
+.legal__body a { color: #9d5a3f; text-decoration: underline; text-underline-offset: 3px; }
 .legal__body a:hover { color: var(--sage-deep); }
 
 .legal__facts { list-style: none; padding: 20px 22px; margin-bottom: 18px;
@@ -2071,3 +2073,14 @@ a { color: inherit; text-decoration: none; }
   .legal__body { font-size: 15.5px; }
   .legal__body h2 { font-size: 23px; margin-top: 32px; }
 }
+
+/* Удаление аккаунта в личном кабинете — намеренно неяркий блок:
+   действие необратимое, но не должно кричать со страницы профиля. */
+.lk-danger { border-top: 1px solid var(--line); }
+.lk-danger__text { color: var(--ink-soft); font-size: 14.5px; line-height: 1.65; margin-bottom: 16px; }
+.lk-danger__text a { color: #9d5a3f; text-decoration: underline; text-underline-offset: 3px; }
+.lk-danger__confirm { display: flex; gap: 10px; align-items: flex-start; margin: 4px 0 16px;
+  color: var(--ink-soft); font-size: 14.5px; line-height: 1.5; cursor: pointer; }
+.lk-danger__confirm input { margin-top: 3px; accent-color: var(--clay); }
+.btn--danger { background: transparent; color: #9d3d2a; border-color: #cba193; }
+.btn--danger:hover { background: #9d3d2a; color: var(--paper); border-color: #9d3d2a; }

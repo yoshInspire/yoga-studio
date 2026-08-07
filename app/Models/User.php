@@ -52,6 +52,7 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'offer_accepted_at' => 'datetime',
+            'anonymized_at' => 'datetime',
             'telegram_id' => 'integer',
             'telegram_linked_at' => 'datetime',
             'password' => 'hashed',
@@ -86,6 +87,12 @@ class User extends Authenticatable implements FilamentUser
     public function getNameAttribute(): string
     {
         return $this->fullName();
+    }
+
+    /** Аккаунт удалён самим клиентом: личные данные стёрты, история платежей осталась. */
+    public function isAnonymized(): bool
+    {
+        return $this->anonymized_at !== null;
     }
 
     public function fullName(): string

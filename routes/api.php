@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\AccountDeletionController;
 use App\Http\Controllers\Api\AdminChatController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
@@ -41,6 +42,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/schedule', [ContentController::class, 'schedule']);
     Route::get('/pricing', [ContentController::class, 'pricing']);
     Route::get('/rules', [ContentController::class, 'rules']);
+    Route::get('/legal', [ContentController::class, 'legal']);
     Route::post('/lead', [LeadController::class, 'store'])->middleware('throttle:6,1');
 
     // --- Требуют токен ---
@@ -81,6 +83,10 @@ Route::prefix('v1')->group(function () {
             Route::post('/account/email/request-code', [ProfileController::class, 'requestEmailCode'])->middleware('throttle:3,1');
             Route::post('/account/email/confirm', [ProfileController::class, 'confirmEmail'])->middleware('throttle:12,1');
             Route::get('/account/offer', [ProfileController::class, 'offer']);
+            // Удаление аккаунта — требование магазинов приложений
+            // (App Store 5.1.1(v), Google Play Data Safety).
+            Route::delete('/account', [AccountDeletionController::class, 'destroy'])
+                ->middleware('throttle:6,1');
             Route::post('/account/offer/accept', [ProfileController::class, 'acceptOffer']);
 
             Route::get('/purchase', [PurchaseController::class, 'index']);

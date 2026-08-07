@@ -15,6 +15,10 @@ class SitemapController extends Controller
             $this->entry(route('schedule'), 'daily', '0.9'),
             $this->entry(route('directions'), 'monthly', '0.8'),
             $this->entry(route('news.index'), 'weekly', '0.7'),
+            // Правовые документы: их адреса указаны в карточках App Store и
+            // Google Play, поэтому страницы должны быть видимыми и живыми.
+            $this->entry(route('legal.offer'), 'yearly', '0.3'),
+            $this->entry(route('legal.privacy'), 'yearly', '0.3'),
         ];
 
         Direction::query()

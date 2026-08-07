@@ -98,6 +98,30 @@ return [
     /** Максимальная длина темы/названия занятия */
     'class_title_max_length' => 120,
 
+    /**
+     * Реквизиты оператора персональных данных для правовых документов
+     * (оферта, политика обработки ПД). Печатаются на публичных страницах
+     * /oferta и /privacy, поэтому здесь только то, что и так есть в оферте.
+     *
+     * ИНН намеренно пустой по умолчанию: в PDF-оферте он напечатан из
+     * 14 цифр, чего у ИНН физического лица быть не может (там 12).
+     * Пока верное значение не подтверждено, строка на странице не выводится.
+     */
+    'legal' => [
+        'operator_name' => env('STUDIO_OPERATOR_NAME', 'Индивидуальный предприниматель Коленцева Ирина Владимировна'),
+        'operator_short' => env('STUDIO_OPERATOR_SHORT', 'ИП Коленцева И. В.'),
+        'ogrnip' => env('STUDIO_OGRNIP', '325774600539031'),
+        'inn' => env('STUDIO_INN'),
+        'postal_address' => env('STUDIO_POSTAL_ADDRESS', '119017, г. Москва, ул. Островитянова, д. 9, к. 4'),
+        'studio_address' => env('STUDIO_ADDRESS', 'Москва, ул. Академика Арцимовича, 13 (вход со двора)'),
+        'privacy_email' => env('STUDIO_PRIVACY_EMAIL', 'hello@ekoyoga-ik.ru'),
+        'phone' => env('STUDIO_PHONE', '+7 (964) 783-43-53'),
+
+        /** Дата редакции документов — печатается в шапке страниц. */
+        'offer_revision' => env('STUDIO_OFFER_REVISION', '2026-06-01'),
+        'privacy_revision' => env('STUDIO_PRIVACY_REVISION', '2026-08-07'),
+    ],
+
     /** Куда отправлять заявки с формы на главной */
     'lead_email' => env('STUDIO_LEAD_EMAIL', 'hello@ekoyoga-ik.ru'),
 

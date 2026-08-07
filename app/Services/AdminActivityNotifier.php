@@ -139,6 +139,25 @@ class AdminActivityNotifier
         );
     }
 
+    /**
+     * Письмо собирается ДО обезличивания: после него имени и телефона в базе
+     * уже не будет, а студии нужно понимать, кто ушёл и кому освободились места.
+     */
+    public function clientDeletedAccount(User $user, int $cancelledBookings): void
+    {
+        $this->notify(
+            'Удаление аккаунта',
+            [
+                ...$this->clientLines($user),
+                'Действие: клиент удалил аккаунт, данные профиля обезличены',
+                $cancelledBookings > 0
+                    ? sprintf('Отменено будущих записей: %d', $cancelledBookings)
+                    : 'Будущих записей не было',
+            ],
+            'Клиент удалил аккаунт',
+        );
+    }
+
     public function clientStartedPurchase(User $user, Payment $payment): void
     {
         $this->notify(

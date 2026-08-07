@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Account\AccountDeletionController;
 use App\Http\Controllers\Account\AvatarController;
 use App\Http\Controllers\Account\OfferAcceptanceController;
 use App\Http\Controllers\Account\PasswordController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\DirectionController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NewsReactionController;
 use App\Http\Controllers\OfferController;
@@ -77,9 +79,20 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', LogoutController::class)->name('logout')->middleware('auth');
 
-Route::get('/oferta', [OfferController::class, 'show'])
+/*
+ * Правовые документы. Открыты всем: их проверяют роботы магазинов приложений,
+ * а мобильное приложение показывает документы ещё до входа.
+ *
+ * По /oferta теперь отдаётся текстовая версия договора: PDF в браузере
+ * Android не показывается, а скачивается файлом. PDF-оригинал, который
+ * администратор загружает через админку, переехал на /oferta.pdf.
+ */
+Route::get('/oferta', [LegalController::class, 'offer'])->name('legal.offer');
+Route::get('/oferta.pdf', [OfferController::class, 'show'])
     ->middleware('throttle:30,1')
-    ->name('offer.show');
+    ->name('legal.offer-pdf');
+Route::get('/privacy', [LegalController::class, 'privacy'])->name('legal.privacy');
+Route::get('/account/delete-request', [LegalController::class, 'accountDelete'])->name('legal.account-delete');
 
 Route::get('/payments/{payment}/return', [PaymentController::class, 'return'])
     ->middleware(['signed', 'noindex'])
@@ -107,6 +120,9 @@ Route::middleware(['auth', 'role:client', 'noindex'])->group(function () {
     Route::post('/account/offer/accept', [OfferAcceptanceController::class, 'store'])->name('account.offer.accept');
     Route::put('/account/profile', [ProfileController::class, 'update'])->name('account.profile.update');
     Route::put('/account/password', [PasswordController::class, 'update'])->name('account.password.update');
+    Route::delete('/account', [AccountDeletionController::class, 'destroy'])
+        ->middleware('throttle:6,1')
+        ->name('account.destroy');
     Route::post('/account/profile/email/send-code', [ProfileController::class, 'sendEmailCode'])
         ->middleware('throttle:3,1')
         ->name('account.profile.email.send');

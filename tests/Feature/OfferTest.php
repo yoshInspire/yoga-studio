@@ -19,42 +19,56 @@ class OfferTest extends TestCase
         Storage::fake(OfferStorage::DISK);
     }
 
-    public function test_offer_returns_not_found_when_missing(): void
+    public function test_offer_pdf_returns_not_found_when_missing(): void
     {
-        $this->get(route('offer.show'))
+        $this->get(route('legal.offer-pdf'))
             ->assertNotFound();
     }
 
-    public function test_offer_is_viewable_inline_when_uploaded(): void
+    public function test_offer_pdf_is_viewable_inline_when_uploaded(): void
     {
         Storage::disk(OfferStorage::DISK)->put(OfferStorage::PATH, '%PDF-1.4 test offer');
 
-        $response = $this->get(route('offer.show'));
+        $response = $this->get(route('legal.offer-pdf'));
 
         $response->assertOk();
         $response->assertHeader('Content-Type', 'application/pdf');
         $response->assertHeader('Content-Disposition', 'inline; filename="oferta.pdf"');
     }
 
-    public function test_account_shows_offer_link_when_available(): void
+    /**
+     * Текстовая версия — основной способ прочитать договор: PDF в браузере
+     * Android скачивается файлом вместо показа.
+     */
+    public function test_offer_page_is_public_and_shows_the_contract_text(): void
     {
-        Storage::disk(OfferStorage::DISK)->put(OfferStorage::PATH, '%PDF-1.4 test offer');
-
-        $client = User::factory()->create();
-
-        $this->actingAs($client)
-            ->get(route('account'))
+        $this->get(route('legal.offer'))
             ->assertOk()
-            ->assertSee(route('offer.show'), false);
+            ->assertSee('Договор-оферта')
+            ->assertSee('Правила посещения')
+            ->assertSee('Противопоказания к групповым практикам', false);
     }
 
-    public function test_account_hides_offer_link_when_missing(): void
+    public function test_offer_page_links_to_the_pdf_only_when_it_is_uploaded(): void
+    {
+        $this->get(route('legal.offer'))
+            ->assertOk()
+            ->assertDontSee(route('legal.offer-pdf'), false);
+
+        Storage::disk(OfferStorage::DISK)->put(OfferStorage::PATH, '%PDF-1.4 test offer');
+
+        $this->get(route('legal.offer'))
+            ->assertOk()
+            ->assertSee(route('legal.offer-pdf'), false);
+    }
+
+    public function test_account_links_to_the_offer_page(): void
     {
         $client = User::factory()->create();
 
         $this->actingAs($client)
             ->get(route('account'))
             ->assertOk()
-            ->assertDontSee(route('offer.show'), false);
+            ->assertSee(route('legal.offer'), false);
     }
 }

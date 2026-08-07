@@ -165,7 +165,7 @@
               ])
             </div>
             <label class="auth__check auth__check--block">
-              <input type="checkbox" name="offer_accepted" value="1" @checked(old('offer_accepted')) required /> Соглашаюсь с условиями <a href="{{ route('offer.show') }}" class="auth__minor" target="_blank" rel="noopener">договора-оферты</a>
+              <input type="checkbox" name="offer_accepted" value="1" @checked(old('offer_accepted')) required /> Соглашаюсь с условиями <a href="{{ route('legal.offer') }}" class="auth__minor" target="_blank" rel="noopener">договора-оферты</a>
             </label>
             <button type="submit" class="btn btn--solid btn--full btn--lg">Зарегистрироваться</button>
             <p class="auth__switch">Уже есть аккаунт? <button type="button" class="auth__link" data-goto="login">Войти</button></p>

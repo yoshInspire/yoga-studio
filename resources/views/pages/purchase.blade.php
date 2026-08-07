@@ -42,7 +42,7 @@
           </div>
         @endforeach
 
-        <p class="purchase-note">Оплата проходит через защищённую форму ЮKassa. После оплаты вы вернётесь на сайт — абонемент активируется автоматически. Оплачивая абонемент, вы принимаете условия <a href="{{ route('offer.show') }}" target="_blank" rel="noopener">договора-оферты</a>.</p>
+        <p class="purchase-note">Оплата проходит через защищённую форму ЮKassa. После оплаты вы вернётесь на сайт — абонемент активируется автоматически. Оплачивая абонемент, вы принимаете условия <a href="{{ route('legal.offer') }}" target="_blank" rel="noopener">договора-оферты</a>.</p>
 
         <a href="{{ route('account') }}" class="btn btn--line" style="margin-top: 8px">Вернуться в личный кабинет</a>
       </div>

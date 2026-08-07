@@ -27,7 +27,8 @@ class Offer extends Page
         return [
             'offerExists' => OfferStorage::exists(),
             'updatedAt' => OfferStorage::updatedAt()?->translatedFormat('d F Y, H:i'),
-            'offerUrl' => route('offer.show'),
+            'offerUrl' => route('legal.offer'),
+            'pdfUrl' => route('legal.offer-pdf'),
         ];
     }
 
