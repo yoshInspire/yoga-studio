@@ -52,6 +52,10 @@ class ClientController extends Controller
             ->map(fn (User $u) => [
                 'id' => $u->id,
                 'name' => $u->fullName(),
+                // Инициалы и фотография — список лиц читается быстрее списка строк,
+                // так же устроен список переписок.
+                'initials' => $u->initials(),
+                'avatar' => $u->avatarUrl(),
                 'phone' => $u->formattedPhone() ?? $u->phone,
                 'email' => $u->email,
                 'active_subscriptions' => $u->subscriptions()->active()->count(),

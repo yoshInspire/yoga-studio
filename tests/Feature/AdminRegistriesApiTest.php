@@ -95,8 +95,9 @@ class AdminRegistriesApiTest extends TestCase
 
     public function test_payments_are_filtered_by_status_and_client(): void
     {
-        $maria = $this->client(['first_name' => 'Мария', 'last_name' => 'Иванова']);
-        $petr = $this->client(['first_name' => 'Пётр', 'last_name' => 'Сидоров']);
+        // Отчество гасим явно: фабрика ставит его случайно, а имя сверяем строкой.
+        $maria = $this->client(['first_name' => 'Мария', 'last_name' => 'Иванова', 'patronymic' => null]);
+        $petr = $this->client(['first_name' => 'Пётр', 'last_name' => 'Сидоров', 'patronymic' => null]);
         $this->payment($maria, PaymentStatus::Succeeded);
         $this->payment($petr, PaymentStatus::Canceled);
 

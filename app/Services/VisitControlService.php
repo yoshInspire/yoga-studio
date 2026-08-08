@@ -31,6 +31,9 @@ class VisitControlService
      *         time: string,
      *         time_range: string,
      *         title: string,
+     *         direction: string|null,
+     *         direction_slug: string|null,
+     *         topic: string|null,
      *         type_label: string,
      *         type: string,
      *         trainer: string|null,
@@ -40,7 +43,10 @@ class VisitControlService
      *         is_cancelled: bool,
      *         attendees: list<array{
      *             booking_id: int,
+     *             user_id: int,
      *             name: string,
+     *             initials: string|null,
+     *             avatar: string|null,
      *             phone: string|null,
      *             phone_href: string|null,
      *             subscription_label: string,
@@ -110,6 +116,12 @@ class VisitControlService
                 'time' => $session->formattedTime(),
                 'time_range' => $session->formattedTimeRange(),
                 'title' => $session->title,
+                // Направление отдельно от склеенного заголовка: приложение красит
+                // карточку в цвет семейства и ставит его иконку, как в расписании
+                // у клиента. Веб-страница поля не использует.
+                'direction' => $session->direction?->title,
+                'direction_slug' => $session->direction?->slug,
+                'topic' => $session->topic,
                 'type_label' => $session->type->shortLabel(),
                 'type' => $session->type->value,
                 'trainer' => $session->type->value === 'individual' ? $session->trainerName() : null,
@@ -134,7 +146,10 @@ class VisitControlService
     /**
      * @return array{
      *     booking_id: int,
+     *     user_id: int,
      *     name: string,
+     *     initials: string|null,
+     *     avatar: string|null,
      *     phone: string|null,
      *     phone_href: string|null,
      *     subscription_label: string,
@@ -163,7 +178,12 @@ class VisitControlService
 
         return [
             'booking_id' => $booking->id,
+            'user_id' => $booking->user_id,
             'name' => $user?->fullName() ?? '—',
+            // Инициалы и фотография — для ростера в приложении: список лиц
+            // читается быстрее списка строк. Веб-страница их не берёт.
+            'initials' => $user?->initials(),
+            'avatar' => $user?->avatarUrl(),
             'phone' => $phone,
             'phone_href' => filled($phone) ? 'tel:'.preg_replace('/\s+/', '', $phone) : null,
             'subscription_label' => $subscription?->type?->shortLabel() ?? '—',

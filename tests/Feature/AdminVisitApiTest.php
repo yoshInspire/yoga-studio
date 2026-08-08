@@ -8,6 +8,7 @@ use App\Enums\ClassSessionStatus;
 use App\Enums\SubscriptionType;
 use App\Enums\UserRole;
 use App\Models\ClassSession;
+use App\Models\Direction;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\BookingService;
@@ -76,6 +77,33 @@ class AdminVisitApiTest extends TestCase
             ->assertJsonPath('sessions.0.attendees.0.name', 'Петров Иван')
             ->assertJsonPath('sessions.0.attendees.0.attendance', 'expected')
             ->assertJsonPath('sessions.0.attendees.0.sessions_remaining', 3);
+    }
+
+    public function test_day_carries_direction_and_faces_for_the_card(): void
+    {
+        // Приложение красит карточку по направлению и рисует лица в ростере —
+        // без этих полей журнал дня выглядит как таблица.
+        $direction = Direction::create([
+            'title' => 'Хатха',
+            'slug' => 'hatha',
+            'num' => '01',
+            'lead' => 'Мягкая практика',
+            'sort_order' => 1,
+        ]);
+        $client = $this->client(['first_name' => 'Иван', 'last_name' => 'Петров', 'patronymic' => null]);
+        $this->subscription($client);
+        $session = $this->classSession();
+        $session->update(['direction_id' => $direction->id, 'topic' => 'Мобильность плеч']);
+        app(BookingService::class)->bookForAdmin($client, $session);
+
+        $this->actingAs($this->admin(), 'sanctum')
+            ->getJson('/api/v1/admin/visits')
+            ->assertOk()
+            ->assertJsonPath('sessions.0.direction', 'Хатха')
+            ->assertJsonPath('sessions.0.direction_slug', 'hatha')
+            ->assertJsonPath('sessions.0.topic', 'Мобильность плеч')
+            ->assertJsonPath('sessions.0.attendees.0.user_id', $client->id)
+            ->assertJsonPath('sessions.0.attendees.0.initials', 'ИП');
     }
 
     public function test_day_accepts_explicit_date(): void

@@ -48,6 +48,12 @@ class SessionController extends Controller
             ->map(fn (ClassSession $s) => [
                 'id' => $s->id,
                 'title' => $s->title,
+                // Направление и тема отдельно: в приложении карточка занятия
+                // красится в цвет семейства и разводит их по строкам, как в
+                // клиентском расписании.
+                'direction' => $s->direction?->title,
+                'direction_slug' => $s->direction?->slug,
+                'topic' => $s->topic,
                 'date_time' => $s->formattedDateTime(),
                 'time' => $s->formattedTime(),
                 'time_range' => $s->formattedTimeRange(),
