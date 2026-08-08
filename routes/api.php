@@ -119,6 +119,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/sessions/{session}/cancel', [AdminSessionController::class, 'cancel']);
             // Контроль посещений: день, отметки и запись клиента администратором.
             Route::get('/visits', [AdminVisitController::class, 'day']);
+            Route::get('/bookings', [AdminBookingController::class, 'index']);
             Route::post('/bookings', [AdminBookingController::class, 'store']);
             Route::get('/bookings/options', [AdminBookingController::class, 'options']);
             Route::post('/bookings/{booking}/attended', [AdminVisitController::class, 'attended']);
@@ -132,6 +133,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/clients/{client}/access', [AdminClientController::class, 'access'])
                 ->middleware('throttle:10,1');
 
+            Route::get('/subscriptions', [AdminSubscriptionController::class, 'index']);
             Route::post('/subscriptions', [AdminSubscriptionController::class, 'store']);
             Route::put('/subscriptions/{subscription}', [AdminSubscriptionController::class, 'update']);
             Route::post('/subscriptions/{subscription}/extend', [AdminSubscriptionController::class, 'extend']);

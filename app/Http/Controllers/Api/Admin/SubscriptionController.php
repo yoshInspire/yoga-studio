@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Subscription;
+use App\Services\SubscriptionBalanceService;
 use App\Services\SubscriptionService;
+use App\Support\PhoneNormalizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -19,6 +21,67 @@ use InvalidArgumentException;
  */
 class SubscriptionController extends Controller
 {
+    /**
+     * Реестр абонементов: тип, состояние, поиск по клиенту, страницы.
+     *
+     * Состояние считаем в запросе, а не по `isActive()` в памяти: иначе
+     * фильтр пришлось бы применять после пагинации, и страницы поехали бы.
+     */
+    public function index(Request $request, SubscriptionBalanceService $balances): JsonResponse
+    {
+        $data = $request->validate([
+            'type' => ['nullable', 'in:group,individual,special_event'],
+            'state' => ['nullable', 'in:active,expired,future'],
+            'q' => ['nullable', 'string', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $q = trim((string) ($data['q'] ?? ''));
+        $today = now()->startOfDay();
+
+        $subscriptions = Subscription::query()
+            ->with('user')
+            ->when($data['type'] ?? null, fn ($query, $type) => $query->where('type', $type))
+            ->when($data['state'] ?? null, fn ($query, $state) => match ($state) {
+                'active' => $query->active($today),
+                'expired' => $query->where('ends_at', '<', $today),
+                'future' => $query->where('starts_at', '>', $today),
+                default => $query,
+            })
+            ->when($q !== '', function ($query) use ($q) {
+                $phone = PhoneNormalizer::normalize($q);
+                $query->whereHas('user', function ($sub) use ($q, $phone) {
+                    $sub->where('first_name', 'like', "%{$q}%")
+                        ->orWhere('last_name', 'like', "%{$q}%")
+                        ->orWhere('email', 'like', "%{$q}%");
+                    if ($phone) {
+                        $sub->orWhere('phone', 'like', "%{$phone}%");
+                    }
+                });
+            })
+            ->orderByDesc('ends_at')
+            ->paginate(perPage: 30, page: $data['page'] ?? 1);
+
+        $breakdowns = $balances->breakdownForMany(collect($subscriptions->items()));
+
+        return response()->json([
+            'data' => collect($subscriptions->items())->map(fn (Subscription $s) => [
+                'id' => $s->id,
+                'client' => $s->user?->fullName() ?? '—',
+                'client_id' => $s->user_id,
+                'type' => $s->type->value,
+                'type_short' => $s->type->shortLabel(),
+                'sessions_total' => $s->sessions_total,
+                'sessions_remaining' => $breakdowns[$s->id]['sessions_remaining'],
+                'sessions_per_day' => $s->sessionsPerDay(),
+                'starts_at' => $s->starts_at->toDateString(),
+                'ends_at' => $s->ends_at->toDateString(),
+                'is_active' => $s->isActive(),
+            ])->values(),
+            'meta' => PaymentController::meta($subscriptions),
+        ]);
+    }
+
     /** Выдать абонемент клиенту. */
     public function store(Request $request): JsonResponse
     {
