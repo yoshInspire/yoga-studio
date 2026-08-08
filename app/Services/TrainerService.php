@@ -11,7 +11,10 @@ use Illuminate\Support\Carbon;
 class TrainerService
 {
     /**
-     * @return array<int, array{key: string, name: string, date: string, slots: list<array>}>
+     * Неделя тренера — общая для страницы сайта и мобильного приложения.
+     * Ключи только добавляются: страница `pages.trainer` читает их по именам.
+     *
+     * @return array<int, array{key: string, name: string, date: string, date_iso: string, is_today: bool, slots: list<array>}>
      */
     public function buildWeekSchedule(User $trainer, Carbon $weekStart): array
     {
@@ -22,7 +25,7 @@ class TrainerService
                 'direction',
                 'bookings' => fn ($q) => $q
                     ->where('status', BookingStatus::Confirmed)
-                    ->with('user:id,first_name,last_name,health_note,health_note_visible_to_trainer'),
+                    ->with('user:id,first_name,last_name,avatar_path,health_note,health_note_visible_to_trainer'),
             ])
             ->withCount(['bookings as taken' => fn ($q) => $q->where('status', BookingStatus::Confirmed)])
             ->orderBy('starts_at')
@@ -43,7 +46,12 @@ class TrainerService
                     ->map(function ($booking) {
                         $user = $booking->user;
                         $entry = [
+                            // Ключ строки в списке приложения. Контактов тренеру
+                            // по-прежнему не отдаём — только имя и фамилия.
+                            'booking_id' => $booking->id,
                             'name' => trim($user->first_name.' '.$user->last_name),
+                            'initials' => $user->initials(),
+                            'avatar' => $user->avatarUrl(),
                         ];
 
                         if ($user->health_note_visible_to_trainer && filled($user->health_note)) {
@@ -56,9 +64,14 @@ class TrainerService
                     ->all();
 
                 return [
+                    'id' => $session->id,
                     'time' => $session->formattedTime(),
+                    'time_range' => $session->formattedTimeRange(),
                     'title' => $session->title,
                     'direction' => $session->direction?->title,
+                    // Слаг, а не название: направления студия переименовывает
+                    // через админку, а цвет и иконку приложение подбирает по слагу.
+                    'direction_slug' => $session->direction?->slug,
                     'topic' => $session->topic,
                     'type' => $session->type->badgeClass(),
                     'type_label' => $session->type->shortLabel(),
@@ -74,6 +87,9 @@ class TrainerService
                 'key' => $dayKeys[$i],
                 'name' => $dayNames[$i],
                 'date' => RussianDate::dayMonth($date),
+                // Машинная дата рядом со словесной: приложению нужен день, а не
+                // подпись, а разбирать «6 августа» обратно — лишняя работа.
+                'date_iso' => $dateKey,
                 'is_today' => $date->isToday(),
                 'slots' => $slots,
             ];
