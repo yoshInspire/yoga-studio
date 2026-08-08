@@ -2,8 +2,14 @@
 
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AccountDeletionController;
+use App\Http\Controllers\Api\Admin\BookingController as AdminBookingController;
+use App\Http\Controllers\Api\Admin\ClientController as AdminClientController;
+use App\Http\Controllers\Api\Admin\OverviewController as AdminOverviewController;
+use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Api\Admin\SessionController as AdminSessionController;
+use App\Http\Controllers\Api\Admin\SubscriptionController as AdminSubscriptionController;
+use App\Http\Controllers\Api\Admin\VisitController as AdminVisitController;
 use App\Http\Controllers\Api\AdminChatController;
-use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AvatarController;
 use App\Http\Controllers\Api\BookingController;
@@ -62,6 +68,13 @@ Route::prefix('v1')->group(function () {
         Route::post('/account/avatar', [AvatarController::class, 'store'])->middleware('throttle:20,1');
         Route::delete('/account/avatar', [AvatarController::class, 'destroy']);
 
+        // Свои данные, пароль и email — тоже у любой роли: в приложении
+        // администратор и тренер правят профиль там же, где клиент.
+        Route::put('/account/profile', [ProfileController::class, 'update']);
+        Route::put('/account/password', [ProfileController::class, 'changePassword']);
+        Route::post('/account/email/request-code', [ProfileController::class, 'requestEmailCode'])->middleware('throttle:3,1');
+        Route::post('/account/email/confirm', [ProfileController::class, 'confirmEmail'])->middleware('throttle:12,1');
+
         // Чат: общее для обеих ролей
         Route::get('/chat/unread', [ChatController::class, 'unread']);
         Route::get('/chat/attachments/{message}', [ChatController::class, 'attachment'])
@@ -78,10 +91,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel']);
             Route::post('/bookings/{booking}/reschedule', [BookingController::class, 'reschedule']);
 
-            Route::put('/account/profile', [ProfileController::class, 'update']);
-            Route::put('/account/password', [ProfileController::class, 'changePassword']);
-            Route::post('/account/email/request-code', [ProfileController::class, 'requestEmailCode'])->middleware('throttle:3,1');
-            Route::post('/account/email/confirm', [ProfileController::class, 'confirmEmail'])->middleware('throttle:12,1');
+            // Оферта — только клиентская история: подписывает её клиент.
             Route::get('/account/offer', [ProfileController::class, 'offer']);
             // Удаление аккаунта — требование магазинов приложений
             // (App Store 5.1.1(v), Google Play Data Safety).
@@ -100,15 +110,25 @@ Route::prefix('v1')->group(function () {
 
         // Администратор
         Route::middleware('role:admin')->prefix('admin')->group(function () {
-            Route::get('/overview', [AdminController::class, 'overview']);
-            Route::get('/meta', [AdminController::class, 'meta']);
-            Route::get('/sessions', [AdminController::class, 'sessions']);
-            Route::post('/sessions', [AdminController::class, 'createSession']);
-            Route::post('/sessions/{session}/cancel', [AdminController::class, 'cancelSession']);
-            Route::get('/clients', [AdminController::class, 'clients']);
-            Route::post('/clients', [AdminController::class, 'createClient']);
-            Route::post('/subscriptions', [AdminController::class, 'issueSubscription']);
-            Route::get('/payments', [AdminController::class, 'payments']);
+            Route::get('/overview', [AdminOverviewController::class, 'overview']);
+            Route::get('/meta', [AdminOverviewController::class, 'meta']);
+            Route::get('/sessions', [AdminSessionController::class, 'index']);
+            Route::post('/sessions', [AdminSessionController::class, 'store']);
+            Route::put('/sessions/{session}', [AdminSessionController::class, 'update']);
+            Route::delete('/sessions/{session}', [AdminSessionController::class, 'destroy']);
+            Route::post('/sessions/{session}/cancel', [AdminSessionController::class, 'cancel']);
+            // Контроль посещений: день, отметки и запись клиента администратором.
+            Route::get('/visits', [AdminVisitController::class, 'day']);
+            Route::post('/bookings', [AdminBookingController::class, 'store']);
+            Route::get('/bookings/options', [AdminBookingController::class, 'options']);
+            Route::post('/bookings/{booking}/attended', [AdminVisitController::class, 'attended']);
+            Route::post('/bookings/{booking}/no-show', [AdminVisitController::class, 'noShow']);
+            Route::post('/bookings/{booking}/cancel', [AdminVisitController::class, 'cancel']);
+
+            Route::get('/clients', [AdminClientController::class, 'index']);
+            Route::post('/clients', [AdminClientController::class, 'store']);
+            Route::post('/subscriptions', [AdminSubscriptionController::class, 'store']);
+            Route::get('/payments', [AdminPaymentController::class, 'index']);
 
             Route::get('/chats', [AdminChatController::class, 'index']);
             Route::get('/chats/{client}', [AdminChatController::class, 'show']);

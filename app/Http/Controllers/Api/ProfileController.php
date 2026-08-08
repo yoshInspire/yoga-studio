@@ -83,7 +83,12 @@ class ProfileController extends Controller
         }
 
         $user->update(['password' => $data['password']]);
-        $this->adminActivity->clientChangedPassword($user);
+
+        // Профилем пользуются все роли, а оповещение написано про клиента:
+        // «клиент сменил пароль» от самого администратора — только шум в Telegram.
+        if ($user->isClient()) {
+            $this->adminActivity->clientChangedPassword($user);
+        }
 
         return response()->json(['message' => 'Пароль обновлён.']);
     }
