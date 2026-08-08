@@ -127,7 +127,15 @@ Route::prefix('v1')->group(function () {
 
             Route::get('/clients', [AdminClientController::class, 'index']);
             Route::post('/clients', [AdminClientController::class, 'store']);
+            Route::get('/clients/{client}', [AdminClientController::class, 'show']);
+            Route::put('/clients/{client}', [AdminClientController::class, 'update']);
+            Route::post('/clients/{client}/access', [AdminClientController::class, 'access'])
+                ->middleware('throttle:10,1');
+
             Route::post('/subscriptions', [AdminSubscriptionController::class, 'store']);
+            Route::put('/subscriptions/{subscription}', [AdminSubscriptionController::class, 'update']);
+            Route::post('/subscriptions/{subscription}/extend', [AdminSubscriptionController::class, 'extend']);
+            Route::post('/subscriptions/{subscription}/sessions', [AdminSubscriptionController::class, 'addSessions']);
             Route::get('/payments', [AdminPaymentController::class, 'index']);
 
             Route::get('/chats', [AdminChatController::class, 'index']);
