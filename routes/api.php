@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Admin\OverviewController as AdminOverviewController
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Api\Admin\PricingController as AdminPricingController;
 use App\Http\Controllers\Api\Admin\SessionController as AdminSessionController;
+use App\Http\Controllers\Api\Admin\StaffController as AdminStaffController;
 use App\Http\Controllers\Api\Admin\SubscriptionController as AdminSubscriptionController;
 use App\Http\Controllers\Api\Admin\VisitController as AdminVisitController;
 use App\Http\Controllers\Api\AdminChatController;
@@ -163,6 +164,20 @@ Route::prefix('v1')->group(function () {
             Route::put('/pricing/items/{item}', [AdminPricingController::class, 'updateItem']);
             Route::delete('/pricing/items/{item}', [AdminPricingController::class, 'destroyItem']);
             Route::post('/pricing/items/{item}/move', [AdminPricingController::class, 'moveItem']);
+
+            // Сотрудники: тренеры и администраторы. Пароль в приложении не
+            // вводится — доступ выдаётся кнопкой (тренеру письмом, админу
+            // на экран). Удаления сотрудника нет, есть снятие с витрины.
+            Route::get('/staff', [AdminStaffController::class, 'index']);
+            Route::post('/staff', [AdminStaffController::class, 'store']);
+            Route::get('/staff/{staff}', [AdminStaffController::class, 'show']);
+            Route::put('/staff/{staff}', [AdminStaffController::class, 'update']);
+            Route::post('/staff/{staff}/role', [AdminStaffController::class, 'role']);
+            Route::post('/staff/{staff}/access', [AdminStaffController::class, 'access'])
+                ->middleware('throttle:10,1');
+            Route::post('/staff/{staff}/photo', [AdminStaffController::class, 'storePhoto'])
+                ->middleware('throttle:30,1');
+            Route::delete('/staff/{staff}/photo', [AdminStaffController::class, 'destroyPhoto']);
 
             // Асаны и программы. Обёртки над AsanaProgramService: перестановка
             // поз, зарисовки и копирование занятия там уже написаны. Рисунок

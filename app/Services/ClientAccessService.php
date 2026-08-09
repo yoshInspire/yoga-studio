@@ -28,9 +28,7 @@ class ClientAccessService
             throw new InvalidArgumentException('Нет email, а Telegram не привязан. Укажите email в карточке или дождитесь, пока пользователь привяжет Telegram после входа на сайт.');
         }
 
-        $password = Str::password(10, letters: true, numbers: true, symbols: false);
-
-        $user->update(['password' => $password]);
+        $password = $this->issueTemporaryPassword($user);
 
         $phone = $user->formattedPhone() ?? $user->phone ?? '—';
         [$heading, $lines, $subject] = $this->accessMessage($user, $password, $phone);
@@ -42,6 +40,22 @@ class ClientAccessService
             'email' => $delivery['email'],
             'telegram' => $delivery['telegram'],
         ];
+    }
+
+    /**
+     * Сгенерировать и сохранить временный пароль, ничего не отправляя.
+     *
+     * Нужен администратору: письма с паролем к панели студии мы не шлём (у
+     * администратора нет и восстановления пароля по почте), поэтому пароль
+     * выдаётся тому, кто его заводит, — назвать вслух и передать лично.
+     */
+    public function issueTemporaryPassword(User $user): string
+    {
+        $password = Str::password(10, letters: true, numbers: true, symbols: false);
+
+        $user->update(['password' => $password]);
+
+        return $password;
     }
 
     /**
