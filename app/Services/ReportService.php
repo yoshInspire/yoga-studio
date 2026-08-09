@@ -220,18 +220,23 @@ class ReportService
      */
     public function visitMonths(?Carbon $from = null, ?Carbon $to = null): array
     {
-        return Booking::query()
-            ->where('bookings.status', BookingStatus::Confirmed)
-            ->whereHas('classSession', function (Builder $q) use ($from, $to) {
-                $q->where('starts_at', '<', now())
-                    ->when($from, fn (Builder $inner) => $inner->where('starts_at', '>=', $from->copy()->startOfDay()))
-                    ->when($to, fn (Builder $inner) => $inner->where('starts_at', '<=', $to->copy()->endOfDay()));
-            })
-            ->join('class_sessions', 'bookings.class_session_id', '=', 'class_sessions.id')
-            ->selectRaw('DATE_FORMAT(class_sessions.starts_at, "%Y-%m") as month_key')
-            ->distinct()
-            ->orderBy('month_key')
-            ->pluck('month_key')
+        // Месяц собираем в PHP, а не через DATE_FORMAT: эта функция есть в
+        // MySQL и нет в SQLite, из-за чего отчёт нельзя было проверить тестом.
+        // Дат тут немного (по одной на прошедшее занятие с записью), а
+        // datetime в базе лежат в часовом поясе приложения — строка выходит
+        // та же самая.
+        $dates = ClassSession::query()
+            ->where('starts_at', '<', now())
+            ->when($from, fn (Builder $q) => $q->where('starts_at', '>=', $from->copy()->startOfDay()))
+            ->when($to, fn (Builder $q) => $q->where('starts_at', '<=', $to->copy()->endOfDay()))
+            ->whereHas('bookings', fn (Builder $q) => $q->where('status', BookingStatus::Confirmed))
+            ->pluck('starts_at');
+
+        return $dates
+            ->map(fn ($date) => Carbon::parse((string) $date)->format('Y-m'))
+            ->unique()
+            ->sort()
+            ->values()
             ->all();
     }
 

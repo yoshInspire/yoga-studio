@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Api\Admin\OverviewController as AdminOverviewController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Api\Admin\PricingController as AdminPricingController;
+use App\Http\Controllers\Api\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Api\Admin\SessionController as AdminSessionController;
 use App\Http\Controllers\Api\Admin\StaffController as AdminStaffController;
 use App\Http\Controllers\Api\Admin\SubscriptionController as AdminSubscriptionController;
@@ -176,6 +177,13 @@ Route::prefix('v1')->group(function () {
                 ->middleware('throttle:10,1');
             Route::post('/mailings/custom', [AdminMailingController::class, 'sendCustom'])
                 ->middleware('throttle:10,1');
+
+            // Отчёты Excel. Файл идёт прямо в ответе под Bearer-токеном:
+            // expo-file-system умеет слать заголовки, а подписанная ссылка
+            // означала бы общедоступный адрес с телефонами клиентов.
+            Route::get('/reports', [AdminReportController::class, 'index']);
+            Route::get('/reports/{key}', [AdminReportController::class, 'download'])
+                ->middleware('throttle:30,1');
 
             // Сотрудники: тренеры и администраторы. Пароль в приложении не
             // вводится — доступ выдаётся кнопкой (тренеру письмом, админу
