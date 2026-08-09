@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Admin\ClientController as AdminClientController;
 use App\Http\Controllers\Api\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Api\Admin\OverviewController as AdminOverviewController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Api\Admin\PricingController as AdminPricingController;
 use App\Http\Controllers\Api\Admin\SessionController as AdminSessionController;
 use App\Http\Controllers\Api\Admin\SubscriptionController as AdminSubscriptionController;
 use App\Http\Controllers\Api\Admin\VisitController as AdminVisitController;
@@ -151,6 +152,15 @@ Route::prefix('v1')->group(function () {
             Route::post('/news/{news}/image', [AdminNewsController::class, 'storeImage'])
                 ->middleware('throttle:30,1');
             Route::delete('/news/{news}/image', [AdminNewsController::class, 'destroyImage']);
+
+            // Цены. Правка базового тарифа меняет и витрину, и сумму
+            // онлайн-оплаты, поэтому ответ перечисляет «было → стало».
+            Route::get('/pricing', [AdminPricingController::class, 'index']);
+            Route::put('/pricing', [AdminPricingController::class, 'updateBase']);
+            Route::post('/pricing/items', [AdminPricingController::class, 'storeItem']);
+            Route::put('/pricing/items/{item}', [AdminPricingController::class, 'updateItem']);
+            Route::delete('/pricing/items/{item}', [AdminPricingController::class, 'destroyItem']);
+            Route::post('/pricing/items/{item}/move', [AdminPricingController::class, 'moveItem']);
 
             Route::get('/chats', [AdminChatController::class, 'index']);
             Route::get('/chats/{client}', [AdminChatController::class, 'show']);
