@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Services\AvatarService;
-use App\Support\AvatarValidation;
+use App\Support\PhotoValidation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -25,9 +25,9 @@ class AvatarController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate(
-            AvatarValidation::rules(),
-            AvatarValidation::messages(),
-            AvatarValidation::attributes(),
+            PhotoValidation::rules(),
+            PhotoValidation::messages(),
+            PhotoValidation::attributes(),
         );
 
         try {

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
 use App\Services\AvatarService;
-use App\Support\AvatarValidation;
+use App\Support\PhotoValidation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use RuntimeException;
@@ -22,16 +22,16 @@ class AvatarController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate(
-            AvatarValidation::rules(),
-            AvatarValidation::messages(),
-            AvatarValidation::attributes(),
+            PhotoValidation::rules(),
+            PhotoValidation::messages(),
+            PhotoValidation::attributes(),
         );
 
         try {
-            $this->avatars->update($request->user(), $request->file(AvatarValidation::FIELD));
+            $this->avatars->update($request->user(), $request->file(PhotoValidation::FIELD));
         } catch (RuntimeException $e) {
             return back()
-                ->withErrors([AvatarValidation::FIELD => $e->getMessage()])
+                ->withErrors([PhotoValidation::FIELD => $e->getMessage()])
                 ->with('lk_section', 'profile');
         }
 

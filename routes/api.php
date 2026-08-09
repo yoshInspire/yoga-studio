@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AccountDeletionController;
 use App\Http\Controllers\Api\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Api\Admin\ClientController as AdminClientController;
+use App\Http\Controllers\Api\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Api\Admin\OverviewController as AdminOverviewController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Api\Admin\SessionController as AdminSessionController;
@@ -139,6 +140,17 @@ Route::prefix('v1')->group(function () {
             Route::post('/subscriptions/{subscription}/extend', [AdminSubscriptionController::class, 'extend']);
             Route::post('/subscriptions/{subscription}/sessions', [AdminSubscriptionController::class, 'addSessions']);
             Route::get('/payments', [AdminPaymentController::class, 'index']);
+
+            // Новости. Публикация рассылает письма клиентам (NewsObserver),
+            // поэтому ответы несут will_notify и число получателей.
+            Route::get('/news', [AdminNewsController::class, 'index']);
+            Route::post('/news', [AdminNewsController::class, 'store']);
+            Route::get('/news/{news}', [AdminNewsController::class, 'show']);
+            Route::put('/news/{news}', [AdminNewsController::class, 'update']);
+            Route::delete('/news/{news}', [AdminNewsController::class, 'destroy']);
+            Route::post('/news/{news}/image', [AdminNewsController::class, 'storeImage'])
+                ->middleware('throttle:30,1');
+            Route::delete('/news/{news}/image', [AdminNewsController::class, 'destroyImage']);
 
             Route::get('/chats', [AdminChatController::class, 'index']);
             Route::get('/chats/{client}', [AdminChatController::class, 'show']);

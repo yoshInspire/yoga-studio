@@ -104,6 +104,17 @@ class NewsNotificationService
     }
 
     /**
+     * Сколько клиентов получат уведомление о публикации.
+     *
+     * Нужно показать до отправки: в приложении «Опубликовать» нажимают
+     * пальцем, и человек должен видеть, скольким уйдут письма.
+     */
+    public function recipientsCount(): int
+    {
+        return $this->isEnabled() ? $this->eligibleClients()->count() : 0;
+    }
+
+    /**
      * @return \Illuminate\Database\Eloquent\Builder<User>
      */
     private function eligibleClients()
