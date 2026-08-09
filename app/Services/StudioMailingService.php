@@ -257,6 +257,37 @@ class StudioMailingService
     }
 
     /**
+     * Кому анонс недели уже ушёл, а кому ещё нет.
+     *
+     * Нужно приложению, чтобы кнопка отправки не молчала: если анонс на эту
+     * неделю уже уходил, повтор без `force` пропустит всех и снаружи будет
+     * выглядеть поломкой.
+     *
+     * @return array{eligible: int, sent: int, pending: int, week_start: string, from: string, to: string}
+     */
+    public function weeklyAnnouncementProgress(?Carbon $on = null): array
+    {
+        [$weekStart, $weekEnd] = $this->announcementWeekRange($on);
+
+        $eligible = $this->eligibleClients()->count();
+
+        $sent = ClientMailingLog::query()
+            ->where('type', ClientMailingLog::TYPE_WEEKLY_SCHEDULE)
+            ->whereDate('mailing_key', $weekStart->toDateString())
+            ->whereIn('user_id', $this->eligibleClients()->reorder()->select('id'))
+            ->count();
+
+        return [
+            'eligible' => $eligible,
+            'sent' => $sent,
+            'pending' => max(0, $eligible - $sent),
+            'week_start' => $weekStart->toDateString(),
+            'from' => $weekStart->translatedFormat('l, j F'),
+            'to' => $weekEnd->translatedFormat('l, j F'),
+        ];
+    }
+
+    /**
      * @return array{0: Carbon, 1: Carbon}
      */
     public function announcementWeekRange(?Carbon $on = null): array

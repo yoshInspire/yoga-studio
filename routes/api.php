@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Admin\AsanaController as AdminAsanaController;
 use App\Http\Controllers\Api\Admin\AsanaLibraryController as AdminAsanaLibraryController;
 use App\Http\Controllers\Api\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Api\Admin\ClientController as AdminClientController;
+use App\Http\Controllers\Api\Admin\MailingController as AdminMailingController;
 use App\Http\Controllers\Api\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Api\Admin\OverviewController as AdminOverviewController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
@@ -164,6 +165,17 @@ Route::prefix('v1')->group(function () {
             Route::put('/pricing/items/{item}', [AdminPricingController::class, 'updateItem']);
             Route::delete('/pricing/items/{item}', [AdminPricingController::class, 'destroyItem']);
             Route::post('/pricing/items/{item}/move', [AdminPricingController::class, 'moveItem']);
+
+            // Рассылки клиентам. Каждое отправление — письма и Telegram живым
+            // людям, отозвать нельзя. Dry-run из веб-админки намеренно не
+            // переносим: число получателей приложение знает заранее.
+            Route::get('/mailings', [AdminMailingController::class, 'index']);
+            Route::put('/mailings/welcome', [AdminMailingController::class, 'updateWelcome']);
+            Route::put('/mailings/birthday', [AdminMailingController::class, 'updateBirthday']);
+            Route::post('/mailings/weekly', [AdminMailingController::class, 'sendWeekly'])
+                ->middleware('throttle:10,1');
+            Route::post('/mailings/custom', [AdminMailingController::class, 'sendCustom'])
+                ->middleware('throttle:10,1');
 
             // Сотрудники: тренеры и администраторы. Пароль в приложении не
             // вводится — доступ выдаётся кнопкой (тренеру письмом, админу
