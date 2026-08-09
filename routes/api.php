@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AccountDeletionController;
+use App\Http\Controllers\Api\Admin\AsanaController as AdminAsanaController;
+use App\Http\Controllers\Api\Admin\AsanaLibraryController as AdminAsanaLibraryController;
 use App\Http\Controllers\Api\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Api\Admin\ClientController as AdminClientController;
 use App\Http\Controllers\Api\Admin\NewsController as AdminNewsController;
@@ -161,6 +163,39 @@ Route::prefix('v1')->group(function () {
             Route::put('/pricing/items/{item}', [AdminPricingController::class, 'updateItem']);
             Route::delete('/pricing/items/{item}', [AdminPricingController::class, 'destroyItem']);
             Route::post('/pricing/items/{item}/move', [AdminPricingController::class, 'moveItem']);
+
+            // Асаны и программы. Обёртки над AsanaProgramService: перестановка
+            // поз, зарисовки и копирование занятия там уже написаны. Рисунок
+            // приходит строкой data-URL — ровно тем, что отдаёт холст.
+            Route::get('/asanas', [AdminAsanaController::class, 'index']);
+            Route::post('/asanas/folders', [AdminAsanaController::class, 'storeFolder']);
+            Route::put('/asanas/folders/{folder}', [AdminAsanaController::class, 'updateFolder']);
+            Route::delete('/asanas/folders/{folder}', [AdminAsanaController::class, 'destroyFolder']);
+
+            Route::post('/asanas/programs', [AdminAsanaController::class, 'storeProgram']);
+            Route::get('/asanas/programs/{program}', [AdminAsanaController::class, 'showProgram']);
+            Route::put('/asanas/programs/{program}', [AdminAsanaController::class, 'updateProgram']);
+            Route::delete('/asanas/programs/{program}', [AdminAsanaController::class, 'destroyProgram']);
+            Route::post('/asanas/programs/{program}/duplicate', [AdminAsanaController::class, 'duplicateProgram']);
+            // Лист для печати собирает сервер: раскладка одна с веб-админкой.
+            Route::get('/asanas/programs/{program}/print', [AdminAsanaController::class, 'printProgram']);
+
+            Route::post('/asanas/programs/{program}/items', [AdminAsanaController::class, 'storeItem']);
+            Route::put('/asanas/items/{item}', [AdminAsanaController::class, 'updateItem']);
+            Route::delete('/asanas/items/{item}', [AdminAsanaController::class, 'destroyItem']);
+            Route::post('/asanas/items/{item}/move', [AdminAsanaController::class, 'moveItem']);
+            Route::post('/asanas/items/{item}/drawing', [AdminAsanaController::class, 'storeItemDrawing'])
+                ->middleware('throttle:60,1');
+            Route::delete('/asanas/items/{item}/drawing', [AdminAsanaController::class, 'destroyItemDrawing']);
+
+            Route::get('/asanas/library', [AdminAsanaLibraryController::class, 'index']);
+            Route::post('/asanas/library', [AdminAsanaLibraryController::class, 'store'])
+                ->middleware('throttle:60,1');
+            Route::put('/asanas/library/{asana}', [AdminAsanaLibraryController::class, 'update']);
+            Route::delete('/asanas/library/{asana}', [AdminAsanaLibraryController::class, 'destroy']);
+            Route::post('/asanas/categories', [AdminAsanaLibraryController::class, 'storeCategory']);
+            Route::put('/asanas/categories/{category}', [AdminAsanaLibraryController::class, 'updateCategory']);
+            Route::delete('/asanas/categories/{category}', [AdminAsanaLibraryController::class, 'destroyCategory']);
 
             Route::get('/chats', [AdminChatController::class, 'index']);
             Route::get('/chats/{client}', [AdminChatController::class, 'show']);
