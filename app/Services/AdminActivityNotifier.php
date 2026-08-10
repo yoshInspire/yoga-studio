@@ -64,6 +64,8 @@ class AdminActivityNotifier
             ],
             'Клиент записался на занятие',
         );
+
+        $this->notifyTrainer($session, 'Новая запись на занятие', $user->fullName().' записался.');
     }
 
     public function clientCancelledBooking(User $user, Booking $booking): void
@@ -78,6 +80,35 @@ class AdminActivityNotifier
                 ...$this->sessionLines($session),
             ],
             'Клиент отменил запись',
+        );
+
+        $this->notifyTrainer($session, 'Клиент снялся с занятия', $user->fullName().' отменил запись.');
+    }
+
+    /**
+     * Сообщить тренеру, что его ростер изменился.
+     *
+     * Только лента и пуш: письмо на каждую запись превратило бы почту тренера
+     * в свалку. Контакты клиента тренеру по-прежнему не отдаются — только имя
+     * и фамилия, как и в ростере на сайте.
+     */
+    private function notifyTrainer(ClassSession $session, string $heading, string $what): void
+    {
+        $trainer = $session->trainer;
+
+        if ($trainer === null) {
+            return;
+        }
+
+        $this->notifications->notifyStaff(
+            $trainer,
+            $heading,
+            [
+                $session->title.' — '.$session->formattedDateTime().'.',
+                $what,
+            ],
+            type: 'booking',
+            payload: ['session_id' => $session->id],
         );
     }
 

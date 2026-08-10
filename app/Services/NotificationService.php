@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\UserRole;
 use App\Mail\StudioNotificationMail;
 use App\Models\ClientNotification;
 use App\Models\User;
@@ -151,12 +152,28 @@ class NotificationService
     }
 
     /**
-     * Уведомить администратора (почта рассылки).
+     * Уведомить администратора: почта рассылки плюс лента и пуш в приложении.
+     *
+     * Раньше здесь была только почта — админка жила в браузере, и телефон был
+     * ни при чём. Теперь администратор студии работает с телефона, поэтому
+     * то же самое уходит ему в ленту и пушем. Точка одна, как и у клиента:
+     * новый вид служебного уведомления попадёт во все каналы сам.
      *
      * @param  list<string>  $lines
+     * @param  string  $type  вид уведомления: задаёт иконку в ленте
+     * @param  array<string, mixed>  $payload  куда вести по тапу
      */
-    public function notifyAdmin(string $heading, array $lines, ?string $subject = null): bool
-    {
+    public function notifyAdmin(
+        string $heading,
+        array $lines,
+        ?string $subject = null,
+        string $type = 'studio',
+        array $payload = [],
+    ): bool {
+        foreach (User::query()->where('role', UserRole::Admin)->get() as $admin) {
+            $this->notifyStaff($admin, $heading, $lines, $type, $payload);
+        }
+
         $email = config('studio.admin_email');
 
         if (blank($email)) {
@@ -164,6 +181,49 @@ class NotificationService
         }
 
         return $this->sendMail((string) $email, $heading, $lines, $subject, footnote: 'Служебное уведомление администратору студии.');
+    }
+
+    /**
+     * Уведомить сотрудника — только лента и пуш, без почты и Telegram.
+     *
+     * Отличается от `notifyUser()` набором каналов, и это решение студии, а не
+     * экономия кода: письмо «клиент записался на ваше занятие» на каждую
+     * запись превратило бы почту тренера в свалку, а лента и значок на иконке
+     * — ровно то место, куда за этим и заходят.
+     *
+     * @param  list<string>  $lines
+     * @param  array<string, mixed>  $payload
+     * @return array{push: int, stored: bool}
+     */
+    public function notifyStaff(
+        User $user,
+        string $heading,
+        array $lines,
+        string $type = 'studio',
+        array $payload = [],
+    ): array {
+        $result = ['push' => 0, 'stored' => false];
+
+        try {
+            ClientNotification::query()->create([
+                'user_id' => $user->id,
+                'type' => $type,
+                'title' => $heading,
+                'body' => $this->formatBody($lines),
+                'payload' => $payload === [] ? null : $payload,
+            ]);
+            $result['stored'] = true;
+        } catch (\Throwable $e) {
+            Log::error('Не удалось сохранить уведомление сотруднику', [
+                'user_id' => $user->id,
+                'type' => $type,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        $result['push'] = $this->sendPush($user, $heading, $lines, $type, $payload);
+
+        return $result;
     }
 
     /**

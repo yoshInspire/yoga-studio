@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\AttendanceStatus;
 use App\Enums\BookingStatus;
+use App\Enums\ClassSessionStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
@@ -148,6 +149,99 @@ class BookingController extends Controller
                 ? 'Действующего абонемента нужного типа нет — сначала выдайте абонемент.'
                 : null,
         ]);
+    }
+
+    /**
+     * Куда можно перенести запись: сама запись и ближайшие занятия со
+     * свободными местами.
+     *
+     * Абонемент здесь не выбирается — для этого есть уже готовый
+     * `options`, который знает и про тип занятия, и про дату. Приложение
+     * зовёт его вторым шагом, когда занятие выбрано.
+     */
+    public function rescheduleOptions(Booking $booking): JsonResponse
+    {
+        $this->assertReschedulable($booking);
+
+        $current = $booking->classSession;
+
+        $sessions = ClassSession::query()
+            ->where('status', ClassSessionStatus::Scheduled)
+            ->where('starts_at', '>=', now())
+            ->where('starts_at', '<=', now()->addDays(30))
+            ->where('id', '!=', $current?->id)
+            ->with('direction')
+            ->withCount(['bookings as confirmed_count' => fn ($q) => $q->where('status', BookingStatus::Confirmed)])
+            ->orderBy('starts_at')
+            ->get()
+            // Занятия без мест показывать незачем: перенести туда всё равно
+            // не выйдет, а список длиннее.
+            ->reject(fn (ClassSession $s) => $s->confirmed_count >= $s->capacity)
+            ->map(fn (ClassSession $s) => [
+                'id' => $s->id,
+                'date_iso' => $s->starts_at->toDateString(),
+                'date_time' => $s->formattedDateTime(),
+                'direction' => $s->direction?->title,
+                'topic' => $s->topic,
+                'type' => $s->type->value,
+                'type_label' => $s->type->shortLabel(),
+                'taken' => $s->confirmed_count,
+                'capacity' => $s->capacity,
+            ])
+            ->values();
+
+        return response()->json([
+            'booking' => [
+                'id' => $booking->id,
+                'client' => $booking->user->fullName(),
+                'user_id' => $booking->user_id,
+                'session' => $current?->title,
+                'date_time' => $current?->formattedDateTime(),
+                'type_label' => $current?->type->shortLabel(),
+                'subscription_id' => $booking->subscription_id,
+            ],
+            'sessions' => $sessions,
+        ]);
+    }
+
+    /**
+     * Перенести запись на другое занятие.
+     *
+     * Сроки отмены здесь не действуют: клиент звонит и просит переставить,
+     * договаривается с ним администратор. Возврат на прежний абонемент и
+     * списание с нового делает `BookingService` одной транзакцией.
+     */
+    public function reschedule(Request $request, Booking $booking, BookingService $bookings): JsonResponse
+    {
+        $this->assertReschedulable($booking);
+
+        $data = $request->validate([
+            'class_session_id' => ['required', 'integer', 'exists:class_sessions,id'],
+            'subscription_id' => ['nullable', 'integer', 'exists:subscriptions,id'],
+        ]);
+
+        $session = ClassSession::query()->findOrFail($data['class_session_id']);
+        $subscription = filled($data['subscription_id'] ?? null)
+            ? Subscription::query()->findOrFail($data['subscription_id'])
+            : null;
+
+        try {
+            $moved = $bookings->rescheduleByAdmin($booking, $session, $subscription);
+        } catch (InvalidArgumentException $e) {
+            throw ValidationException::withMessages(['class_session_id' => $e->getMessage()]);
+        }
+
+        return response()->json([
+            'id' => $moved->id,
+            'message' => 'Запись перенесена на «'.$session->title.'», '.$session->formattedDateTime().'.',
+        ]);
+    }
+
+    private function assertReschedulable(Booking $booking): void
+    {
+        if ($booking->status !== BookingStatus::Confirmed) {
+            abort(422, 'Запись отменена — переносить нечего.');
+        }
     }
 
     /** Записать клиента. Абонемент не указан — подберётся сам. */

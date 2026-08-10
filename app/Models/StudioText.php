@@ -14,6 +14,12 @@ class StudioText extends Model
     /** Приветствие при первом бронировании. */
     public const WELCOME_VISIT = 'welcome_visit';
 
+    /**
+     * Текст оферты, извлечённый из загруженного PDF (JSON с блоками).
+     * Читать и писать через `App\Support\OfferDocument`.
+     */
+    public const OFFER_BODY = 'offer_body';
+
     /** Текст администратора, а если его не задавали — значение по умолчанию. */
     public static function body(string $key, string $default = ''): string
     {

@@ -12,6 +12,7 @@
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
         "maatwebsite/excel": "3.1.69",
+        "smalot/pdfparser": "^2.12",
         "yoomoney/yookassa-sdk-php": "^3.13"
     },
     "require-dev": {

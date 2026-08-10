@@ -19,6 +19,7 @@ class BookingService
     public function __construct(
         private SubscriptionService $subscriptions,
         private WelcomeMessageService $welcomeMessages,
+        private NotificationService $notifications,
     ) {}
 
     public function book(User $user, ClassSession $session, ?Subscription $subscription = null): Booking
@@ -290,6 +291,70 @@ class BookingService
         });
     }
 
+    /**
+     * Перенести запись клиента на другое занятие — действие администратора.
+     *
+     * Отличается от `rescheduleByClient()` тремя вещами, и все три намеренны:
+     * запись чужая (клиент звонит и просит переставить), сроки отмены не
+     * действуют (администратор договаривается лично), а абонемент списания
+     * можно сменить — например, когда прежний уже кончился.
+     *
+     * Всё остальное общее и трогать нельзя: занятие возвращается на прежний
+     * абонемент и списывается с нового в одной транзакции, иначе остатки
+     * разъедутся.
+     */
+    public function rescheduleByAdmin(
+        Booking $booking,
+        ClassSession $newSession,
+        ?Subscription $subscription = null,
+    ): Booking {
+        return DB::transaction(function () use ($booking, $newSession, $subscription) {
+            $booking = Booking::query()->lockForUpdate()->findOrFail($booking->id);
+            $newSession = ClassSession::query()->lockForUpdate()->findOrFail($newSession->id);
+
+            if (! $booking->isConfirmed()) {
+                throw new InvalidArgumentException('Запись уже отменена — переносить нечего.');
+            }
+
+            if ($booking->class_session_id === $newSession->id) {
+                throw new InvalidArgumentException('Клиент уже записан на это занятие.');
+            }
+
+            $subscription ??= $booking->subscription;
+
+            if ($subscription === null) {
+                throw new InvalidArgumentException(
+                    'У записи нет абонемента — выберите, с какого списать занятие.',
+                );
+            }
+
+            if ($subscription->user_id !== $booking->user_id) {
+                throw new InvalidArgumentException('Выбранный абонемент принадлежит другому клиенту.');
+            }
+
+            if (! $this->subscriptions->typesMatch($subscription->type, $newSession->type)) {
+                throw new InvalidArgumentException('Тип абонемента не подходит для этого занятия.');
+            }
+
+            $this->assertCanBook($booking->user, $newSession, excludeBookingId: $booking->id, forAdmin: true);
+
+            // Сначала вернуть занятие на прежний абонемент, потом списать с
+            // нового: иначе перенос внутри одного абонемента с последним
+            // занятием упрётся в собственную же бронь.
+            $this->releaseBooking($booking);
+
+            $usageId = $this->chargeForBooking($booking->user, $newSession, $subscription);
+
+            $booking->update([
+                'class_session_id' => $newSession->id,
+                'subscription_id' => $subscription->id,
+                'subscription_usage_id' => $usageId,
+            ]);
+
+            return $booking->refresh();
+        });
+    }
+
     public function cancelByClient(Booking $booking): Booking
     {
         if ($booking->user_id !== auth()->id()) {
@@ -321,7 +386,7 @@ class BookingService
 
     public function cancelClass(ClassSession $session, string $reason, bool $refundClients = true): ClassSession
     {
-        return DB::transaction(function () use ($session, $reason, $refundClients) {
+        $cancelled = DB::transaction(function () use ($session, $reason, $refundClients) {
             $session = ClassSession::query()->lockForUpdate()->findOrFail($session->id);
 
             if ($session->isCancelled()) {
@@ -351,6 +416,33 @@ class BookingService
 
             return $session->refresh();
         });
+
+        // Тренер узнаёт об отмене здесь, а не в трёх местах вызова (админка,
+        // API, автоотмена недобранных групп): их легко забыть, а приехать на
+        // отменённое занятие — нет. Только лента и пуш, писем тренерам не шлём.
+        $this->notifyTrainerOfCancellation($cancelled, $reason);
+
+        return $cancelled;
+    }
+
+    private function notifyTrainerOfCancellation(ClassSession $session, string $reason): void
+    {
+        $trainer = $session->trainer;
+
+        if ($trainer === null) {
+            return;
+        }
+
+        $this->notifications->notifyStaff(
+            $trainer,
+            'Занятие отменено',
+            [
+                $session->title.' — '.$session->formattedDateTime().'.',
+                $reason,
+            ],
+            type: 'cancel',
+            payload: ['session_id' => $session->id],
+        );
     }
 
     public function cancelByAdmin(Booking $booking, ?string $reason = null, bool $refund = true): Booking

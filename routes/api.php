@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\Admin\ClientController as AdminClientController;
 use App\Http\Controllers\Api\Admin\DirectionController as AdminDirectionController;
 use App\Http\Controllers\Api\Admin\MailingController as AdminMailingController;
 use App\Http\Controllers\Api\Admin\NewsController as AdminNewsController;
+use App\Http\Controllers\Api\Admin\OfferController as AdminOfferController;
 use App\Http\Controllers\Api\Admin\OverviewController as AdminOverviewController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Api\Admin\PricingController as AdminPricingController;
@@ -130,6 +131,10 @@ Route::prefix('v1')->group(function () {
             Route::get('/bookings', [AdminBookingController::class, 'index']);
             Route::post('/bookings', [AdminBookingController::class, 'store']);
             Route::get('/bookings/options', [AdminBookingController::class, 'options']);
+            // Перенос записи на другое занятие: клиент звонит и просит
+            // переставить. Сроки отмены администратору не мешают.
+            Route::get('/bookings/{booking}/reschedule', [AdminBookingController::class, 'rescheduleOptions']);
+            Route::post('/bookings/{booking}/reschedule', [AdminBookingController::class, 'reschedule']);
             Route::post('/bookings/{booking}/attended', [AdminVisitController::class, 'attended']);
             Route::post('/bookings/{booking}/no-show', [AdminVisitController::class, 'noShow']);
             Route::post('/bookings/{booking}/cancel', [AdminVisitController::class, 'cancel']);
@@ -196,6 +201,13 @@ Route::prefix('v1')->group(function () {
                 ->whereNumber('index');
             Route::post('/directions/{direction:id}/slides/{index}/move', [AdminDirectionController::class, 'moveSlide'])
                 ->whereNumber('index');
+
+            // Оферта. Загрузка PDF пересобирает текст страницы /oferta из
+            // самого файла — двух редакций одного договора быть не должно.
+            Route::get('/offer', [AdminOfferController::class, 'show']);
+            Route::post('/offer', [AdminOfferController::class, 'store'])
+                ->middleware('throttle:10,1');
+            Route::delete('/offer', [AdminOfferController::class, 'destroy']);
 
             // Отчёты Excel. Файл идёт прямо в ответе под Bearer-токеном:
             // expo-file-system умеет слать заголовки, а подписанная ссылка

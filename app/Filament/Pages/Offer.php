@@ -2,6 +2,8 @@
 
 namespace App\Filament\Pages;
 
+use App\Services\OfferService;
+use App\Support\OfferDocument;
 use App\Support\OfferStorage;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -29,6 +31,11 @@ class Offer extends Page
             'updatedAt' => OfferStorage::updatedAt()?->translatedFormat('d F Y, H:i'),
             'offerUrl' => route('legal.offer'),
             'pdfUrl' => route('legal.offer-pdf'),
+            // Страница /oferta теперь собирается из файла, а не правится
+            // руками — на самой странице Filament висело предупреждение об
+            // обратном, и вид должен это отражать.
+            'textBlocks' => count(OfferDocument::blocks()),
+            'textUpdatedAt' => OfferDocument::updatedAt()?->translatedFormat('d F Y, H:i'),
         ];
     }
 
@@ -51,10 +58,15 @@ class Offer extends Page
                         ->helperText('До 20 МБ. Файл будет доступен клиентам только для просмотра, без прямой ссылки на скачивание.'),
                 ])
                 ->action(function (): void {
+                    // Filament кладёт файл на диск сам, но текст страницы
+                    // /oferta обязан пересобраться из него — иначе вернётся
+                    // расхождение двух редакций, ради которого всё и затеяли.
+                    $result = app(OfferService::class)->syncFromStoredPdf();
+
                     Notification::make()
-                        ->title('Оферта обновлена')
-                        ->body('Документ доступен клиентам в личном кабинете.')
-                        ->success()
+                        ->title($result['parsed'] ? 'Оферта обновлена' : 'Файл загружен, текст не разобран')
+                        ->body($result['message'])
+                        ->status($result['parsed'] ? 'success' : 'warning')
                         ->send();
                 }),
             Action::make('delete')
@@ -64,10 +76,11 @@ class Offer extends Page
                 ->visible(fn () => OfferStorage::exists())
                 ->requiresConfirmation()
                 ->action(function (): void {
-                    OfferStorage::delete();
+                    app(OfferService::class)->delete();
 
                     Notification::make()
                         ->title('Оферта удалена')
+                        ->body('На странице сайта осталась прежняя редакция текста.')
                         ->success()
                         ->send();
                 }),
