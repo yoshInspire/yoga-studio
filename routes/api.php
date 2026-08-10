@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Admin\AsanaController as AdminAsanaController;
 use App\Http\Controllers\Api\Admin\AsanaLibraryController as AdminAsanaLibraryController;
 use App\Http\Controllers\Api\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Api\Admin\ClientController as AdminClientController;
+use App\Http\Controllers\Api\Admin\DirectionController as AdminDirectionController;
 use App\Http\Controllers\Api\Admin\MailingController as AdminMailingController;
 use App\Http\Controllers\Api\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Api\Admin\OverviewController as AdminOverviewController;
@@ -177,6 +178,24 @@ Route::prefix('v1')->group(function () {
                 ->middleware('throttle:10,1');
             Route::post('/mailings/custom', [AdminMailingController::class, 'sendCustom'])
                 ->middleware('throttle:10,1');
+
+            // Направления. Файлы лежат на диске public_web (рядом с сайтом),
+            // а не в storage, как новости. Привязка по id, а не по slug:
+            // getRouteKeyName у модели — slug, приложению нужен id.
+            Route::get('/directions', [AdminDirectionController::class, 'index']);
+            Route::post('/directions', [AdminDirectionController::class, 'store']);
+            Route::get('/directions/{direction:id}', [AdminDirectionController::class, 'show']);
+            Route::put('/directions/{direction:id}', [AdminDirectionController::class, 'update']);
+            Route::delete('/directions/{direction:id}', [AdminDirectionController::class, 'destroy']);
+            Route::post('/directions/{direction:id}/move', [AdminDirectionController::class, 'move']);
+            Route::post('/directions/{direction:id}/cover', [AdminDirectionController::class, 'storeCover'])
+                ->middleware('throttle:30,1');
+            Route::post('/directions/{direction:id}/slides', [AdminDirectionController::class, 'storeSlide'])
+                ->middleware('throttle:30,1');
+            Route::delete('/directions/{direction:id}/slides/{index}', [AdminDirectionController::class, 'destroySlide'])
+                ->whereNumber('index');
+            Route::post('/directions/{direction:id}/slides/{index}/move', [AdminDirectionController::class, 'moveSlide'])
+                ->whereNumber('index');
 
             // Отчёты Excel. Файл идёт прямо в ответе под Bearer-токеном:
             // expo-file-system умеет слать заголовки, а подписанная ссылка
