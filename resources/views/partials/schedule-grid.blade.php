@@ -13,6 +13,10 @@
     </span>
   @endif
 
+  {{-- Период на телефоне живёт в одной строке со стрелками: так лента дней
+       занимает всю ширину, а верхняя плашка с периодом там не нужна. --}}
+  <span class="gridsched__range" aria-hidden="true">{{ $rangeLabel }}</span>
+
   <div class="gridsched__head-main">
     <div class="gridsched__days" aria-hidden="true">
       @foreach($days as $day)
@@ -26,19 +30,18 @@
       @endforeach
     </div>
 
+    {{-- Неделя целиком, семь равных колонок: лента с прокруткой показывала на
+         телефоне два-три дня и обрывалась под стрелкой. --}}
     <div class="gridsched__mobnav" role="tablist" id="gridschedMobnav" aria-label="Выбор дня">
       @foreach($days as $i => $day)
         <button type="button"
-                class="gridsched__mobtab {{ $i === 0 ? 'is-active' : '' }}"
+                class="gridsched__mobtab {{ $i === 0 ? 'is-active' : '' }} {{ $day['is_today'] ? 'gridsched__mobtab--today' : '' }}"
                 data-day-tab="{{ $i }}"
                 role="tab"
-                aria-selected="{{ $i === 0 ? 'true' : 'false' }}">
-          @if($day['is_today'])
-            <span class="gridsched__mobtab-main">Сегодня</span>
-          @else
-            <span class="gridsched__mobtab-main">{{ $day['name'] }}</span>
-            <span class="gridsched__mobtab-sub">{{ $day['date'] }}</span>
-          @endif
+                aria-selected="{{ $i === 0 ? 'true' : 'false' }}"
+                aria-label="{{ $day['is_today'] ? 'Сегодня, ' : '' }}{{ $day['name'] }} {{ $day['date'] }}">
+          <span class="gridsched__mobtab-main">{{ $day['name'] }}</span>
+          <span class="gridsched__mobtab-sub">{{ $day['day_number'] ?? $day['date'] }}</span>
         </button>
       @endforeach
     </div>

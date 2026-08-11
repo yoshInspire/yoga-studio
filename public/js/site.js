@@ -23,6 +23,47 @@ mobileMenu?.querySelectorAll('a').forEach((a) => {
   a.addEventListener('click', () => toggleMenu(false));
 });
 
+/**
+ * Растушёвка у краёв рядов с горизонтальной прокруткой (`[data-scroll-fade]`).
+ *
+ * Обрыв ряда ровно по краю экрана не читается как «дальше есть ещё» — на узких
+ * экранах человек просто не догадывается, что ряд можно листать. Класс вешаем
+ * на родителя и только когда прокручивать действительно есть куда, иначе
+ * градиент врёт на последнем чипе.
+ */
+function initScrollFades(root = document) {
+  root.querySelectorAll('[data-scroll-fade]').forEach((row) => {
+    const box = row.parentElement;
+    if (!box) {
+      return;
+    }
+
+    const sync = () => {
+      // Скрытый ряд (на широком экране это лента дней) меряется нулевой
+      // шириной и без проверки всегда просил бы растушёвку справа.
+      if (row.offsetParent === null) {
+        box.classList.remove('has-fade-left', 'has-fade-right');
+
+        return;
+      }
+
+      const rest = row.scrollWidth - row.clientWidth - row.scrollLeft;
+      box.classList.toggle('has-fade-left', row.scrollLeft > 4);
+      box.classList.toggle('has-fade-right', rest > 4);
+    };
+
+    if (!row.dataset.scrollFadeBound) {
+      row.addEventListener('scroll', sync, { passive: true });
+      row.dataset.scrollFadeBound = '1';
+    }
+
+    sync();
+  });
+}
+
+window.addEventListener('resize', () => initScrollFades());
+initScrollFades();
+
 const reveals = document.querySelectorAll('.reveal');
 const io = new IntersectionObserver(
   (entries) => {
@@ -225,38 +266,13 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
     return url;
   };
 
-  // Порядок направлений всегда берём из разметки — он совпадает с серверным,
-  // поэтому одна и та же выборка даёт одну и ту же ссылку.
-  const filterChips = () => Array.from(schedFilter?.querySelectorAll('[data-dir-filter]') ?? []);
+  // Набор направлений сервер пересчитывает на каждую неделю, и в ссылке
+  // каждого чипа уже лежит результат его нажатия — читаем оттуда, а не
+  // повторяем логику переключения на клиенте.
+  const directionsFromHref = (href) => {
+    const value = new URL(href, window.location.origin).searchParams.get('directions');
 
-  const toggledDirections = (slug) => {
-    if (!slug) {
-      return [];
-    }
-    const next = schedDirections.includes(slug)
-      ? schedDirections.filter((item) => item !== slug)
-      : schedDirections.concat(slug);
-
-    return filterChips()
-      .map((chip) => chip.dataset.dirFilter)
-      .filter((item) => item && next.includes(item));
-  };
-
-  const syncFilterUi = () => {
-    filterChips().forEach((chip) => {
-      const slug = chip.dataset.dirFilter;
-      const active = slug ? schedDirections.includes(slug) : schedDirections.length === 0;
-
-      chip.classList.toggle('is-active', active);
-      if (active) {
-        chip.setAttribute('aria-current', 'true');
-      } else {
-        chip.removeAttribute('aria-current');
-      }
-
-      const href = buildScheduleUrl(schedCurrentOffset, toggledDirections(slug));
-      chip.setAttribute('href', href.toString());
-    });
+    return value ? value.split(',').filter(Boolean) : [];
   };
 
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -298,9 +314,15 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
 
       const data = await response.json();
       gridschedStage.innerHTML = data.html;
+      initScrollFades(gridschedStage);
       schedCurrentOffset = data.offset;
       schedDirections = Array.isArray(data.selectedDirections) ? data.selectedDirections : targetDirections;
-      syncFilterUi();
+
+      if (schedFilter && typeof data.filterHtml === 'string') {
+        schedFilter.innerHTML = data.filterHtml;
+        schedFilter.classList.toggle('is-empty', !data.hasFilter);
+        initScrollFades(schedFilter);
+      }
 
       if (schedRangeLabel) {
         schedRangeLabel.textContent = data.rangeLabel;
@@ -382,7 +404,7 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
 
     event.preventDefault();
 
-    const next = toggledDirections(chip.dataset.dirFilter);
+    const next = directionsFromHref(chip.getAttribute('href'));
     if (next.join(',') === schedDirections.join(',')) {
       return;
     }

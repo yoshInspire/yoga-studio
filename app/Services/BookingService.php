@@ -748,19 +748,27 @@ class BookingService
     }
 
     /**
-     * Направления, по которым можно отфильтровать расписание.
+     * Направления, по которым можно отфильтровать показанный период.
      *
-     * Список — только те направления, у которых есть занятия в будущем:
-     * он не должен меняться при перелистывании недель, иначе фильтр «прыгает».
+     * В списке только те, у кого в этих семи днях есть занятия: чип, который
+     * ничего не находит, обманывает — человек жмёт «Инь-йога» и получает
+     * пустую сетку. Поэтому набор пересчитывается на каждую неделю.
      *
+     * Исключение — уже выбранные направления ($keepSlugs): их чипы обязаны
+     * остаться на месте, иначе, перелистнув на неделю без таких занятий,
+     * фильтр нечем будет снять.
+     *
+     * @param  list<string>  $keepSlugs
      * @return list<array{slug: string, title: string}>
      */
-    public function scheduleDirections(): array
+    public function scheduleDirections(Carbon $rangeStart, Carbon $rangeEnd, array $keepSlugs = []): array
     {
         return Direction::query()
-            ->whereHas('classSessions', fn ($q) => $q
-                ->where('status', ClassSessionStatus::Scheduled)
-                ->where('starts_at', '>=', now()->startOfDay()))
+            ->where(fn ($query) => $query
+                ->whereHas('classSessions', fn ($q) => $q
+                    ->inDateRange($rangeStart, $rangeEnd)
+                    ->where('status', ClassSessionStatus::Scheduled))
+                ->when($keepSlugs !== [], fn ($q) => $q->orWhereIn('slug', $keepSlugs)))
             ->ordered()
             ->get(['id', 'slug', 'title'])
             ->map(fn (Direction $direction) => [
@@ -838,6 +846,10 @@ class BookingService
                 'key' => $dayKeys[$date->dayOfWeekIso - 1],
                 'name' => $dayNames[$date->dayOfWeekIso - 1],
                 'date' => RussianDate::dayMonth($date),
+                // Для узкой ленты дней на телефоне: «12 августа» в кнопку не
+                // помещается, и на экране остаётся два дня из семи.
+                'date_short' => $date->format('d.m'),
+                'day_number' => $date->format('j'),
                 'label' => $isToday
                     ? 'Сегодня'
                     : mb_strtoupper(RussianDate::dayMonth($date)).' '.mb_strtoupper($dayNames[$date->dayOfWeekIso - 1]),

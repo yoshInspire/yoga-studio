@@ -29,6 +29,10 @@ class ScheduleController extends Controller
                 'nextOffset' => $data['nextOffset'],
                 'rangeLabel' => $data['rangeLabel'],
                 'selectedDirections' => $data['selectedDirections'],
+                // Список направлений считается по показанной неделе, поэтому
+                // чипы приезжают вместе с сеткой, а не собираются на клиенте.
+                'hasFilter' => count($data['directionOptions']) > 1 || $data['selectedDirections'] !== [],
+                'filterHtml' => view('partials.schedule-filter', $data)->render(),
                 'html' => view('partials.schedule-grid', $data)->render(),
             ]);
         }
@@ -65,8 +69,19 @@ class ScheduleController extends Controller
             }
         }
 
-        $directionOptions = $bookings->scheduleDirections();
-        $selectedDirections = $this->selectedDirections($request, $directionOptions);
+        // Порядок важен: список направлений строится под показанный период, но
+        // выбранные из адреса в него добавляются принудительно — иначе снять
+        // фильтр на неделе без таких занятий было бы нечем.
+        $requestedDirections = $this->requestedDirections($request);
+        $directionOptions = $bookings->scheduleDirections(
+            $startDate->copy()->startOfDay(),
+            $endDate->copy()->endOfDay(),
+            $requestedDirections,
+        );
+        $selectedDirections = array_values(array_filter(
+            array_column($directionOptions, 'slug'),
+            fn (string $slug) => in_array($slug, $requestedDirections, true),
+        ));
         $directionIds = $bookings->scheduleDirectionIds($selectedDirections);
 
         $days = $bookings->buildRollingSchedule($startDate, $viewer, $rescheduleFrom, $directionIds);
@@ -92,15 +107,15 @@ class ScheduleController extends Controller
     }
 
     /**
-     * Выбранные направления из адреса: ?directions=hatha,kundalini.
+     * Слаги направлений из адреса: ?directions=hatha,kundalini.
      *
-     * Слаги, которых нет среди доступных, отбрасываются — иначе ссылка
-     * на снятое направление показывала бы пустое расписание без объяснения.
+     * Здесь только разбор строки. Несуществующие слаги отсеются позже, когда
+     * их не окажется среди направлений студии, — иначе ссылка на удалённое
+     * направление показывала бы пустое расписание без объяснения.
      *
-     * @param  list<array{slug: string, title: string}>  $options
      * @return list<string>
      */
-    private function selectedDirections(Request $request, array $options): array
+    private function requestedDirections(Request $request): array
     {
         $raw = $request->query('directions');
 
@@ -112,16 +127,9 @@ class ScheduleController extends Controller
             return [];
         }
 
-        $picked = array_filter(array_map(
+        return array_values(array_unique(array_filter(array_map(
             fn ($value) => is_string($value) ? trim($value) : '',
             $raw,
-        ));
-
-        // Порядок берём из списка направлений, а не из адреса: так одна и та же
-        // выборка всегда даёт одну и ту же ссылку.
-        return array_values(array_filter(
-            array_column($options, 'slug'),
-            fn (string $slug) => in_array($slug, $picked, true),
-        ));
+        ))));
     }
 }

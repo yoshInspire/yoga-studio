@@ -784,8 +784,28 @@ a { color: inherit; text-decoration: none; }
   font-size: 16px;
 }
 
+/* Растушёвка у краёв прокручиваемых рядов — классы вешает initScrollFades() */
+.sched-filter__row { position: relative; }
+.sched-filter__row::before,
+.sched-filter__row::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 26px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .25s var(--ease);
+  z-index: 1;
+}
+.sched-filter__row::before { left: 0; background: linear-gradient(90deg, rgba(244,241,230,1) 0%, rgba(244,241,230,0) 100%); }
+.sched-filter__row::after { right: 0; background: linear-gradient(270deg, rgba(244,241,230,1) 0%, rgba(244,241,230,0) 100%); }
+.has-fade-left::before,
+.has-fade-right::after { opacity: 1; }
+
 /* Фильтр расписания по направлениям */
 .sched-filter { margin-bottom: 20px; }
+.sched-filter.is-empty { display: none; }
 .sched-filter__label {
   font-size: 11.5px;
   font-weight: 700;
@@ -1048,49 +1068,64 @@ a { color: inherit; text-decoration: none; }
 .gridsched__card--booked { border-left-color: var(--clay); background: #fffaf7; }
 
 .gridsched__mobnav,
-.gridsched__mobile { display: none; }
+.gridsched__mobile,
+.gridsched__range { display: none; }
 
+/* Неделя целиком: семь равных колонок вместо ленты с прокруткой. */
 .gridsched__mobnav {
-  gap: 8px;
-  padding: 10px 4px 12px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  padding: 0;
 }
-.gridsched__mobnav::-webkit-scrollbar { display: none; }
 
 .gridsched__mobtab {
-  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  min-width: 72px;
-  padding: 10px 12px;
+  gap: 1px;
+  min-width: 0;
+  padding: 8px 2px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--paper);
   cursor: pointer;
-  transition: background .25s var(--ease), border-color .25s var(--ease), transform .25s var(--ease);
+  transition: background .25s var(--ease), border-color .25s var(--ease), color .25s var(--ease);
 }
 .gridsched__mobtab-main {
   font-weight: 700;
-  font-size: 13px;
-  color: var(--ink);
+  font-size: 11.5px;
+  color: var(--ink-soft);
   white-space: nowrap;
 }
 .gridsched__mobtab-sub {
-  font-size: 11px;
-  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
   white-space: nowrap;
+  font-variant-numeric: lining-nums tabular-nums;
 }
+/* Сегодняшний день видно и без выбора — по цвету числа. */
+.gridsched__mobtab--today { border-color: var(--sage); }
+.gridsched__mobtab--today .gridsched__mobtab-sub { color: var(--clay); }
 .gridsched__mobtab.is-active {
   background: var(--sage-deep);
   border-color: var(--sage-deep);
-  transform: translateY(-1px);
 }
 .gridsched__mobtab.is-active .gridsched__mobtab-main,
 .gridsched__mobtab.is-active .gridsched__mobtab-sub { color: #fff; }
+
+/* Период недели в шапке сетки — только на телефоне. */
+.gridsched__range {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .gridsched__mobile {
   background: #f8f6ef;
@@ -1823,12 +1858,27 @@ a { color: inherit; text-decoration: none; }
 
 @media (max-width: 960px) {
   .gridsched__days { display: none; }
-  .gridsched__mobnav { display: flex; }
+  .gridsched__mobnav { display: grid; }
   .gridsched__body { display: none; }
   .gridsched__mobile { display: block; }
-  .gridsched__header { flex-wrap: nowrap; }
-  .gridsched__arrow { flex: 0 0 46px; }
-  .gridsched__head-main { flex: 1; min-width: 0; }
+
+  /* Было: две глухие плиты во всю высоту шапки, тёмная «вперёд» срезала ленту
+     дней, а сама лента показывала два дня из семи. Стало: строка «‹ период ›»
+     кнопками-кружками, под ней неделя целиком. */
+  .gridsched__header {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 12px 14px;
+  }
+  .gridsched__arrow { flex: 0 0 38px; height: 38px; border-radius: 50%; order: 1; }
+  .gridsched__arrow--prev { background: var(--paper); border: 1px solid var(--line); }
+  .gridsched__arrow--next { order: 3; }
+  .gridsched__arrow.is-disabled { background: var(--bg); border-color: transparent; }
+  .gridsched__range { display: block; order: 2; }
+  .gridsched__head-main { order: 4; flex: 1 0 100%; }
+  /* Плашка с периодом над сеткой теперь дублировала бы шапку. */
+  .sched__range { display: none; }
 }
 
 @media (max-width: 720px) {
@@ -1844,8 +1894,9 @@ a { color: inherit; text-decoration: none; }
   .sched-filter__chips::-webkit-scrollbar { display: none; }
   .sched-filter__chip { font-size: 13.5px; padding: 7px 14px; }
   .gridsched { border-radius: var(--radius-sm); }
-  .gridsched__arrow { flex-basis: 42px; }
-  .gridsched__mobtab { min-width: 64px; padding: 9px 10px; }
+  .gridsched__header { gap: 6px; padding: 10px 8px 12px; }
+  .gridsched__arrow { flex: 0 0 36px; height: 36px; }
+  .gridsched__mobtab { padding: 8px 1px; }
   .gridsched__mobile { padding: 12px 12px 16px; }
   .gridsched__card { padding: 14px 14px 13px 15px; }
   .gridsched__card-title { font-size: 16px; }
@@ -1858,8 +1909,10 @@ a { color: inherit; text-decoration: none; }
 }
 @media (max-width: 560px) {
   .sched .container { padding: 0 16px; }
-  .gridsched__mobnav { padding-inline: 0; }
-  .gridsched__mobtab-main { font-size: 12px; }
+  .gridsched__mobnav { gap: 3px; }
+  .gridsched__mobtab-main { font-size: 10.5px; }
+  .gridsched__mobtab-sub { font-size: 13px; }
+  .gridsched__range { font-size: 13px; }
   .sched-modal { padding: 0; }
   .sched-modal__dialog { max-width: 100%; min-height: 100%; border-radius: 0; border: none; }
   .auth__panel { padding: 30px 24px; }

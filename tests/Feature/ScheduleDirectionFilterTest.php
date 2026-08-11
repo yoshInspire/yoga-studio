@@ -41,6 +41,44 @@ class ScheduleDirectionFilterTest extends TestCase
         ]);
     }
 
+    public function test_direction_without_classes_in_shown_week_is_not_offered(): void
+    {
+        $hatha = $this->direction('hatha', 'Хатха-йога', 1);
+        $later = $this->direction('kundalini', 'Кундалини-йога', 2);
+
+        $this->classSession($hatha, 'Утренняя практика');
+        $this->classSession($later, 'Работа с дыханием', 10);
+
+        $response = $this->get(route('schedule'));
+
+        $response->assertOk();
+        $response->assertSee('data-dir-filter="hatha"', false);
+        // Занятие есть, но на другой неделе: чип, который ничего не найдёт,
+        // обманывает — именно на это пожаловался заказчик.
+        $response->assertDontSee('data-dir-filter="kundalini"', false);
+
+        // На неделе, где занятие есть, чип появляется.
+        $next = $this->get(route('schedule', ['offset' => 1]));
+        $next->assertOk();
+        $next->assertSee('data-dir-filter="kundalini"', false);
+    }
+
+    public function test_selected_direction_stays_in_the_list_without_classes_this_week(): void
+    {
+        $hatha = $this->direction('hatha', 'Хатха-йога', 1);
+        $later = $this->direction('kundalini', 'Кундалини-йога', 2);
+
+        $this->classSession($hatha, 'Утренняя практика');
+        $this->classSession($later, 'Работа с дыханием', 10);
+
+        // Иначе, перелистнув на неделю без таких занятий, фильтр нечем снять.
+        $response = $this->get(route('schedule', ['directions' => 'kundalini']));
+
+        $response->assertOk();
+        $response->assertSee('data-dir-filter="kundalini"', false);
+        $response->assertSee('По выбранным направлениям в этом периоде занятий нет.');
+    }
+
     public function test_filter_lists_only_directions_with_upcoming_sessions(): void
     {
         $hatha = $this->direction('hatha', 'Хатха-йога', 1);
