@@ -168,7 +168,9 @@ class Mailings extends Page
                     ]),
                 ]),
             Section::make('Произвольное оповещение')
-                ->description('Свободная рассылка на любую тему. Сообщение уйдёт всем клиентам с принятой офертой (email и/или Telegram). Сейчас получателей: '.$recipients.'.')
+                ->description('Свободная рассылка на любую тему. Сообщение уйдёт всем клиентам с принятой офертой (email и/или Telegram). Сейчас получателей: '.$recipients.'. '
+                    .'Отправка идёт в фоне: кнопка отвечает сразу, а сообщения расходятся в течение нескольких минут. '
+                    .'Повторное нажатие с тем же текстом второй копии не пошлёт.')
                 ->schema([
                     TextInput::make('customHeading')
                         ->label('Тема сообщения')
@@ -189,7 +191,7 @@ class Mailings extends Page
                             ->color('success')
                             ->requiresConfirmation()
                             ->modalHeading('Отправить оповещение?')
-                            ->modalDescription('Сообщение уйдёт всем клиентам с принятой офертой (email и/или Telegram).')
+                            ->modalDescription('Сообщение уйдёт всем клиентам с принятой офертой (email и/или Telegram). Получателей: '.$recipients.'.')
                             ->action(function () {
                                 $this->runCustom(dryRun: false);
                             }),
@@ -277,9 +279,9 @@ class Mailings extends Page
         $result = app(StudioMailingService::class)->sendWeeklyScheduleAnnouncement(dryRun: $dryRun, force: $force);
 
         Notification::make()
-            ->title($dryRun ? 'Проверка недельной рассылки' : 'Рассылка об открытии записи отправлена')
+            ->title($dryRun ? 'Проверка недельной рассылки' : 'Рассылка об открытии записи поставлена в отправку')
             ->body(sprintf(
-                'Период: %s — %s. Отправлено: %d. Пропущено: %d.',
+                'Период: %s — %s. Получателей: %d. Пропущено (уже получали): %d.',
                 $result['from'],
                 $result['to'],
                 $result['sent'],
@@ -305,20 +307,42 @@ class Mailings extends Page
             dryRun: $dryRun,
         );
 
+        if ($dryRun) {
+            Notification::make()
+                ->title('Проверка произвольного оповещения')
+                ->body(sprintf('Тема: «%s». Будет отправлено: %d.', $this->customHeading, $result['sent']))
+                ->success()
+                ->send();
+
+            return;
+        }
+
+        // Ничего не поставлено в очередь — значит это повтор того же текста.
+        // Говорим об этом прямо: администратор нажал ещё раз именно потому,
+        // что не был уверен, ушло ли сообщение.
+        if ($result['sent'] === 0) {
+            Notification::make()
+                ->title('Это сообщение уже отправлено')
+                ->body($result['already_running']
+                    ? 'Рассылка с таким текстом уже запущена — сообщения расходятся, повторять не нужно.'
+                    : sprintf('Все получатели (%d) его уже получили. Второй копии не будет.', $result['skipped']))
+                ->warning()
+                ->send();
+
+            return;
+        }
+
         Notification::make()
-            ->title($dryRun ? 'Проверка произвольного оповещения' : 'Оповещение отправлено')
+            ->title('Оповещение поставлено в отправку')
             ->body(sprintf(
-                'Тема: «%s». %s: %d.',
+                'Тема: «%s». Получателей: %d. Сообщения уходят в фоне, это занимает несколько минут — страницу можно закрыть.',
                 $this->customHeading,
-                $dryRun ? 'Будет отправлено' : 'Отправлено',
                 $result['sent'],
             ))
             ->success()
             ->send();
 
-        if (! $dryRun) {
-            $this->customHeading = '';
-            $this->customBody = '';
-        }
+        $this->customHeading = '';
+        $this->customBody = '';
     }
 }

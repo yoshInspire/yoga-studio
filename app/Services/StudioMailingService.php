@@ -4,16 +4,37 @@ namespace App\Services;
 
 use App\Enums\BookingStatus;
 use App\Enums\UserRole;
+use App\Jobs\SendClientMailing;
 use App\Models\Booking;
 use App\Models\ClientMailingLog;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
+/**
+ * Массовые рассылки клиентам студии.
+ *
+ * **Отправка идёт очередью, а не в запросе.** Раньше письма уходили прямо в
+ * HTTP-запросе, и на семи десятках клиентов он не укладывался в таймаут
+ * nginx: администратор видел «Ошибка при загрузке страницы», хотя рассылка
+ * продолжала уходить, — и жал «Отправить» снова. Так 06.08.2026 сообщение
+ * ушло людям по нескольку раз. Теперь нажатие только ставит задания
+ * `SendClientMailing` (это доли секунды), а доставку ведёт воркер, которого
+ * раз в минуту поднимает планировщик (`routes/console.php`).
+ *
+ * Защит от повторной отправки две, и они разного назначения:
+ *  - `alreadySent()` перед постановкой — чтобы счётчики на экране были
+ *    честными («уже отправлено, повтор не нужен»);
+ *  - вставка строки журнала внутри самого задания — чтобы копия не ушла даже
+ *    при гонке двух нажатий (см. `SendClientMailing::claim()`).
+ */
 class StudioMailingService
 {
+    /** Сколько помним, что рассылка с таким ключом уже запускалась. */
+    private const RUN_MARK_TTL = 3600;
+
     public function __construct(
-        private NotificationService $notifications,
         private BirthdayGreetingService $birthdayGreetings,
     ) {}
 
@@ -71,15 +92,7 @@ class StudioMailingService
                 return;
             }
 
-            $this->notifications->notifyUser(
-                $user,
-                $message['heading'],
-                $message['lines'],
-                $message['subject'],
-                type: 'reminder',
-            );
-
-            $this->markSent($user, ClientMailingLog::TYPE_DAILY_EVENING, $mailingKey);
+            $this->queueMailing($user, $message, ClientMailingLog::TYPE_DAILY_EVENING, $mailingKey, 'reminder');
         });
 
         return $counts;
@@ -126,19 +139,11 @@ class StudioMailingService
                 ClientMailingLog::query()
                     ->where('user_id', $user->id)
                     ->where('type', ClientMailingLog::TYPE_WEEKLY_SCHEDULE)
-                    ->whereDate('mailing_key', $mailingKey)
+                    ->where('mailing_key', $mailingKey)
                     ->delete();
             }
 
-            $this->notifications->notifyUser(
-                $user,
-                $message['heading'],
-                $message['lines'],
-                $message['subject'],
-                type: 'schedule',
-            );
-
-            $this->markSent($user, ClientMailingLog::TYPE_WEEKLY_SCHEDULE, $mailingKey);
+            $this->queueMailing($user, $message, ClientMailingLog::TYPE_WEEKLY_SCHEDULE, $mailingKey, 'schedule');
             $sent++;
         });
 
@@ -151,42 +156,65 @@ class StudioMailingService
     }
 
     /**
-     * @return array{sent: int, mailing_key: string}
+     * Произвольное оповещение всем клиентам с принятой офертой.
+     *
+     * Ключ рассылки — дата плюс отпечаток текста. Из этого следует главное:
+     * повторное нажатие «Отправить» с тем же сообщением никому не пошлёт
+     * вторую копию (`skipped`), а другое сообщение в тот же день уйдёт как
+     * обычно. Раньше ключ был меткой времени, то есть каждое нажатие
+     * считалось новой рассылкой.
+     *
+     * @return array{sent: int, skipped: int, already_running: bool, mailing_key: string}
      */
     public function sendCustomAnnouncement(string $heading, string $body, bool $dryRun = false): array
     {
         $heading = trim($heading);
         $lines = $this->parseBodyLines($body);
-        $mailingKey = now()->format('Y-m-d-His');
+        $mailingKey = $this->customMailingKey($heading, $lines);
+        $message = ['heading' => $heading, 'subject' => $heading, 'lines' => $lines];
+
         $sent = 0;
+        $skipped = 0;
+
+        // Отметка о запуске живёт час и нужна для честного ответа экрану:
+        // задания уже поставлены, но журнал заполнит воркер, и до этого
+        // момента `alreadySent()` про них ещё не знает.
+        if (! $dryRun && ! $this->markRunStarted($mailingKey)) {
+            return [
+                'sent' => 0,
+                'skipped' => $this->eligibleClientsCount(),
+                'already_running' => true,
+                'mailing_key' => $mailingKey,
+            ];
+        }
 
         $this->eligibleClients()->each(function (User $user) use (
-            $heading,
-            $lines,
+            $message,
             $mailingKey,
             $dryRun,
             &$sent,
+            &$skipped,
         ) {
+            if ($this->alreadySent($user, ClientMailingLog::TYPE_CUSTOM, $mailingKey)) {
+                $skipped++;
+
+                return;
+            }
+
             if ($dryRun) {
                 $sent++;
 
                 return;
             }
 
-            $this->notifications->notifyUser(
-                $user,
-                $heading,
-                $lines,
-                $heading,
-                type: 'announcement',
-            );
-
-            $this->markSent($user, ClientMailingLog::TYPE_CUSTOM, $mailingKey);
+            $this->queueMailing($user, $message, ClientMailingLog::TYPE_CUSTOM, $mailingKey, 'announcement');
             $sent++;
         });
 
         return [
             'sent' => $sent,
+            'skipped' => $skipped,
+            'already_running' => false,
             'mailing_key' => $mailingKey,
         ];
     }
@@ -225,15 +253,18 @@ class StudioMailingService
                     return;
                 }
 
-                $this->notifications->notifyUser(
+                $this->queueMailing(
                     $user,
-                    '🎂 С днём рождения!',
-                    [$body],
-                    'С днём рождения!',
-                    type: 'birthday',
+                    [
+                        'heading' => '🎂 С днём рождения!',
+                        'subject' => 'С днём рождения!',
+                        'lines' => [$body],
+                    ],
+                    ClientMailingLog::TYPE_BIRTHDAY,
+                    $mailingKey,
+                    'birthday',
                 );
 
-                $this->markSent($user, ClientMailingLog::TYPE_BIRTHDAY, $mailingKey);
                 $counts['sent']++;
             });
 
@@ -273,7 +304,7 @@ class StudioMailingService
 
         $sent = ClientMailingLog::query()
             ->where('type', ClientMailingLog::TYPE_WEEKLY_SCHEDULE)
-            ->whereDate('mailing_key', $weekStart->toDateString())
+            ->where('mailing_key', $weekStart->toDateString())
             ->whereIn('user_id', $this->eligibleClients()->reorder()->select('id'))
             ->count();
 
@@ -411,23 +442,61 @@ class StudioMailingService
             ->orderBy('id');
     }
 
+    /**
+     * Поставить сообщение в очередь. Саму отправку и запись в журнал делает
+     * `SendClientMailing` — там же защита от второй копии.
+     *
+     * @param  array{heading: string, subject?: string|null, lines: list<string>}  $message
+     */
+    private function queueMailing(
+        User $user,
+        array $message,
+        string $logType,
+        string $mailingKey,
+        string $notificationType,
+    ): void {
+        SendClientMailing::dispatch(
+            $user->id,
+            $message['heading'],
+            $message['lines'],
+            $message['subject'] ?? null,
+            $notificationType,
+            $logType,
+            $mailingKey,
+        );
+    }
+
+    /**
+     * Ключ произвольной рассылки: дата плюс отпечаток текста.
+     *
+     * Отпечаток — чтобы повтор того же сообщения узнавался; дата — чтобы одно
+     * и то же объявление можно было повторить через неделю намеренно.
+     *
+     * @param  list<string>  $lines
+     */
+    private function customMailingKey(string $heading, array $lines): string
+    {
+        $fingerprint = substr(hash('sha256', $heading."\n".implode("\n", $lines)), 0, 16);
+
+        return now()->toDateString().':'.$fingerprint;
+    }
+
+    /**
+     * Отметить, что рассылка с таким ключом запущена. Вернёт false, если её
+     * уже запускали — значит задания стоят в очереди и повтор не нужен.
+     */
+    private function markRunStarted(string $mailingKey): bool
+    {
+        return Cache::add('studio-mailing:'.$mailingKey, now()->toIso8601String(), self::RUN_MARK_TTL);
+    }
+
     private function alreadySent(User $user, string $type, string $mailingKey): bool
     {
         return ClientMailingLog::query()
             ->where('user_id', $user->id)
             ->where('type', $type)
-            ->whereDate('mailing_key', $mailingKey)
+            ->where('mailing_key', $mailingKey)
             ->exists();
-    }
-
-    private function markSent(User $user, string $type, string $mailingKey): void
-    {
-        ClientMailingLog::query()->create([
-            'user_id' => $user->id,
-            'type' => $type,
-            'mailing_key' => $mailingKey,
-            'sent_at' => now(),
-        ]);
     }
 
     private function config(string $key): mixed

@@ -3,21 +3,25 @@
 namespace App\Services;
 
 use App\Enums\UserRole;
+use App\Jobs\SendClientMailing;
+use App\Models\ClientMailingLog;
 use App\Models\News;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 
 /**
  * Уведомления клиентов о публикации новости на сайте (почта и Telegram).
+ *
+ * Отправка идёт очередью — по тем же причинам, что и остальные массовые
+ * рассылки студии (см. `StudioMailingService`): сохранение новости в админке
+ * не должно ждать семи десятков писем, иначе страница отвалится по таймауту,
+ * а рассылка при этом продолжится.
  */
 class NewsNotificationService
 {
-    public function __construct(
-        private NotificationService $notifications,
-    ) {}
-
     /**
-     * Отправить уведомления, если новость опубликована и ещё не рассылалась.
+     * Поставить уведомления в очередь, если новость опубликована и рассылки
+     * ещё не было.
      *
      * @return int|null Число получателей или null, если рассылка не требовалась.
      */
@@ -28,16 +32,19 @@ class NewsNotificationService
         }
 
         $message = $this->buildMessage($news);
+        $mailingKey = 'news:'.$news->getKey();
         $sent = 0;
 
-        $this->eligibleClients()->each(function (User $user) use ($message, $news, &$sent) {
-            $this->notifications->notifyUser(
-                $user,
+        $this->eligibleClients()->each(function (User $user) use ($message, $news, $mailingKey, &$sent) {
+            SendClientMailing::dispatch(
+                $user->id,
                 $message['heading'],
                 $message['lines'],
                 $message['subject'],
-                type: 'news',
-                payload: ['news_slug' => $news->slug],
+                'news',
+                ClientMailingLog::TYPE_NEWS,
+                $mailingKey,
+                ['news_slug' => $news->slug],
             );
             $sent++;
         });

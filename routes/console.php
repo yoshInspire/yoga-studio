@@ -42,3 +42,20 @@ Schedule::command('studio:birthday-greetings')
 Schedule::command('studio:publish-scheduled-news')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+/*
+ * Очередь рассылок. Постоянного воркера на сервере нет и заводить его
+ * незачем: заданий тут не бывает между рассылками, а cron с
+ * `schedule:run` уже стоит и работает.
+ *
+ * `--stop-when-empty` — разобрал очередь и вышел; `--max-time=50` — чтобы
+ * запуск не пересекался со следующей минутой (остаток разберёт она);
+ * `--tries=1` — у `SendClientMailing` повторов нет намеренно, право на
+ * отправку он занимает записью в журнал. `withoutOverlapping` не даёт
+ * поднять второй воркер поверх работающего, `runInBackground` — задержать
+ * остальные задачи планировщика на эти пятьдесят секунд.
+ */
+Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=1 --quiet')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->runInBackground();

@@ -57,7 +57,7 @@ class BirthdayGreetingsTest extends TestCase
         $this->assertDatabaseHas('client_mailing_logs', [
             'user_id' => $user->id,
             'type' => ClientMailingLog::TYPE_BIRTHDAY,
-            'mailing_key' => '2026-07-10 00:00:00',
+            'mailing_key' => '2026-07-10',
         ]);
     }
 

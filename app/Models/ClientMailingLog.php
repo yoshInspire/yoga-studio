@@ -18,6 +18,9 @@ class ClientMailingLog extends Model
     /** Памятка «К вашему визиту» — один раз при первом бронировании. */
     public const TYPE_WELCOME = 'welcome_visit';
 
+    /** Публикация новости — ключ `news:<id>`, один раз на новость. */
+    public const TYPE_NEWS = 'news';
+
     protected $fillable = [
         'user_id',
         'type',
@@ -25,10 +28,16 @@ class ClientMailingLog extends Model
         'sent_at',
     ];
 
+    /**
+     * `mailing_key` — строка, а не дата, и каста у неё быть не должно.
+     *
+     * Каст `date` сводил ключ произвольной рассылки к дате и превращал UNIQUE
+     * (user_id, type, mailing_key) в мину: второе оповещение за день падало
+     * после отправки первому клиенту. См. миграцию от 11.08.2026.
+     */
     protected function casts(): array
     {
         return [
-            'mailing_key' => 'date',
             'sent_at' => 'datetime',
         ];
     }

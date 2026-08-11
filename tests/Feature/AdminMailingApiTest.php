@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Jobs\SendClientMailing;
 use App\Mail\StudioNotificationMail;
 use App\Models\BirthdayGreeting;
 use App\Models\ClientMailingLog;
@@ -12,6 +13,7 @@ use App\Services\WelcomeMessageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 /**
@@ -232,6 +234,86 @@ class AdminMailingApiTest extends TestCase
             ->postJson('/api/v1/admin/mailings/custom', ['heading' => '', 'body' => ''])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['heading', 'body']);
+    }
+
+    /**
+     * Разбор инцидента 06.08.2026: сообщение ушло клиентам четыре раза.
+     *
+     * Отправка не укладывалась в таймаут, страница показывала ошибку, и
+     * администратор жал «Отправить» снова. Теперь повтор того же текста
+     * второй копии не шлёт.
+     */
+    public function test_repeated_custom_announcement_does_not_send_second_copy(): void
+    {
+        Mail::fake();
+
+        $this->eligibleClient('+79990000001', 'one@example.com');
+
+        $payload = ['heading' => 'Тема', 'body' => 'Текст сообщения'];
+
+        $this->actingAs($this->admin(), 'sanctum')
+            ->postJson('/api/v1/admin/mailings/custom', $payload)
+            ->assertOk()
+            ->assertJsonPath('queued', 1);
+
+        $this->actingAs($this->admin(), 'sanctum')
+            ->postJson('/api/v1/admin/mailings/custom', $payload)
+            ->assertOk()
+            ->assertJsonPath('queued', 0)
+            ->assertJsonPath('already_sent', true);
+
+        Mail::assertSent(StudioNotificationMail::class, 1);
+        $this->assertSame(
+            1,
+            ClientMailingLog::query()->where('type', ClientMailingLog::TYPE_CUSTOM)->count(),
+        );
+    }
+
+    /**
+     * Второе оповещение за день с другим текстом обязано уходить.
+     *
+     * До 11.08.2026 оно падало с ошибкой уникальности журнала — уже после
+     * того, как сообщение ушло первому клиенту в списке.
+     */
+    public function test_second_custom_announcement_with_other_text_goes_out_same_day(): void
+    {
+        Mail::fake();
+
+        $this->eligibleClient('+79990000001', 'one@example.com');
+        $this->eligibleClient('+79990000002', 'two@example.com');
+
+        $this->actingAs($this->admin(), 'sanctum')
+            ->postJson('/api/v1/admin/mailings/custom', ['heading' => 'Утро', 'body' => 'Занятие перенесено'])
+            ->assertOk()
+            ->assertJsonPath('queued', 2);
+
+        $this->actingAs($this->admin(), 'sanctum')
+            ->postJson('/api/v1/admin/mailings/custom', ['heading' => 'Вечер', 'body' => 'Занятие отменено'])
+            ->assertOk()
+            ->assertJsonPath('queued', 2);
+
+        Mail::assertSent(StudioNotificationMail::class, 4);
+    }
+
+    /**
+     * Запрос только ставит задания: ждать в нём семь десятков SMTP-сессий
+     * нельзя — именно это и обрывалось по таймауту.
+     */
+    public function test_custom_announcement_is_queued_and_does_not_send_in_request(): void
+    {
+        Mail::fake();
+        Queue::fake();
+
+        $this->eligibleClient('+79990000001', 'one@example.com');
+        $this->eligibleClient('+79990000002', 'two@example.com');
+
+        $this->actingAs($this->admin(), 'sanctum')
+            ->postJson('/api/v1/admin/mailings/custom', ['heading' => 'Тема', 'body' => 'Текст'])
+            ->assertOk()
+            ->assertJsonPath('queued', 2);
+
+        Queue::assertPushed(SendClientMailing::class, 2);
+        Mail::assertNothingSent();
     }
 
     public function test_dry_run_is_not_exposed(): void
