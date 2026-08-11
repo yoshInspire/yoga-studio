@@ -61,7 +61,7 @@ class BookingController extends Controller
             ->with('status', 'Бронирование перенесено на «'.$session->title.'» '.$session->formattedDateTime().'.');
     }
 
-    public function cancel(Booking $booking, BookingService $bookings): RedirectResponse
+    public function cancel(Request $request, Booking $booking, BookingService $bookings): RedirectResponse
     {
         if ($booking->user_id !== auth()->id()) {
             abort(403);
