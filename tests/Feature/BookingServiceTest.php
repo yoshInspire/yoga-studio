@@ -535,6 +535,144 @@ class BookingServiceTest extends TestCase
         }
     }
 
+    /**
+     * Случай Фадеевой (клиент #19, отчёт от 10.08.2026): клиент занял последнее
+     * занятие старого абонемента, следующую бронь система увела на новый, а
+     * потом первую отменил администратор. Занятие вернулось на старый абонемент
+     * и раньше догорало до окончания срока.
+     */
+    public function test_admin_cancellation_moves_future_booking_back_to_expiring_subscription(): void
+    {
+        $user = $this->client();
+
+        $old = $this->subscription($user, [
+            'type' => SubscriptionType::Individual,
+            'sessions_total' => 1,
+            'purchased_at' => now()->subMonth(),
+            'starts_at' => now()->subDays(3),
+            'ends_at' => now()->addDays(4),
+        ]);
+
+        $new = $this->subscription($user, [
+            'type' => SubscriptionType::Individual,
+            'sessions_total' => 1,
+            'purchased_at' => now()->subDay(),
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addMonth(),
+        ]);
+
+        $first = $this->service->bookForAdmin($user, $this->makeSession([
+            'type' => SubscriptionType::Individual,
+            'capacity' => 1,
+            'starts_at' => now()->addDay()->setTime(16, 45),
+        ]));
+
+        $second = $this->service->bookForAdmin($user, $this->makeSession([
+            'type' => SubscriptionType::Individual,
+            'capacity' => 1,
+            'starts_at' => now()->addDays(3)->setTime(16, 0),
+        ]));
+
+        // Автовыбор: старый абонемент первым, дальше — новый.
+        $this->assertSame($old->id, $first->subscription_id);
+        $this->assertSame($new->id, $second->subscription_id);
+
+        $this->service->cancelByAdmin($first, 'Тренер перенёс занятие');
+
+        // Занятие вернулось на старый абонемент, и запись на 3-й день, которая
+        // ещё попадает в его срок, переехала туда же — новый абонемент цел.
+        $second = $second->fresh();
+        $this->assertSame($old->id, $second->subscription_id);
+        $this->assertNotNull($second->subscription_usage_id);
+        $this->assertSame(1, $old->fresh()->sessions_used);
+        $this->assertSame(0, $new->fresh()->sessions_used);
+    }
+
+    public function test_rebalance_skips_bookings_outside_the_freed_subscription_window(): void
+    {
+        $user = $this->client();
+
+        $old = $this->subscription($user, [
+            'type' => SubscriptionType::Individual,
+            'sessions_total' => 1,
+            'purchased_at' => now()->subMonth(),
+            'starts_at' => now()->subDays(3),
+            'ends_at' => now()->addDay(),
+        ]);
+
+        $new = $this->subscription($user, [
+            'type' => SubscriptionType::Individual,
+            'sessions_total' => 1,
+            'purchased_at' => now()->subDay(),
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addMonth(),
+        ]);
+
+        $first = $this->service->bookForAdmin($user, $this->makeSession([
+            'type' => SubscriptionType::Individual,
+            'capacity' => 1,
+            'starts_at' => now()->addDay()->setTime(16, 45),
+        ]));
+
+        // Занятие уже за датой окончания старого абонемента — переносить нельзя.
+        $second = $this->service->bookForAdmin($user, $this->makeSession([
+            'type' => SubscriptionType::Individual,
+            'capacity' => 1,
+            'starts_at' => now()->addDays(5)->setTime(16, 0),
+        ]));
+
+        $this->service->cancelByAdmin($first, 'Клиент заболел');
+
+        $this->assertSame($new->id, $second->fresh()->subscription_id);
+        $this->assertSame(0, $old->fresh()->sessions_used);
+        $this->assertSame(1, $new->fresh()->sessions_used);
+    }
+
+    public function test_rebalance_does_not_touch_bookings_on_an_earlier_subscription(): void
+    {
+        $user = $this->client();
+
+        // Освобождается более поздний абонемент — записи с более раннего
+        // остаются на месте, иначе перенос спорил бы с автовыбором.
+        $old = $this->subscription($user, [
+            'type' => SubscriptionType::Individual,
+            'sessions_total' => 2,
+            'purchased_at' => now()->subMonth(),
+            'starts_at' => now()->subDays(3),
+            'ends_at' => now()->addMonth(),
+        ]);
+
+        $new = $this->subscription($user, [
+            'type' => SubscriptionType::Individual,
+            'sessions_total' => 1,
+            'purchased_at' => now()->subDay(),
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addMonth(),
+        ]);
+
+        $onOld = $this->service->bookForAdmin($user, $this->makeSession([
+            'type' => SubscriptionType::Individual,
+            'capacity' => 1,
+            'starts_at' => now()->addDays(2)->setTime(16, 0),
+        ]));
+
+        // Абонемент выбран администратором вручную, вопреки автовыбору.
+        $onNew = $this->service->bookForAdmin($user, $this->makeSession([
+            'type' => SubscriptionType::Individual,
+            'capacity' => 1,
+            'starts_at' => now()->addDay()->setTime(16, 45),
+        ]), $new);
+
+        $this->assertSame($old->id, $onOld->subscription_id);
+        $this->assertSame($new->id, $onNew->subscription_id);
+
+        $this->service->cancelByAdmin($onNew, 'Клиент отказался');
+
+        $this->assertSame($old->id, $onOld->fresh()->subscription_id);
+        $this->assertSame(1, $old->fresh()->sessions_used);
+        $this->assertSame(0, $new->fresh()->sessions_used);
+    }
+
     public function test_cancel_class_refunds_all_clients_with_reason(): void
     {
         $session = $this->makeSession(['capacity' => 5]);

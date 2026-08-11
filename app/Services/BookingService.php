@@ -209,13 +209,17 @@ class BookingService
      * одно: если в этот день есть другая активная бронь по тому же абонементу,
      * возврат не делаем, а переносим списание на неё. Возврат происходит, только
      * когда в этот день не остаётся ни одной активной брони.
+     *
+     * Возвращает абонемент, которому вернули занятие, — его остаток вырос, и
+     * прежний выбор списания для будущих записей мог стать неверным
+     * (см. `rebalanceFreedSessions()`). null — возвращать было нечего.
      */
-    private function releaseBooking(Booking $booking): void
+    private function releaseBooking(Booking $booking): ?Subscription
     {
         $usage = $booking->subscriptionUsage;
 
         if ($usage === null) {
-            return;
+            return null;
         }
 
         $subscription = $usage->subscription;
@@ -232,11 +236,118 @@ class BookingService
             if ($other !== null) {
                 $other->update(['subscription_usage_id' => $usage->id]);
 
-                return;
+                return null;
             }
         }
 
         $this->subscriptions->refundUsage($usage);
+
+        return $subscription;
+    }
+
+    /**
+     * Перевести будущие записи на абонемент, которому вернули занятие.
+     *
+     * Абонемент списания выбирается один раз — при создании брони — и раньше
+     * никогда не пересматривался. Из-за этого занятия сгорали: клиент занимал
+     * последнее занятие старого абонемента, следующую бронь система уводила на
+     * новый (старый исчерпан), затем первую бронь отменяли — занятие
+     * возвращалось на старый абонемент и догорало до даты окончания, хотя
+     * будущая запись как раз попадала в его срок.
+     *
+     * Возврат занятия — единственный момент, когда прежний выбор мог стать
+     * неверным, поэтому здесь пересчитываем его для ещё не прошедших записей.
+     * Правило то же, что в `findUsableForUser()`: списываем с абонемента,
+     * приобретённого раньше, — иначе перенос спорил бы с автовыбором.
+     *
+     * @return int сколько записей переставили
+     */
+    public function rebalanceFreedSessions(Subscription $freed, ?int $excludeBookingId = null): int
+    {
+        $freed = $freed->fresh();
+
+        if ($freed === null || $freed->isDoublePerDay() || ! $freed->isActive()) {
+            return 0;
+        }
+
+        $moved = 0;
+
+        foreach ($this->bookingsToMoveOnto($freed, $excludeBookingId) as $booking) {
+            if ($freed->sessionsRemaining() < 1) {
+                break;
+            }
+
+            $this->releaseBooking($booking);
+
+            $booking->update([
+                'subscription_id' => $freed->id,
+                'subscription_usage_id' => $this->chargeForBooking($booking->user, $booking->classSession, $freed),
+            ]);
+
+            $freed->refresh();
+            $moved++;
+        }
+
+        return $moved;
+    }
+
+    /**
+     * Будущие записи клиента, которые по правилу автовыбора должны были уйти
+     * на этот абонемент, а списаны с более позднего.
+     *
+     * «Двойные» абонементы не трогаем ни с одной стороны: там оплачен день, а
+     * не занятие, и перенос списания сломал бы дневной учёт.
+     *
+     * @return list<Booking>
+     */
+    private function bookingsToMoveOnto(Subscription $freed, ?int $excludeBookingId): array
+    {
+        return Booking::query()
+            ->where('user_id', $freed->user_id)
+            ->where('status', BookingStatus::Confirmed)
+            ->where('subscription_id', '!=', $freed->id)
+            ->where(fn ($q) => $q->where('attendance_status', AttendanceStatus::Expected)
+                ->orWhereNull('attendance_status'))
+            ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId))
+            // Занятие уже прошло — списание переносить некуда, клиент на нём был.
+            ->whereHas('classSession', fn ($q) => $q
+                ->where('starts_at', '>=', now())
+                ->whereDate('starts_at', '>=', $freed->starts_at->toDateString())
+                ->whereDate('starts_at', '<=', $freed->ends_at->toDateString()))
+            ->with(['classSession', 'subscription', 'subscriptionUsage', 'user'])
+            ->get()
+            ->filter(fn (Booking $booking) => $booking->classSession !== null
+                && $booking->user !== null
+                && $booking->subscription !== null
+                && ! $booking->subscription->isDoublePerDay()
+                && $this->subscriptions->typesMatch($freed->type, $booking->classSession->type)
+                && $this->isPreferredOver($freed, $booking->subscription))
+            // Ближайшее занятие — первым: у него меньше шансов дожить до
+            // следующего возврата, если занятий вернулось меньше, чем записей.
+            ->sortBy(fn (Booking $booking) => $booking->classSession->starts_at->getTimestamp())
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Тот же порядок предпочтения, что и в `SubscriptionService::findUsableForUser()`.
+     */
+    private function isPreferredOver(Subscription $candidate, Subscription $current): bool
+    {
+        return $this->orderKey($candidate) < $this->orderKey($current);
+    }
+
+    /**
+     * @return array{string, string, string, int}
+     */
+    private function orderKey(Subscription $subscription): array
+    {
+        return [
+            $subscription->purchased_at->toDateString(),
+            $subscription->starts_at->toDateString(),
+            $subscription->ends_at->toDateString(),
+            $subscription->id,
+        ];
     }
 
     public function rescheduleByClient(Booking $booking, ClassSession $newSession): Booking
@@ -341,7 +452,7 @@ class BookingService
             // Сначала вернуть занятие на прежний абонемент, потом списать с
             // нового: иначе перенос внутри одного абонемента с последним
             // занятием упрётся в собственную же бронь.
-            $this->releaseBooking($booking);
+            $freed = $this->releaseBooking($booking);
 
             $usageId = $this->chargeForBooking($booking->user, $newSession, $subscription);
 
@@ -350,6 +461,13 @@ class BookingService
                 'subscription_id' => $subscription->id,
                 'subscription_usage_id' => $usageId,
             ]);
+
+            // Администратор сменил абонемент списания — на прежнем освободилось
+            // занятие. Саму перенесённую запись исключаем: её абонемент выбрал
+            // администратор вручную, возвращать её обратно нельзя.
+            if ($freed !== null && $freed->id !== $subscription->id) {
+                $this->rebalanceFreedSessions($freed, $booking->id);
+            }
 
             return $booking->refresh();
         });
@@ -372,13 +490,17 @@ class BookingService
                 throw new InvalidArgumentException('Запись уже отменена.');
             }
 
-            $this->releaseBooking($booking);
+            $freed = $this->releaseBooking($booking);
 
             $booking->update([
                 'status' => BookingStatus::CancelledByClient,
                 'cancelled_at' => now(),
                 'subscription_usage_id' => null,
             ]);
+
+            if ($freed !== null) {
+                $this->rebalanceFreedSessions($freed, $booking->id);
+            }
 
             return $booking->refresh();
         });
@@ -399,11 +521,16 @@ class BookingService
                 'cancelled_at' => now(),
             ]);
 
+            /** @var array<int, Subscription> $freed */
+            $freed = [];
+
             $session->bookings()
                 ->where('status', BookingStatus::Confirmed)
-                ->each(function (Booking $booking) use ($reason, $refundClients) {
-                    if ($refundClients) {
-                        $this->releaseBooking($booking);
+                ->each(function (Booking $booking) use ($reason, $refundClients, &$freed) {
+                    $released = $refundClients ? $this->releaseBooking($booking) : null;
+
+                    if ($released !== null) {
+                        $freed[$released->id] = $released;
                     }
 
                     $booking->update([
@@ -413,6 +540,12 @@ class BookingService
                         'subscription_usage_id' => null,
                     ]);
                 });
+
+            // Только после того, как все брони отменённого занятия сняты с
+            // абонементов: иначе перенос увидел бы их как действующие записи.
+            foreach ($freed as $subscription) {
+                $this->rebalanceFreedSessions($subscription);
+            }
 
             return $session->refresh();
         });
@@ -454,9 +587,7 @@ class BookingService
                 throw new InvalidArgumentException('Запись уже отменена.');
             }
 
-            if ($refund) {
-                $this->releaseBooking($booking);
-            }
+            $freed = $refund ? $this->releaseBooking($booking) : null;
 
             $booking->update([
                 'status' => BookingStatus::CancelledByAdmin,
@@ -464,6 +595,10 @@ class BookingService
                 'cancelled_at' => now(),
                 'subscription_usage_id' => null,
             ]);
+
+            if ($freed !== null) {
+                $this->rebalanceFreedSessions($freed, $booking->id);
+            }
 
             return $booking->refresh();
         });
@@ -499,15 +634,17 @@ class BookingService
                 throw new InvalidArgumentException('Запись отменена — отметить неявку нельзя.');
             }
 
-            if ($booking->isCharged()) {
-                $this->releaseBooking($booking);
-            }
+            $freed = $booking->isCharged() ? $this->releaseBooking($booking) : null;
 
             $booking->update([
                 'subscription_usage_id' => null,
                 'attendance_status' => AttendanceStatus::NoShow,
                 'attended_at' => now(),
             ]);
+
+            if ($freed !== null) {
+                $this->rebalanceFreedSessions($freed, $booking->id);
+            }
 
             return $booking->refresh();
         });

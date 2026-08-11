@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Subscriptions\Pages;
 
 use App\Filament\Resources\Subscriptions\SubscriptionResource;
 use App\Models\Subscription;
+use App\Services\BookingService;
 use App\Services\SubscriptionService;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -144,11 +145,24 @@ class EditSubscription extends EditRecord
                         ->placeholder('Например: клиент заболел, занятие списано ошибочно')
                         ->rows(2),
                 ])
-                ->action(function (array $data, Subscription $record, SubscriptionService $service): void {
+                ->action(function (
+                    array $data,
+                    Subscription $record,
+                    SubscriptionService $service,
+                    BookingService $bookings,
+                ): void {
                     $service->returnSession($record, $data['reason'] ?? null);
+
+                    // Возвращённое занятие могло «догореть» до окончания срока,
+                    // пока будущая запись клиента списана с более позднего
+                    // абонемента. Переставляем такие записи сюда.
+                    $moved = $bookings->rebalanceFreedSessions($record);
 
                     Notification::make()
                         ->title('Занятие возвращено в абонемент')
+                        ->body($moved > 0
+                            ? 'Записей переведено на этот абонемент: '.$moved.'.'
+                            : null)
                         ->success()
                         ->send();
 
