@@ -126,8 +126,11 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
   const descEl = document.getElementById('schedModalDesc');
   const actionEl = document.getElementById('schedModalAction');
 
+  const schedFilter = document.getElementById('schedFilter');
+
   let schedNavLoading = false;
   let schedCurrentOffset = cfg.offset ?? 0;
+  let schedDirections = Array.isArray(cfg.directions) ? cfg.directions.slice() : [];
 
   const closeSchedModal = () => {
     schedModal.classList.remove('is-open');
@@ -204,7 +207,7 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
     document.body.style.overflow = 'hidden';
   };
 
-  const buildScheduleUrl = (offset) => {
+  const buildScheduleUrl = (offset, directions = schedDirections) => {
     const url = new URL(cfg.scheduleUrl, window.location.origin);
     if (offset > 0) {
       url.searchParams.set('offset', String(offset));
@@ -214,25 +217,72 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
     if (cfg.rescheduleFrom) {
       url.searchParams.set('reschedule', String(cfg.rescheduleFrom));
     }
+    if (directions.length) {
+      url.searchParams.set('directions', directions.join(','));
+    } else {
+      url.searchParams.delete('directions');
+    }
     return url;
+  };
+
+  // Порядок направлений всегда берём из разметки — он совпадает с серверным,
+  // поэтому одна и та же выборка даёт одну и ту же ссылку.
+  const filterChips = () => Array.from(schedFilter?.querySelectorAll('[data-dir-filter]') ?? []);
+
+  const toggledDirections = (slug) => {
+    if (!slug) {
+      return [];
+    }
+    const next = schedDirections.includes(slug)
+      ? schedDirections.filter((item) => item !== slug)
+      : schedDirections.concat(slug);
+
+    return filterChips()
+      .map((chip) => chip.dataset.dirFilter)
+      .filter((item) => item && next.includes(item));
+  };
+
+  const syncFilterUi = () => {
+    filterChips().forEach((chip) => {
+      const slug = chip.dataset.dirFilter;
+      const active = slug ? schedDirections.includes(slug) : schedDirections.length === 0;
+
+      chip.classList.toggle('is-active', active);
+      if (active) {
+        chip.setAttribute('aria-current', 'true');
+      } else {
+        chip.removeAttribute('aria-current');
+      }
+
+      const href = buildScheduleUrl(schedCurrentOffset, toggledDirections(slug));
+      chip.setAttribute('href', href.toString());
+    });
   };
 
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  const loadScheduleWeek = async (offset, direction) => {
+  const loadScheduleWeek = async (offset, direction, directions = schedDirections) => {
     if (schedNavLoading) {
       return;
     }
 
+    // direction — сторона листания недели; при смене фильтра его нет,
+    // и вместо сдвига в сторону сетка просто гаснет.
+    const targetDirections = directions;
+
     schedNavLoading = true;
     gridSchedule.classList.add('is-loading');
-    gridschedStage.classList.remove('is-entering-left', 'is-entering-right', 'is-leaving-left', 'is-leaving-right');
-    gridschedStage.classList.add(direction === 'next' ? 'is-leaving-left' : 'is-leaving-right');
+    gridschedStage.classList.remove('is-entering-left', 'is-entering-right', 'is-leaving-left', 'is-leaving-right', 'is-fading');
+    if (direction) {
+      gridschedStage.classList.add(direction === 'next' ? 'is-leaving-left' : 'is-leaving-right');
+    } else {
+      gridschedStage.classList.add('is-fading');
+    }
 
     await wait(200);
 
     try {
-      const url = buildScheduleUrl(offset);
+      const url = buildScheduleUrl(offset, targetDirections);
       url.searchParams.set('ajax', '1');
 
       const response = await fetch(url.toString(), {
@@ -249,27 +299,33 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
       const data = await response.json();
       gridschedStage.innerHTML = data.html;
       schedCurrentOffset = data.offset;
+      schedDirections = Array.isArray(data.selectedDirections) ? data.selectedDirections : targetDirections;
+      syncFilterUi();
 
       if (schedRangeLabel) {
         schedRangeLabel.textContent = data.rangeLabel;
       }
 
-      gridschedStage.classList.remove('is-leaving-left', 'is-leaving-right');
-      gridschedStage.classList.add(direction === 'next' ? 'is-entering-right' : 'is-entering-left');
+      gridschedStage.classList.remove('is-leaving-left', 'is-leaving-right', 'is-fading');
+      if (direction) {
+        gridschedStage.classList.add(direction === 'next' ? 'is-entering-right' : 'is-entering-left');
+      } else {
+        gridschedStage.classList.add('is-fading');
+      }
 
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          gridschedStage.classList.remove('is-entering-left', 'is-entering-right');
+          gridschedStage.classList.remove('is-entering-left', 'is-entering-right', 'is-fading');
         });
       });
 
-      const pageUrl = buildScheduleUrl(data.offset);
+      const pageUrl = buildScheduleUrl(data.offset, schedDirections);
       pageUrl.searchParams.delete('ajax');
-      history.pushState({ schedOffset: data.offset }, '', pageUrl.toString());
+      history.pushState({ schedOffset: data.offset, schedDirections: schedDirections }, '', pageUrl.toString());
     } catch (error) {
       console.error(error);
-      gridschedStage.classList.remove('is-leaving-left', 'is-leaving-right');
-      window.location.href = buildScheduleUrl(offset).toString();
+      gridschedStage.classList.remove('is-leaving-left', 'is-leaving-right', 'is-fading');
+      window.location.href = buildScheduleUrl(offset, targetDirections).toString();
     } finally {
       gridSchedule.classList.remove('is-loading');
       schedNavLoading = false;
@@ -318,13 +374,33 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
     });
   });
 
-  window.addEventListener('popstate', (event) => {
-    const offset = event.state?.schedOffset ?? 0;
-    if (offset === schedCurrentOffset) {
+  schedFilter?.addEventListener('click', (event) => {
+    const chip = event.target.closest('[data-dir-filter]');
+    if (!chip) {
       return;
     }
-    const direction = offset > schedCurrentOffset ? 'next' : 'prev';
-    loadScheduleWeek(offset, direction);
+
+    event.preventDefault();
+
+    const next = toggledDirections(chip.dataset.dirFilter);
+    if (next.join(',') === schedDirections.join(',')) {
+      return;
+    }
+
+    loadScheduleWeek(schedCurrentOffset, null, next);
+  });
+
+  window.addEventListener('popstate', (event) => {
+    const offset = event.state?.schedOffset ?? 0;
+    const directions = Array.isArray(event.state?.schedDirections) ? event.state.schedDirections : [];
+    const sameWeek = offset === schedCurrentOffset;
+    const sameDirections = directions.join(',') === schedDirections.join(',');
+
+    if (sameWeek && sameDirections) {
+      return;
+    }
+
+    loadScheduleWeek(offset, sameWeek ? null : (offset > schedCurrentOffset ? 'next' : 'prev'), directions);
   });
 
   schedModal.querySelectorAll('[data-sched-close]').forEach((el) => {
@@ -337,7 +413,7 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
     }
   });
 
-  history.replaceState({ schedOffset: schedCurrentOffset }, '', window.location.href);
+  history.replaceState({ schedOffset: schedCurrentOffset, schedDirections: schedDirections }, '', window.location.href);
 }
 
 // ===== Аккордеон FAQ =====

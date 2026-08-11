@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=49" />
+  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=50" />
   @stack('head')
 </head>
 <body>
@@ -117,7 +117,7 @@
   </div>
 
   <script src="{{ asset('js/phone-mask.js') }}?v=1"></script>
-  <script src="{{ asset('js/site.js') }}?v=21"></script>
+  <script src="{{ asset('js/site.js') }}?v=22"></script>
   @stack('scripts')
 </body>
 </html>

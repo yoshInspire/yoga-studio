@@ -8,6 +8,7 @@ use App\Enums\BookingStatus;
 use App\Enums\ClassSessionStatus;
 use App\Models\Booking;
 use App\Models\ClassSession;
+use App\Models\Direction;
 use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -747,9 +748,52 @@ class BookingService
     }
 
     /**
+     * Направления, по которым можно отфильтровать расписание.
+     *
+     * Список — только те направления, у которых есть занятия в будущем:
+     * он не должен меняться при перелистывании недель, иначе фильтр «прыгает».
+     *
+     * @return list<array{slug: string, title: string}>
+     */
+    public function scheduleDirections(): array
+    {
+        return Direction::query()
+            ->whereHas('classSessions', fn ($q) => $q
+                ->where('status', ClassSessionStatus::Scheduled)
+                ->where('starts_at', '>=', now()->startOfDay()))
+            ->ordered()
+            ->get(['id', 'slug', 'title'])
+            ->map(fn (Direction $direction) => [
+                'slug' => $direction->slug,
+                'title' => $direction->title,
+            ])
+            ->all();
+    }
+
+    /**
+     * Слаги направлений из адреса — в идентификаторы. Чужие слаги отбрасываются.
+     *
+     * @param  list<string>  $slugs
+     * @return list<int>
+     */
+    public function scheduleDirectionIds(array $slugs): array
+    {
+        if ($slugs === []) {
+            return [];
+        }
+
+        return Direction::query()
+            ->whereIn('slug', $slugs)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    /**
+     * @param  list<int>  $directionIds  пустой список — без фильтра
      * @param  array<int, array{key: string, name: string, date: string, label: string, is_today: bool, slots: list<array>}>
      */
-    public function buildRollingSchedule(Carbon $startDate, ?User $viewer = null, ?Booking $rescheduleFrom = null): array
+    public function buildRollingSchedule(Carbon $startDate, ?User $viewer = null, ?Booking $rescheduleFrom = null, array $directionIds = []): array
     {
         $rangeStart = $startDate->copy()->startOfDay();
         $rangeEnd = $startDate->copy()->addDays(6)->endOfDay();
@@ -757,6 +801,7 @@ class BookingService
         $sessionsQuery = ClassSession::query()
             ->inDateRange($rangeStart, $rangeEnd)
             ->where('status', ClassSessionStatus::Scheduled)
+            ->when($directionIds !== [], fn ($q) => $q->whereIn('direction_id', $directionIds))
             ->with(['trainer', 'direction'])
             ->withCount(['bookings as taken' => fn ($q) => $q->where('status', BookingStatus::Confirmed)])
             ->orderBy('starts_at');

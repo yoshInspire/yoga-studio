@@ -71,7 +71,13 @@
       <div class="gridsched__time gridsched__time--right" aria-hidden="true">{{ $row['time'] }}</div>
     </div>
   @empty
-    <p class="gridsched__empty">В выбранном периоде занятий пока нет.</p>
+    <p class="gridsched__empty">
+      @if (! empty($selectedDirections))
+        По выбранным направлениям в этом периоде занятий нет.
+      @else
+        В выбранном периоде занятий пока нет.
+      @endif
+    </p>
   @endforelse
 </div>
 

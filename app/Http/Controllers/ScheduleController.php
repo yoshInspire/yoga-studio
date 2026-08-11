@@ -28,6 +28,7 @@ class ScheduleController extends Controller
                 'prevOffset' => $data['prevOffset'],
                 'nextOffset' => $data['nextOffset'],
                 'rangeLabel' => $data['rangeLabel'],
+                'selectedDirections' => $data['selectedDirections'],
                 'html' => view('partials.schedule-grid', $data)->render(),
             ]);
         }
@@ -64,12 +65,18 @@ class ScheduleController extends Controller
             }
         }
 
-        $days = $bookings->buildRollingSchedule($startDate, $viewer, $rescheduleFrom);
+        $directionOptions = $bookings->scheduleDirections();
+        $selectedDirections = $this->selectedDirections($request, $directionOptions);
+        $directionIds = $bookings->scheduleDirectionIds($selectedDirections);
+
+        $days = $bookings->buildRollingSchedule($startDate, $viewer, $rescheduleFrom, $directionIds);
         $rows = $bookings->buildScheduleRows($days);
 
         return [
             'days' => $days,
             'rows' => $rows,
+            'directionOptions' => $directionOptions,
+            'selectedDirections' => $selectedDirections,
             'offset' => $offset,
             'canGoPrev' => $offset > 0,
             'prevOffset' => max(0, $offset - 1),
@@ -82,5 +89,39 @@ class ScheduleController extends Controller
                 'event' => 'Мероприятие',
             ],
         ];
+    }
+
+    /**
+     * Выбранные направления из адреса: ?directions=hatha,kundalini.
+     *
+     * Слаги, которых нет среди доступных, отбрасываются — иначе ссылка
+     * на снятое направление показывала бы пустое расписание без объяснения.
+     *
+     * @param  list<array{slug: string, title: string}>  $options
+     * @return list<string>
+     */
+    private function selectedDirections(Request $request, array $options): array
+    {
+        $raw = $request->query('directions');
+
+        if (is_string($raw)) {
+            $raw = explode(',', $raw);
+        }
+
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $picked = array_filter(array_map(
+            fn ($value) => is_string($value) ? trim($value) : '',
+            $raw,
+        ));
+
+        // Порядок берём из списка направлений, а не из адреса: так одна и та же
+        // выборка всегда даёт одну и ту же ссылку.
+        return array_values(array_filter(
+            array_column($options, 'slug'),
+            fn (string $slug) => in_array($slug, $picked, true),
+        ));
     }
 }

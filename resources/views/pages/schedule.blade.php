@@ -9,6 +9,7 @@
     $navQuery = fn (int $targetOffset) => array_filter([
         'offset' => $targetOffset > 0 ? $targetOffset : null,
         'reschedule' => ($rescheduleFrom ?? null)?->id,
+        'directions' => $selectedDirections ? implode(',', $selectedDirections) : null,
     ], fn ($value) => $value !== null);
   @endphp
 
@@ -41,6 +42,47 @@
           {{ $rescheduleFrom->classSession->formattedDateTime() }}.
           Выберите новое занятие и нажмите «Перенести сюда».
           <a href="{{ route('schedule', $navQuery($offset)) }}" class="auth__minor" style="margin-left: 8px">Отменить перенос</a>
+        </div>
+      @endif
+
+      @if (count($directionOptions) > 1)
+        @php
+          // Ссылки на случай, когда JS не отработал: каждый чип — обычная ссылка
+          // с уже пересчитанным набором направлений.
+          $filterUrl = function (array $slugs) use ($offset, $rescheduleFrom) {
+              return route('schedule', array_filter([
+                  'offset' => $offset > 0 ? $offset : null,
+                  'reschedule' => ($rescheduleFrom ?? null)?->id,
+                  'directions' => $slugs ? implode(',', $slugs) : null,
+              ], fn ($value) => $value !== null));
+          };
+          $toggled = function (string $slug) use ($directionOptions, $selectedDirections) {
+              $next = in_array($slug, $selectedDirections, true)
+                  ? array_diff($selectedDirections, [$slug])
+                  : array_merge($selectedDirections, [$slug]);
+
+              return array_values(array_filter(
+                  array_column($directionOptions, 'slug'),
+                  fn (string $item) => in_array($item, $next, true),
+              ));
+          };
+        @endphp
+
+        <div class="sched-filter reveal" id="schedFilter">
+          <p class="sched-filter__label" id="schedFilterLabel">Направления</p>
+          <div class="sched-filter__chips" role="group" aria-labelledby="schedFilterLabel">
+            <a class="sched-filter__chip {{ $selectedDirections ? '' : 'is-active' }}"
+               href="{{ $filterUrl([]) }}"
+               data-dir-filter=""
+               @if(! $selectedDirections) aria-current="true" @endif>Все</a>
+            @foreach ($directionOptions as $option)
+              @php $isActive = in_array($option['slug'], $selectedDirections, true); @endphp
+              <a class="sched-filter__chip {{ $isActive ? 'is-active' : '' }}"
+                 href="{{ $filterUrl($toggled($option['slug'])) }}"
+                 data-dir-filter="{{ $option['slug'] }}"
+                 @if($isActive) aria-current="true" @endif>{{ $option['title'] }}</a>
+            @endforeach
+          </div>
         </div>
       @endif
 
@@ -94,6 +136,7 @@
         'scheduleUrl' => route('schedule'),
         'csrf' => csrf_token(),
         'offset' => $offset,
+        'directions' => $selectedDirections,
         'typeLabels' => $typeLabels,
         'rescheduleFrom' => ($rescheduleFrom ?? null)?->id,
         'rescheduleUrl' => ($rescheduleFrom ?? null) ? route('bookings.reschedule', $rescheduleFrom) : null,
