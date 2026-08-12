@@ -28,6 +28,7 @@ class ReportService
             ->with([
                 'user:id,first_name,last_name,patronymic,phone',
                 'usages' => fn ($query) => $query->orderBy('used_at'),
+                'paymentItem:id,subscription_id,price',
             ])
             ->orderBy('starts_at')
             ->orderBy('id')

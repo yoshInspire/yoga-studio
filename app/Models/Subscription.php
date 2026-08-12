@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 #[Fillable([
@@ -49,6 +50,27 @@ class Subscription extends Model
     public function usages(): HasMany
     {
         return $this->hasMany(SubscriptionUsage::class);
+    }
+
+    /**
+     * Позиция платежа, которой оплачен абонемент, — источник цены для отчёта.
+     *
+     * Есть не у всех: абонементы из старой системы и выданные администратором
+     * вручную через сайт не оплачивались, и цены у них нет.
+     */
+    public function paymentItem(): HasOne
+    {
+        return $this->hasOne(PaymentItem::class);
+    }
+
+    /**
+     * Цена покупки в рублях. null — абонемент не покупался онлайн.
+     */
+    public function price(): ?int
+    {
+        $price = $this->paymentItem?->price;
+
+        return $price !== null ? (int) $price : null;
     }
 
     public function bookings(): HasMany

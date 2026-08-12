@@ -38,6 +38,7 @@ class SubscriptionTypeSheet implements FromCollection, ShouldAutoSize, WithHeadi
             'Забронировано',
             'Остаток',
             'Дата покупки',
+            'Цена, ₽',
             'Начало действия',
             'Окончание',
             'Даты посещений',
@@ -61,6 +62,10 @@ class SubscriptionTypeSheet implements FromCollection, ShouldAutoSize, WithHeadi
                 // с карточкой в админке: всего − использовано − забронировано.
                 $subscription->sessionsRemaining(),
                 $subscription->purchased_at->format('d.m.Y'),
+                // Числом, а не строкой: столбец должен суммироваться в Excel.
+                // Пусто — абонемент не покупался онлайн (импорт из старой
+                // системы или выдача администратором), цены студия знает сама.
+                $subscription->price() ?? '',
                 $subscription->starts_at->format('d.m.Y'),
                 $subscription->ends_at->format('d.m.Y'),
                 $this->reports->visitDatesForSubscription($subscription),
