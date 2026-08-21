@@ -81,6 +81,7 @@ Route::prefix('v1')->group(function () {
         // администратор и тренер правят профиль там же, где клиент.
         Route::put('/account/profile', [ProfileController::class, 'update']);
         Route::put('/account/password', [ProfileController::class, 'changePassword']);
+        Route::put('/account/mailings', [ProfileController::class, 'updateMailings']);
         Route::post('/account/email/request-code', [ProfileController::class, 'requestEmailCode'])->middleware('throttle:3,1');
         Route::post('/account/email/confirm', [ProfileController::class, 'confirmEmail'])->middleware('throttle:12,1');
 

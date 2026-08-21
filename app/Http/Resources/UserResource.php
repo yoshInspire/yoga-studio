@@ -39,6 +39,7 @@ class UserResource extends JsonResource
             'has_telegram' => $this->hasTelegram(),
             'offer_accepted' => $this->hasAcceptedOffer(),
             'offer_accepted_at' => $this->formattedOfferAcceptedAt(),
+            'mailings_subscribed' => $this->isSubscribedToMailings(),
         ];
     }
 }

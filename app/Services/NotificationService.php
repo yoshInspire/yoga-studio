@@ -24,12 +24,19 @@ use Illuminate\Support\Facades\Mail;
  *  - привязан Telegram → шлём в Telegram;
  *  - указана почта → шлём на почту.
  * Администратору письма уходят на почту рассылки (studio.admin_email).
+ *
+ * Флаг `$unsubscribable` отделяет информационную рассылку от личного письма:
+ * у первой в подвале появляется ссылка «Отписаться», а в заголовках — кнопка
+ * отписки самой почты. Сам отказ проверяется раньше, при постановке рассылки
+ * в очередь (`User::scopeSubscribedToMailings()`), и потому одинаково гасит
+ * все каналы — и почту, и Telegram, и пуш.
  */
 class NotificationService
 {
     public function __construct(
         private TelegramNotifier $telegram,
         private PushSender $push,
+        private MailingSubscriptionService $mailingSubscription,
     ) {}
 
     /**
@@ -38,6 +45,7 @@ class NotificationService
      * @param  list<string>  $lines
      * @param  string  $type  вид уведомления: задаёт иконку и переход в приложении
      * @param  array<string, mixed>  $payload  куда вести по тапу: {"session_id": 12}
+     * @param  bool  $unsubscribable  это информационная рассылка, а не личное письмо
      * @return array{email: bool, telegram: bool, push: int, stored: bool}
      */
     public function notifyUser(
@@ -47,6 +55,7 @@ class NotificationService
         ?string $subject = null,
         string $type = 'studio',
         array $payload = [],
+        bool $unsubscribable = false,
     ): array {
         $result = ['email' => false, 'telegram' => false, 'push' => 0, 'stored' => false];
 
@@ -79,7 +88,13 @@ class NotificationService
         }
 
         if (filled($user->email)) {
-            $result['email'] = $this->sendMail($user->email, $heading, $lines, $subject);
+            $result['email'] = $this->sendMail(
+                $user->email,
+                $heading,
+                $lines,
+                $subject,
+                unsubscribeUrl: $unsubscribable ? $this->mailingSubscription->unsubscribeUrl($user) : null,
+            );
         }
 
         return $result;
@@ -229,10 +244,16 @@ class NotificationService
     /**
      * @param  list<string>  $lines
      */
-    private function sendMail(string $to, string $heading, array $lines, ?string $subject, ?string $footnote = null): bool
-    {
+    private function sendMail(
+        string $to,
+        string $heading,
+        array $lines,
+        ?string $subject,
+        ?string $footnote = null,
+        ?string $unsubscribeUrl = null,
+    ): bool {
         try {
-            Mail::to($to)->send(new StudioNotificationMail($heading, $lines, $subject, $footnote));
+            Mail::to($to)->send(new StudioNotificationMail($heading, $lines, $subject, $footnote, $unsubscribeUrl));
 
             return true;
         } catch (\Throwable $e) {

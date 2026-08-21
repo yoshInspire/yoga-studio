@@ -3,8 +3,8 @@
 namespace App\Filament\Pages;
 
 use App\Services\BirthdayGreetingService;
-use App\Services\WelcomeMessageService;
 use App\Services\StudioMailingService;
+use App\Services\WelcomeMessageService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
@@ -265,10 +265,11 @@ class Mailings extends Page
         Notification::make()
             ->title($dryRun ? 'Проверка ежедневной рассылки' : 'Ежедневная рассылка отправлена')
             ->body(sprintf(
-                'С занятиями: %d. Без занятий: %d. Пропущено: %d.',
+                'С занятиями: %d. Без занятий: %d. Пропущено: %d. Без абонемента или отписаны: %d.',
                 $counts['with_bookings'],
                 $counts['without_bookings'],
                 $counts['skipped'],
+                $counts['not_targeted'],
             ))
             ->success()
             ->send();

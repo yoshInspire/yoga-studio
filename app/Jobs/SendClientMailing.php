@@ -46,6 +46,8 @@ class SendClientMailing implements ShouldQueue
      * @param  string  $notificationType  вид уведомления в ленте приложения
      * @param  string  $logType  тип рассылки в журнале `client_mailing_logs`
      * @param  array<string, mixed>  $payload  куда вести по тапу в приложении
+     * @param  bool  $unsubscribable  информационная рассылка (со ссылкой на отписку),
+     *                                а не личное письмо о собственной записи клиента
      */
     public function __construct(
         public int $userId,
@@ -56,6 +58,7 @@ class SendClientMailing implements ShouldQueue
         public string $logType,
         public string $mailingKey,
         public array $payload = [],
+        public bool $unsubscribable = true,
     ) {}
 
     public function handle(NotificationService $notifications): void
@@ -78,6 +81,7 @@ class SendClientMailing implements ShouldQueue
             $this->subject,
             type: $this->notificationType,
             payload: $this->payload,
+            unsubscribable: $this->unsubscribable,
         );
     }
 

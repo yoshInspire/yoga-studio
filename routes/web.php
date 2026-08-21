@@ -2,22 +2,24 @@
 
 use App\Http\Controllers\Account\AccountDeletionController;
 use App\Http\Controllers\Account\AvatarController;
+use App\Http\Controllers\Account\MailingPreferenceController;
 use App\Http\Controllers\Account\OfferAcceptanceController;
 use App\Http\Controllers\Account\PasswordController;
 use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Account\TelegramLinkController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Auth\TelegramAuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\DirectionController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LegalController;
+use App\Http\Controllers\MailingSubscriptionController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NewsReactionController;
 use App\Http\Controllers\OfferController;
@@ -94,6 +96,26 @@ Route::get('/oferta.pdf', [OfferController::class, 'show'])
 Route::get('/privacy', [LegalController::class, 'privacy'])->name('legal.privacy');
 Route::get('/account/delete-request', [LegalController::class, 'accountDelete'])->name('legal.account-delete');
 
+/*
+ * Отписка от рассылок по ссылке из письма. Без входа в кабинет — подписи в
+ * ссылке достаточно, а требовать пароль у человека, который просто хочет,
+ * чтобы письма перестали приходить, значит подталкивать его к кнопке «Спам».
+ *
+ * GET показывает страницу с кнопкой, POST по тому же адресу отписывает.
+ * Раздельно потому, что ссылки в письмах открывают роботы-предпросмотрщики:
+ * отписка прямо на GET срабатывала бы без участия человека. Кнопка отписки
+ * в самом почтовом ящике (Яндекс, Mail.ru, Gmail) шлёт сразу POST — для неё
+ * это по-прежнему один клик.
+ */
+Route::middleware(['signed', 'noindex'])->group(function () {
+    Route::get('/mailings/unsubscribe/{user}', [MailingSubscriptionController::class, 'confirm'])
+        ->name('mailings.unsubscribe');
+    Route::post('/mailings/unsubscribe/{user}', [MailingSubscriptionController::class, 'unsubscribe'])
+        ->name('mailings.unsubscribe.confirm');
+    Route::get('/mailings/subscribe/{user}', [MailingSubscriptionController::class, 'resubscribe'])
+        ->name('mailings.subscribe');
+});
+
 Route::get('/payments/{payment}/return', [PaymentController::class, 'return'])
     ->middleware(['signed', 'noindex'])
     ->name('payments.return');
@@ -120,6 +142,7 @@ Route::middleware(['auth', 'role:client', 'noindex'])->group(function () {
     Route::post('/account/offer/accept', [OfferAcceptanceController::class, 'store'])->name('account.offer.accept');
     Route::put('/account/profile', [ProfileController::class, 'update'])->name('account.profile.update');
     Route::put('/account/password', [PasswordController::class, 'update'])->name('account.password.update');
+    Route::put('/account/mailings', [MailingPreferenceController::class, 'update'])->name('account.mailings.update');
     Route::delete('/account', [AccountDeletionController::class, 'destroy'])
         ->middleware('throttle:6,1')
         ->name('account.destroy');

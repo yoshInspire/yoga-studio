@@ -1,5 +1,9 @@
 <?php
 
+use App\Enums\UserRole;
+use App\Http\Middleware\EnsureOfferAccepted;
+use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\PreventSearchIndexing;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,13 +18,17 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'role' => \App\Http\Middleware\EnsureRole::class,
-            'offer.accepted' => \App\Http\Middleware\EnsureOfferAccepted::class,
-            'noindex' => \App\Http\Middleware\PreventSearchIndexing::class,
+            'role' => EnsureRole::class,
+            'offer.accepted' => EnsureOfferAccepted::class,
+            'noindex' => PreventSearchIndexing::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
             'payments/webhook',
+            // Отписка в один клик из почтового клиента (RFC 8058): POST шлёт
+            // сам Яндекс или Gmail, токена нашей формы у него нет. Подделать
+            // запрос нельзя — адрес подписан, см. routes/web.php.
+            'mailings/unsubscribe/*',
         ]);
 
         $middleware->redirectGuestsTo(fn () => route('login'));
@@ -28,8 +36,8 @@ return Application::configure(basePath: dirname(__DIR__))
             $user = auth()->user();
 
             return match ($user?->role) {
-                \App\Enums\UserRole::Admin => '/admin',
-                \App\Enums\UserRole::Trainer => route('trainer'),
+                UserRole::Admin => '/admin',
+                UserRole::Trainer => route('trainer'),
                 default => route('account'),
             };
         });

@@ -10,10 +10,12 @@ use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -40,6 +42,7 @@ use Laravel\Sanctum\HasApiTokens;
     'site_sort_order',
     'password',
     'offer_accepted_at',
+    'mailings_subscribed',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
@@ -52,6 +55,7 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'offer_accepted_at' => 'datetime',
+            'mailings_opt_out_at' => 'datetime',
             'anonymized_at' => 'datetime',
             'telegram_id' => 'integer',
             'telegram_linked_at' => 'datetime',
@@ -143,7 +147,7 @@ class User extends Authenticatable implements FilamentUser
         return $text;
     }
 
-    public function hasBirthdayOn(\Illuminate\Support\Carbon $date): bool
+    public function hasBirthdayOn(Carbon $date): bool
     {
         if (! $this->birth_day || ! $this->birth_month) {
             return false;
@@ -157,7 +161,7 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /** @param  Builder<self>  $query */
-    public function scopeBirthdayOn(Builder $query, \Illuminate\Support\Carbon $date): Builder
+    public function scopeBirthdayOn(Builder $query, Carbon $date): Builder
     {
         return $query
             ->whereNotNull('birth_day')
@@ -250,6 +254,64 @@ class User extends Authenticatable implements FilamentUser
     public function hasAcceptedOffer(): bool
     {
         return $this->offer_accepted_at !== null;
+    }
+
+    /** Клиент не отказывался от информационных рассылок студии. */
+    public function isSubscribedToMailings(): bool
+    {
+        return $this->mailings_opt_out_at === null;
+    }
+
+    /**
+     * Подписка как обычное булево поле — им пользуются формы (админка) и
+     * `MailingSubscriptionService`. В базе лежит дата отказа, а не флаг:
+     * дата отвечает ещё и на вопрос «когда отписался», который рано или
+     * поздно задают.
+     *
+     * @return Attribute<bool, bool>
+     */
+    protected function mailingsSubscribed(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): bool => $this->mailings_opt_out_at === null,
+            set: fn (mixed $value): array => [
+                'mailings_opt_out_at' => filter_var($value, FILTER_VALIDATE_BOOL)
+                    ? null
+                    : ($this->mailings_opt_out_at ?? now()),
+            ],
+        );
+    }
+
+    /**
+     * Клиенты, до которых студия вообще может дотянуться.
+     *
+     * Оферта — потому что до её принятия человек студии ничего не разрешал;
+     * почта или Telegram — потому что без канала письмо некуда отправить.
+     * Отписка здесь намеренно не учитывается: через эту выборку идут и личные
+     * уведомления о собственных записях клиента, от которых не отписываются.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeReachableClients(Builder $query): Builder
+    {
+        return $query
+            ->where('role', UserRole::Client)
+            ->whereNotNull('offer_accepted_at')
+            ->where(function (Builder $query) {
+                $query->whereNotNull('email')
+                    ->orWhereNotNull('telegram_id');
+            })
+            ->orderBy('id');
+    }
+
+    /**
+     * Из достижимых — те, кто не отписался от рассылок.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeSubscribedToMailings(Builder $query): Builder
+    {
+        return $query->whereNull('mailings_opt_out_at');
     }
 
     public function formattedOfferAcceptedAt(): ?string

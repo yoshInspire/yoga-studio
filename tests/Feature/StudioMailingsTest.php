@@ -12,6 +12,7 @@ use App\Models\ClientMailingLog;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\BookingService;
+use App\Services\MailingSubscriptionService;
 use App\Services\StudioMailingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -92,6 +93,7 @@ class StudioMailingsTest extends TestCase
         Mail::fake();
 
         $user = $this->eligibleClient();
+        $this->subscription($user);
 
         $this->artisan('studio:daily-booking-reminders')->assertExitCode(0);
 
@@ -104,11 +106,115 @@ class StudioMailingsTest extends TestCase
         Mail::fake();
 
         $user = $this->eligibleClient();
+        $this->subscription($user);
 
         $this->artisan('studio:daily-booking-reminders')->assertExitCode(0);
         $this->artisan('studio:daily-booking-reminders')->assertExitCode(0);
 
         Mail::assertSent(StudioNotificationMail::class, 1);
+    }
+
+    /**
+     * Главное изменение: «завтра занятий нет» — это приглашение записаться, и
+     * человеку без действующего абонемента оно ни о чём. Раньше такое письмо
+     * уходило каждый вечер всей базе, включая давно ушедших клиентов, и было
+     * основным источником отчётов о недоставке и жалоб на спам.
+     */
+    public function test_daily_reminder_without_bookings_skips_clients_without_active_subscription(): void
+    {
+        Mail::fake();
+
+        $this->eligibleClient();
+
+        $this->artisan('studio:daily-booking-reminders')->assertExitCode(0);
+
+        Mail::assertNothingSent();
+    }
+
+    public function test_daily_reminder_without_bookings_skips_expired_subscription(): void
+    {
+        Mail::fake();
+
+        $user = $this->eligibleClient();
+        $subscription = $this->subscription($user);
+        $subscription->forceFill([
+            'starts_at' => now()->subMonths(3),
+            'ends_at' => now()->subMonths(2),
+        ])->save();
+
+        $this->artisan('studio:daily-booking-reminders')->assertExitCode(0);
+
+        Mail::assertNothingSent();
+    }
+
+    public function test_daily_reminder_without_bookings_skips_unsubscribed_client(): void
+    {
+        Mail::fake();
+
+        $user = $this->eligibleClient();
+        $this->subscription($user);
+        app(MailingSubscriptionService::class)->unsubscribe($user);
+
+        $this->artisan('studio:daily-booking-reminders')->assertExitCode(0);
+
+        Mail::assertNothingSent();
+    }
+
+    /**
+     * Напоминание о собственной записи — не рассылка: место занято, занятие
+     * с абонемента списано. Отписка его не отменяет, и ссылки на отписку в
+     * нём нет — предлагать отписаться от того, что всё равно придёт, нечестно.
+     */
+    public function test_daily_reminder_with_bookings_reaches_unsubscribed_client(): void
+    {
+        Mail::fake();
+
+        $user = $this->eligibleClient();
+        $this->subscription($user);
+        app(MailingSubscriptionService::class)->unsubscribe($user);
+
+        $session = ClassSession::create([
+            'topic' => 'Хатха-йога',
+            'starts_at' => now()->addDay()->setTime(10, 0),
+            'type' => SubscriptionType::Group,
+            'capacity' => 6,
+            'status' => ClassSessionStatus::Scheduled,
+        ]);
+
+        app(BookingService::class)->book($user, $session);
+
+        $this->artisan('studio:daily-booking-reminders')->assertExitCode(0);
+
+        Mail::assertSent(StudioNotificationMail::class, fn (StudioNotificationMail $mail) => $mail->hasTo($user->email)
+            && str_contains($mail->heading, 'Напоминание')
+            && $mail->unsubscribeUrl === null);
+    }
+
+    public function test_evening_nudge_carries_unsubscribe_link(): void
+    {
+        Mail::fake();
+
+        $user = $this->eligibleClient();
+        $this->subscription($user);
+
+        $this->artisan('studio:daily-booking-reminders')->assertExitCode(0);
+
+        Mail::assertSent(StudioNotificationMail::class, fn (StudioNotificationMail $mail) => $mail->unsubscribeUrl !== null
+            && str_contains($mail->unsubscribeUrl, '/mailings/unsubscribe/'.$user->id));
+    }
+
+    public function test_weekly_announcement_skips_unsubscribed_client(): void
+    {
+        Mail::fake();
+
+        Carbon::setTestNow(Carbon::parse('2026-06-14 14:00:00', config('app.timezone')));
+
+        $user = $this->eligibleClient();
+        app(MailingSubscriptionService::class)->unsubscribe($user);
+
+        $this->artisan('studio:weekly-schedule-announcement')->assertExitCode(0);
+
+        Mail::assertNothingSent();
     }
 
     public function test_daily_reminder_skips_clients_without_offer_acceptance(): void

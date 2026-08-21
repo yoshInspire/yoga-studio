@@ -13,5 +13,12 @@
     <p style="color: #6b7280; font-size: 14px; margin-top: 16px;">{{ $footnote }}</p>
   @endif
   <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">ЭКО YOGA · <a href="https://ekoyoga-ik.ru" style="color: #6b7280;">ekoyoga-ik.ru</a></p>
+  @if (! empty($unsubscribeUrl))
+    <p style="color: #9ca3af; font-size: 12px; margin-top: 12px; line-height: 1.6;">
+      Вы получаете это письмо как клиент студии.
+      <a href="{{ $unsubscribeUrl }}" style="color: #9ca3af;">Отписаться от рассылок</a>.
+      Письма о ваших записях, отменах занятий и абонементе продолжат приходить.
+    </p>
+  @endif
 </body>
 </html>

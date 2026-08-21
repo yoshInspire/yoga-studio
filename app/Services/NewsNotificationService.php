@@ -2,11 +2,12 @@
 
 namespace App\Services;
 
-use App\Enums\UserRole;
 use App\Jobs\SendClientMailing;
 use App\Models\ClientMailingLog;
 use App\Models\News;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
 /**
@@ -57,7 +58,7 @@ class NewsNotificationService
     /**
      * Новости, у которых наступила дата публикации, но уведомления ещё не отправлены.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, News>
+     * @return Collection<int, News>
      */
     public function pendingPublications(?Carbon $on = null)
     {
@@ -122,18 +123,15 @@ class NewsNotificationService
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<User>
+     * Новость — обычная рассылка, поэтому отписавшихся она не касается.
+     * Правило «кому можно писать» одно на все рассылки студии и живёт в
+     * `User::scopeReachableClients()`.
+     *
+     * @return Builder<User>
      */
     private function eligibleClients()
     {
-        return User::query()
-            ->where('role', UserRole::Client)
-            ->whereNotNull('offer_accepted_at')
-            ->where(function ($query) {
-                $query->whereNotNull('email')
-                    ->orWhereNotNull('telegram_id');
-            })
-            ->orderBy('id');
+        return User::query()->reachableClients()->subscribedToMailings();
     }
 
     private function isEnabled(): bool

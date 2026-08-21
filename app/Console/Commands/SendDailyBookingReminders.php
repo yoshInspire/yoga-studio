@@ -23,11 +23,12 @@ class SendDailyBookingReminders extends Command
         $counts = $mailings->sendDailyReminders(dryRun: $dryRun);
 
         $this->info(sprintf(
-            '%sЕжедневная рассылка: с занятиями — %d, без занятий — %d, пропущено (уже отправлено) — %d.',
+            '%sЕжедневная рассылка: с занятиями — %d, без занятий — %d, пропущено (уже отправлено) — %d, не подходят под условия — %d.',
             $dryRun ? '[dry-run] ' : '',
             $counts['with_bookings'],
             $counts['without_bookings'],
             $counts['skipped'],
+            $counts['not_targeted'],
         ));
 
         return self::SUCCESS;

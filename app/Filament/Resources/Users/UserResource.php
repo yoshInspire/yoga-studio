@@ -128,6 +128,11 @@ class UserResource extends Resource
                             ->maxLength(255)
                             ->unique(ignoreRecord: true)
                             ->helperText('Нужен для отправки временного пароля и уведомлений. Telegram администратор не привязывает — клиент может сделать это сам в личном кабинете после входа.'),
+                        Toggle::make('mailings_subscribed')
+                            ->label('Получает рассылки')
+                            ->default(true)
+                            ->visible(fn (Get $get): bool => $get('role') === UserRole::Client->value)
+                            ->helperText('Анонс расписания на неделю, новости, объявления, поздравления. Письма о записях клиента, отмене занятия и абонементе приходят всегда — от них отписаться нельзя. Клиент управляет этим сам: ссылкой в подвале письма или в личном кабинете.'),
                         Select::make('role')
                             ->label('Роль')
                             ->options(collect(UserRole::cases())->mapWithKeys(
@@ -202,6 +207,15 @@ class UserResource extends Resource
                     ->label('Роль')
                     ->badge()
                     ->formatStateUsing(fn (UserRole $state) => $state->label()),
+                TextColumn::make('mailings_opt_out_at')
+                    ->label('Рассылки')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => filled($state) ? 'Отписан' : 'Подписан')
+                    ->color(fn ($state) => filled($state) ? 'warning' : 'gray')
+                    ->tooltip(fn ($state) => filled($state)
+                        ? 'Отписался '.$state->format('d.m.Y')
+                        : null)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('health_note')
                     ->label('Здоровье')
                     ->badge()

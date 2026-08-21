@@ -7,6 +7,7 @@ use App\Http\Resources\UserResource;
 use App\Mail\RegistrationVerificationMail;
 use App\Models\User;
 use App\Services\AdminActivityNotifier;
+use App\Services\MailingSubscriptionService;
 use App\Support\OfferStorage;
 use App\Support\PhoneNormalizer;
 use Illuminate\Http\JsonResponse;
@@ -28,6 +29,29 @@ class ProfileController extends Controller
     private function emailKey(int $userId): string
     {
         return 'api_profile_email:'.$userId;
+    }
+
+    /**
+     * Подписка на рассылки студии.
+     *
+     * В приложении это тумблер в профиле — та же настройка, что и ссылка
+     * «Отписаться» в подвале письма. Личных писем о собственных записях
+     * клиента она не касается, см. `MailingSubscriptionService`.
+     */
+    public function updateMailings(Request $request, MailingSubscriptionService $mailings): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $request->validate(['subscribed' => ['required', 'boolean']]);
+
+        if ($request->boolean('subscribed')) {
+            $mailings->resubscribe($user);
+        } else {
+            $mailings->unsubscribe($user);
+        }
+
+        return response()->json(['user' => new UserResource($user->fresh())]);
     }
 
     /** Обновление профиля (email меняется отдельным потоком с кодом). */

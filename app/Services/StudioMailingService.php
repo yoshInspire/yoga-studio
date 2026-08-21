@@ -3,11 +3,12 @@
 namespace App\Services;
 
 use App\Enums\BookingStatus;
-use App\Enums\UserRole;
 use App\Jobs\SendClientMailing;
 use App\Models\Booking;
 use App\Models\ClientMailingLog;
+use App\Models\Subscription;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -28,6 +29,12 @@ use Illuminate\Support\Facades\Cache;
  *    честными («уже отправлено, повтор не нужен»);
  *  - вставка строки журнала внутри самого задания — чтобы копия не ушла даже
  *    при гонке двух нажатий (см. `SendClientMailing::claim()`).
+ *
+ * **Кому пишем.** Все рассылки идут по `eligibleClients()` — это клиенты с
+ * принятой офертой, у которых есть канал связи и которые не отписались.
+ * Исключение одно: вечернее напоминание о собственной записи клиента (см.
+ * `sendDailyReminders()`) — это не рассылка, а часть услуги, и отписка его
+ * не отменяет.
  */
 class StudioMailingService
 {
@@ -39,12 +46,28 @@ class StudioMailingService
     ) {}
 
     /**
-     * @return array{with_bookings: int, without_bookings: int, skipped: int}
+     * Вечернее письмо накануне занятий.
+     *
+     * Писем здесь два, и они разной природы:
+     *  - **есть запись на завтра** → напоминание о ней. Это часть услуги: место
+     *    занято, абонемент списан, человек ждёт. Уходит всем, включая тех, кто
+     *    отписался от рассылок, и ссылки на отписку в нём нет.
+     *  - **записи нет** → «завтра занятий нет». Это уже рассылка, и уходит она
+     *    только тем, у кого есть действующий абонемент — то есть кому есть что
+     *    использовать и кого приглашение записаться касается.
+     *
+     * Раньше второе письмо уходило каждый вечер всем клиентам подряд, включая
+     * тех, кто не был в студии полгода. На семи десятках адресов это давало
+     * ежевечерний поток отчётов о недоставке на ящик студии и прямой повод
+     * нажать «Спам» — а жалобы бьют по доставляемости всех остальных писем,
+     * в том числе нужных.
+     *
+     * @return array{with_bookings: int, without_bookings: int, skipped: int, not_targeted: int}
      */
     public function sendDailyReminders(?Carbon $on = null, bool $dryRun = false): array
     {
         if (! ($this->config('daily_reminder.enabled') ?? true)) {
-            return ['with_bookings' => 0, 'without_bookings' => 0, 'skipped' => 0];
+            return ['with_bookings' => 0, 'without_bookings' => 0, 'skipped' => 0, 'not_targeted' => 0];
         }
 
         $on ??= now();
@@ -62,25 +85,41 @@ class StudioMailingService
             ->get()
             ->groupBy('user_id');
 
-        $counts = ['with_bookings' => 0, 'without_bookings' => 0, 'skipped' => 0];
+        // Одним запросом, а не по абонементу на клиента: вечерний проход идёт
+        // по всей базе, и запрос на каждого — это семьдесят запросов подряд.
+        $withActiveSubscription = Subscription::query()
+            ->active($on)
+            ->distinct()
+            ->pluck('user_id')
+            ->flip();
 
-        $this->eligibleClients()->each(function (User $user) use (
+        $counts = ['with_bookings' => 0, 'without_bookings' => 0, 'skipped' => 0, 'not_targeted' => 0];
+
+        $this->reachableClients()->each(function (User $user) use (
             $bookingsByUser,
+            $withActiveSubscription,
             $tomorrow,
             $mailingKey,
             $dryRun,
             &$counts,
         ) {
+            /** @var Collection<int, Booking> $bookings */
+            $bookings = $bookingsByUser->get($user->id, collect());
+            $hasBookings = $bookings->isNotEmpty();
+
+            if (! $hasBookings && ! $this->wantsEveningNudge($user, $withActiveSubscription)) {
+                $counts['not_targeted']++;
+
+                return;
+            }
+
             if ($this->alreadySent($user, ClientMailingLog::TYPE_DAILY_EVENING, $mailingKey)) {
                 $counts['skipped']++;
 
                 return;
             }
 
-            /** @var Collection<int, Booking> $bookings */
-            $bookings = $bookingsByUser->get($user->id, collect());
-
-            if ($bookings->isNotEmpty()) {
+            if ($hasBookings) {
                 $message = $this->buildDailyWithBookingsMessage($user, $tomorrow, $bookings);
                 $counts['with_bookings']++;
             } else {
@@ -92,10 +131,28 @@ class StudioMailingService
                 return;
             }
 
-            $this->queueMailing($user, $message, ClientMailingLog::TYPE_DAILY_EVENING, $mailingKey, 'reminder');
+            $this->queueMailing(
+                $user,
+                $message,
+                ClientMailingLog::TYPE_DAILY_EVENING,
+                $mailingKey,
+                'reminder',
+                unsubscribable: ! $hasBookings,
+            );
         });
 
         return $counts;
+    }
+
+    /**
+     * Стоит ли писать клиенту без записи, что завтра у него занятий нет.
+     *
+     * @param  Collection<int, int>  $withActiveSubscription  id клиентов с действующим абонементом
+     */
+    private function wantsEveningNudge(User $user, Collection $withActiveSubscription): bool
+    {
+        return $user->isSubscribedToMailings()
+            && $withActiveSubscription->has($user->id);
     }
 
     /**
@@ -428,18 +485,24 @@ class StudioMailingService
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<User>
+     * Получатели рассылок: до кого можно дотянуться и кто не отписался.
+     *
+     * @return Builder<User>
      */
     private function eligibleClients()
     {
-        return User::query()
-            ->where('role', UserRole::Client)
-            ->whereNotNull('offer_accepted_at')
-            ->where(function ($query) {
-                $query->whereNotNull('email')
-                    ->orWhereNotNull('telegram_id');
-            })
-            ->orderBy('id');
+        return $this->reachableClients()->subscribedToMailings();
+    }
+
+    /**
+     * Все клиенты с каналом связи — включая отписавшихся от рассылок.
+     * Личные письма о собственных записях идут по этой выборке.
+     *
+     * @return Builder<User>
+     */
+    private function reachableClients()
+    {
+        return User::query()->reachableClients();
     }
 
     /**
@@ -447,6 +510,7 @@ class StudioMailingService
      * `SendClientMailing` — там же защита от второй копии.
      *
      * @param  array{heading: string, subject?: string|null, lines: list<string>}  $message
+     * @param  bool  $unsubscribable  информационная рассылка, а не личное письмо
      */
     private function queueMailing(
         User $user,
@@ -454,6 +518,7 @@ class StudioMailingService
         string $logType,
         string $mailingKey,
         string $notificationType,
+        bool $unsubscribable = true,
     ): void {
         SendClientMailing::dispatch(
             $user->id,
@@ -463,6 +528,7 @@ class StudioMailingService
             $notificationType,
             $logType,
             $mailingKey,
+            unsubscribable: $unsubscribable,
         );
     }
 

@@ -115,6 +115,29 @@
                     @endif
                   </dd>
                 </div>
+                <div class="lk__field lk__field--mailings">
+                  <dt>Рассылки студии</dt>
+                  <dd>
+                    <div class="lk-tg-row">
+                      <span class="lk-tg-row__name">
+                        {{ $user->isSubscribedToMailings() ? 'Вы подписаны' : 'Вы отписаны' }}
+                      </span>
+                      <form action="{{ route('account.mailings.update') }}" method="post" class="lk-tg-row__form">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="subscribed" value="{{ $user->isSubscribedToMailings() ? 0 : 1 }}" />
+                        <button type="submit" class="lk-tg-unlink">
+                          {{ $user->isSubscribedToMailings() ? 'Отписаться' : 'Подписаться' }}
+                        </button>
+                      </form>
+                    </div>
+                    <p class="lk-tg-hint">
+                      Это анонс расписания на неделю, новости, объявления и поздравления.
+                      Письма о ваших записях, отменах занятий и абонементе приходят всегда —
+                      от них отписаться нельзя.
+                    </p>
+                  </dd>
+                </div>
               </dl>
 
               <button type="button" class="btn btn--line" id="profileEditBtn">Редактировать профиль</button>
