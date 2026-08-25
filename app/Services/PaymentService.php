@@ -29,7 +29,14 @@ class PaymentService
     ) {}
 
     /**
-     * Одноразовый тариф (пробное занятие) уже оплачен этим клиентом.
+     * Одноразовый тариф (пробное занятие) клиенту больше не положен.
+     *
+     * Пробное — знакомство со студией, поэтому его закрывает любой след
+     * прежних занятий: оплаченное пробное, любой абонемент (в том числе
+     * выданный администратором вручную — платежа у него нет) и любая запись
+     * на занятие, даже отменённая. Иначе клиент со стажем покупает пробное
+     * вместо разового, как это вышло с абонементами из админки.
+     *
      * Незавершённые платежи не блокируют — клиент мог просто закрыть оплату.
      */
     public static function isAlreadyUsedOnceOnlyProduct(User $user, string $productKey): bool
@@ -38,11 +45,19 @@ class PaymentService
             return false;
         }
 
-        return Payment::query()
+        $paidBefore = Payment::query()
             ->where('user_id', $user->id)
             ->where('product_key', $productKey)
             ->whereIn('status', [PaymentStatus::Succeeded, PaymentStatus::WaitingForCapture])
             ->exists();
+
+        return $paidBefore || self::hasStudioHistory($user);
+    }
+
+    /** Клиент уже не новый: у него есть абонемент или запись на занятие. */
+    private static function hasStudioHistory(User $user): bool
+    {
+        return $user->subscriptions()->exists() || $user->bookings()->exists();
     }
 
     /**

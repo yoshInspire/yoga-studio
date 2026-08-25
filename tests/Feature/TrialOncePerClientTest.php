@@ -2,9 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Enums\BookingStatus;
+use App\Enums\ClassSessionStatus;
 use App\Enums\PaymentStatus;
+use App\Enums\SubscriptionType;
 use App\Enums\UserRole;
+use App\Models\Booking;
+use App\Models\ClassSession;
 use App\Models\Payment;
+use App\Models\Subscription;
 use App\Models\User;
 use App\Services\PaymentService;
 use App\Support\PurchaseCatalog;
@@ -38,6 +44,38 @@ class TrialOncePerClientTest extends TestCase
             'starts_at' => now(),
             'description' => 'Пробное занятие',
             'idempotence_key' => (string) \Illuminate\Support\Str::uuid(),
+        ]);
+    }
+
+    /** Абонемент, выданный администратором вручную: платежа у него нет. */
+    private function manualSubscription(User $user): Subscription
+    {
+        return Subscription::create([
+            'user_id' => $user->id,
+            'type' => SubscriptionType::Group,
+            'sessions_total' => 4,
+            'sessions_used' => 0,
+            'purchased_at' => now()->subMonth(),
+            'starts_at' => now()->subMonth(),
+            'ends_at' => now()->subDays(2),
+            'admin_note' => 'Оплата в студии',
+        ]);
+    }
+
+    private function booking(User $user, BookingStatus $status = BookingStatus::Confirmed): Booking
+    {
+        $session = ClassSession::create([
+            'topic' => 'Хатха-йога',
+            'starts_at' => now()->subWeek()->setTime(19, 15),
+            'type' => SubscriptionType::Group,
+            'capacity' => 6,
+            'status' => ClassSessionStatus::Scheduled,
+        ]);
+
+        return Booking::create([
+            'user_id' => $user->id,
+            'class_session_id' => $session->id,
+            'status' => $status,
         ]);
     }
 
@@ -84,6 +122,55 @@ class TrialOncePerClientTest extends TestCase
         ]);
 
         $this->assertFalse(PaymentService::isAlreadyUsedOnceOnlyProduct($fresh, 'group_trial'));
+    }
+
+    /**
+     * Случай Суровой: клиент пришёл сразу с абонементом, пробное никогда не
+     * покупал — и через полтора месяца занятий купил его как «новый».
+     */
+    public function test_existing_subscription_blocks_trial(): void
+    {
+        $user = $this->client();
+        $this->manualSubscription($user);
+
+        $this->assertTrue(PaymentService::isAlreadyUsedOnceOnlyProduct($user, 'group_trial'));
+    }
+
+    public function test_any_booking_blocks_trial_even_cancelled(): void
+    {
+        $user = $this->client();
+        $this->booking($user, BookingStatus::CancelledByClient);
+
+        $this->assertTrue(PaymentService::isAlreadyUsedOnceOnlyProduct($user, 'group_trial'));
+    }
+
+    public function test_studio_history_does_not_block_regular_subscriptions(): void
+    {
+        $user = $this->client();
+        $this->manualSubscription($user);
+        $this->booking($user);
+
+        $this->assertFalse(PaymentService::isAlreadyUsedOnceOnlyProduct($user, 'group_4'));
+        $this->assertFalse(PaymentService::isAlreadyUsedOnceOnlyProduct($user, 'group_single'));
+    }
+
+    public function test_new_client_without_history_still_sees_trial(): void
+    {
+        $user = $this->client();
+
+        $this->assertFalse(PaymentService::isAlreadyUsedOnceOnlyProduct($user, 'group_trial'));
+    }
+
+    public function test_client_with_history_does_not_see_trial_in_catalog(): void
+    {
+        $user = $this->client();
+        $this->manualSubscription($user);
+
+        $keys = collect(PurchaseCatalog::groupedOnlineProductsFor($user))
+            ->flatten(1)->pluck('key');
+
+        $this->assertNotContains('group_trial', $keys->all());
+        $this->assertContains('group_4', $keys->all());
     }
 
     public function test_used_trial_is_hidden_from_catalog(): void
