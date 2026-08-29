@@ -17,6 +17,7 @@
     <div class="container">
       <div class="sched__head reveal">
         <div>
+          @include('partials.messengers', ['modifier' => 'sched'])
           <p class="eyebrow">Расписание</p>
           <h1 class="section__title">Расписание занятий</h1>
           <p class="sched__note">
