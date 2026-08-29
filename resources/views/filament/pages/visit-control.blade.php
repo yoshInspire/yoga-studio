@@ -120,7 +120,9 @@
                                                 · с {{ $attendee['subscription_starts_at'] }}
                                             @endif
                                             · всего {{ $attendee['sessions_total'] }}
-                                            · рез. {{ $attendee['sessions_reserved'] }}
+                                            @if ($attendee['sessions_reserved'] > 0)
+                                                · рез. {{ $attendee['sessions_reserved'] }}
+                                            @endif
                                             @if ($attendee['sessions_consumed'] > 0)
                                                 · исп. {{ $attendee['sessions_consumed'] }}
                                             @endif

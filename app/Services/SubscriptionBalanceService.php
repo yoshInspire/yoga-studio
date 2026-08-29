@@ -99,6 +99,15 @@ class SubscriptionBalanceService
     }
 
     /**
+     * Записи, под которые занятие ещё только держится в резерве.
+     *
+     * Резерв — это будущие занятия. Как только занятие началось, списание за
+     * него потрачено, даже если посещение не отметили кнопкой «Был(а)»:
+     * администратор часто просто записывает пришедшего клиента задним числом.
+     * Иначе такое списание навсегда оставалось бы в «рез.» и не попадало в
+     * «исп.» — остаток верный, а количество использованных не менялось.
+     * Так же считает отчёт по абонементам (`ReportService::completedSessionsUsed()`).
+     *
      * @return Collection<int, Booking>
      */
     private function expectedBookings(Subscription $subscription): Collection
@@ -110,6 +119,7 @@ class SubscriptionBalanceService
                 $query->where('attendance_status', AttendanceStatus::Expected)
                     ->orWhereNull('attendance_status');
             })
+            ->whereHas('classSession', fn ($query) => $query->where('starts_at', '>', now()))
             ->with(['classSession', 'subscriptionUsage'])
             ->get();
     }

@@ -15,11 +15,22 @@ use App\Services\BookingService;
 use App\Services\SubscriptionBalanceService;
 use App\Services\VisitControlService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class SubscriptionBalanceServiceTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Занятия в сценариях привязаны ко времени суток, а резерв считается
+        // только под ещё не начавшиеся занятия. Без фиксации «сейчас» прогон
+        // после 14:00 считал бы дневной слот уже прошедшим.
+        $this->travelTo(Carbon::parse('2026-08-27 09:00:00'));
+    }
 
     private function client(): User
     {
@@ -148,5 +159,58 @@ class SubscriptionBalanceServiceTest extends TestCase
         $this->assertSame(1, $balance['sessions_reserved']);
         $this->assertSame(0, $balance['sessions_consumed']);
         $this->assertSame(1, $balance['sessions_remaining']);
+    }
+
+    public function test_past_booking_without_attendance_mark_counts_as_consumed(): void
+    {
+        $user = $this->client();
+        $sub = $this->subscription($user, ['starts_at' => now()->subDays(5)]);
+        $session = $this->classSession([
+            'starts_at' => now()->subDays(2)->setTime(10, 0),
+        ]);
+
+        // Ручное списание: администратор записал клиента задним числом и не
+        // нажимал «Был(а)». Занятие уже потрачено — оно в «исп.», не в «рез.».
+        app(BookingService::class)->bookForAdmin($user, $session);
+
+        $balance = app(SubscriptionBalanceService::class)->breakdown($sub->fresh());
+
+        $this->assertSame(0, $balance['sessions_reserved']);
+        $this->assertSame(1, $balance['sessions_consumed']);
+        $this->assertSame(5, $balance['sessions_remaining']);
+    }
+
+    public function test_manual_write_off_in_subscription_card_counts_as_consumed(): void
+    {
+        $user = $this->client();
+        $sub = $this->subscription($user);
+
+        // Правка поля «Списано» в карточке абонемента — без usage-записи.
+        $sub->update(['sessions_used' => 2]);
+
+        $balance = app(SubscriptionBalanceService::class)->breakdown($sub->fresh());
+
+        $this->assertSame(0, $balance['sessions_reserved']);
+        $this->assertSame(2, $balance['sessions_consumed']);
+        $this->assertSame(4, $balance['sessions_remaining']);
+    }
+
+    public function test_past_booking_stays_reserved_for_future_sibling_only(): void
+    {
+        $user = $this->client();
+        $sub = $this->subscription($user, ['starts_at' => now()->subDays(5)]);
+
+        app(BookingService::class)->bookForAdmin($user, $this->classSession([
+            'starts_at' => now()->subDay()->setTime(10, 0),
+        ]));
+        app(BookingService::class)->bookForAdmin($user, $this->classSession([
+            'starts_at' => now()->addDay()->setTime(10, 0),
+        ]));
+
+        $balance = app(SubscriptionBalanceService::class)->breakdown($sub->fresh());
+
+        $this->assertSame(1, $balance['sessions_reserved']);
+        $this->assertSame(1, $balance['sessions_consumed']);
+        $this->assertSame(4, $balance['sessions_remaining']);
     }
 }

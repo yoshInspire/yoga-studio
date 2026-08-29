@@ -14,11 +14,22 @@ use App\Models\User;
 use App\Services\BookingService;
 use App\Services\VisitControlService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class VisitControlTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Занятия здесь привязаны ко времени суток, а резерв абонемента
+        // считается только под ещё не начавшиеся занятия. Фиксируем «сейчас»,
+        // иначе прогон после 14:00 видел бы дневной слот уже прошедшим.
+        $this->travelTo(Carbon::parse('2026-08-27 09:00:00'));
+    }
 
     private function admin(): User
     {
@@ -58,15 +69,15 @@ class VisitControlTest extends TestCase
         ]);
     }
 
-    private function classSession(): ClassSession
+    private function classSession(array $overrides = []): ClassSession
     {
-        return ClassSession::create([
+        return ClassSession::create(array_merge([
             'topic' => 'Хатха-йога',
             'starts_at' => now()->startOfDay()->addHours(14),
             'type' => SubscriptionType::Group,
             'capacity' => 6,
             'status' => ClassSessionStatus::Scheduled,
-        ]);
+        ], $overrides));
     }
 
     public function test_visit_control_page_is_available_for_admin(): void
@@ -137,5 +148,24 @@ class VisitControlTest extends TestCase
         $this->assertNull($booking->subscription_usage_id);
         $this->assertSame(0, $sub->fresh()->sessions_used);
         $this->assertSame(BookingStatus::Confirmed, $booking->status);
+    }
+
+    public function test_past_session_shows_write_off_as_consumed(): void
+    {
+        $user = $this->client();
+        $sub = $this->subscription($user);
+        // Занятие уже прошло, посещение кнопкой не отметили: так выглядит
+        // ручная запись клиента задним числом.
+        $session = $this->classSession(['starts_at' => now()->subHours(3)]);
+
+        app(BookingService::class)->bookForAdmin($user, $session);
+
+        $day = app(VisitControlService::class)->buildDay(now()->startOfDay());
+        $attendee = $day['sessions'][0]['attendees'][0];
+
+        $this->assertSame(0, $attendee['sessions_reserved']);
+        $this->assertSame(1, $attendee['sessions_consumed']);
+        $this->assertSame(3, $attendee['sessions_remaining']);
+        $this->assertSame(1, $sub->fresh()->sessions_used);
     }
 }
