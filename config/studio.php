@@ -122,6 +122,15 @@ return [
         'privacy_revision' => env('STUDIO_PRIVACY_REVISION', '2026-08-07'),
     ],
 
+    /**
+     * Мессенджеры студии — иконки в блоке «Контакты» на главной и в подвале.
+     * Пустое значение убирает иконку, не трогая вёрстку.
+     */
+    'socials' => [
+        'telegram' => env('STUDIO_TELEGRAM_URL', 'https://t.me/yogAvLife'),
+        'whatsapp' => env('STUDIO_WHATSAPP_URL', 'https://wa.me/79647834353'),
+    ],
+
     /** Куда отправлять заявки с формы на главной */
     'lead_email' => env('STUDIO_LEAD_EMAIL', 'hello@ekoyoga-ik.ru'),
 

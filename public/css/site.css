@@ -511,6 +511,29 @@ a { color: inherit; text-decoration: none; }
 }
 .contacts__socials a:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 
+/* Мессенджеры: круглые контурные иконки (в контактах и в подвале) */
+.messengers { display: flex; gap: 10px; margin-top: 8px; }
+.messengers__link {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 42px; height: 42px; padding: 0; border-radius: 50%;
+  border: 1.5px solid var(--line); color: var(--ink-soft);
+  transition: color .3s var(--ease), border-color .3s var(--ease), background .3s var(--ease), transform .3s var(--ease);
+}
+.messengers__link:hover {
+  color: var(--ink); border-color: var(--sage); background: var(--paper);
+  transform: translateY(-1px);
+}
+.messengers__icon { width: 21px; height: 21px; }
+.messengers--footer { margin-top: 12px; }
+.messengers--footer .messengers__link {
+  display: inline-flex; width: 40px; height: 40px; padding: 0;
+  border-color: rgba(255, 255, 255, .16); color: #a8a294;
+}
+.messengers--footer .messengers__link:hover {
+  color: var(--paper); border-color: rgba(255, 255, 255, .38);
+  background: rgba(255, 255, 255, .06);
+}
+
 .contacts__form { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 38px 36px; }
 .form__title { font-family: var(--serif); font-size: 28px; font-weight: 600; }
 .form__sub { color: var(--ink-soft); font-size: 15px; margin: 8px 0 24px; }

@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=51" />
+  <link rel="stylesheet" href="{{ asset('css/site.css') }}?v=52" />
   @stack('head')
 </head>
 <body>
@@ -89,8 +89,8 @@
           <h4>Контакты</h4>
           <a href="{{ route('home') }}#contacts">ул. Ак. Арцимовича, 13</a>
           <a href="tel:+79647834353">+7 (964) 783-43-53</a>
-          <a href="https://t.me/yogAvLife" target="_blank" rel="noopener">@yogAvLife</a>
           <a href="{{ route('home') }}#contacts">Ежедневно 07:00–22:00</a>
+          @include('partials.messengers', ['modifier' => 'footer'])
         </div>
       </div>
     </div>

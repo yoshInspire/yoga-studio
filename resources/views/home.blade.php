@@ -213,11 +213,10 @@
           <li><span>Адрес</span> Москва, ул. Академика Арцимовича, 13 (вход со двора) · р-н Коньково</li>
           <li><span>Метро</span> Коньково · Беляево</li>
           <li><span>Телефон</span> <a href="tel:+79647834353">+7 (964) 783-43-53</a></li>
-          <li><span>Telegram</span> <a href="https://t.me/yogAvLife" target="_blank" rel="noopener">@yogAvLife</a></li>
+          <li><span>Мессенджеры</span> @include('partials.messengers')</li>
           <li><span>Часы работы</span> ежедневно · 07:00 — 22:00</li>
         </ul>
         <div class="contacts__socials reveal">
-          <a href="https://t.me/irinikayoga" target="_blank" rel="noopener">Telegram</a>
           <a href="tel:+79647834353">Позвонить</a>
         </div>
       </div>
