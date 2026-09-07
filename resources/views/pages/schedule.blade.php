@@ -18,7 +18,6 @@
       <div class="sched__head reveal">
         <div>
           @include('partials.messengers', ['modifier' => 'sched'])
-          <p class="eyebrow">Расписание</p>
           <h1 class="section__title">Расписание занятий</h1>
           <p class="sched__note">
             Открытие бронирования на&nbsp;неделю вперёд — по воскресеньям до&nbsp;14:00. Расписание доступно всем —
