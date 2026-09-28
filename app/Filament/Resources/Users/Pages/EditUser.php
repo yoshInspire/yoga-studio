@@ -25,16 +25,20 @@ class EditUser extends EditRecord
                 ->color('success')
                 ->visible(fn (User $record): bool => in_array($record->role, [UserRole::Client, UserRole::Trainer], true))
                 ->requiresConfirmation()
-                ->modalHeading('Отправить временный пароль')
+                // Кнопку не отключаем: бледная неактивная кнопка без пояснений выглядит
+                // как поломка. Если отправлять некуда — модалка объясняет, что сделать.
+                ->modalHeading(fn (User $record): string => $this->accessBlocker($record) === null
+                    ? 'Отправить временный пароль'
+                    : 'Некуда отправить доступ')
                 ->modalDescription(function (User $record): string {
+                    if (($blocker = $this->accessBlocker($record)) !== null) {
+                        return $blocker;
+                    }
+
                     $channels = array_filter([
                         filled($record->email) ? 'email: '.$record->email : null,
                         $record->hasTelegram() ? 'Telegram: '.$record->telegramDisplayAccount() : null,
                     ]);
-
-                    if ($channels === []) {
-                        return 'Укажите email в карточке и сохраните запись. Telegram администратор не привязывает — пользователь может сделать это сам после входа на сайт.';
-                    }
 
                     $telegramNote = $record->hasTelegram()
                         ? ''
@@ -42,8 +46,19 @@ class EditUser extends EditRecord
 
                     return 'Система сгенерирует новый временный пароль, сохранит его и отправит: '.implode('; ', $channels).'.'.$telegramNote;
                 })
-                ->disabled(fn (User $record): bool => blank($record->email) && ! $record->hasTelegram())
+                ->modalSubmitAction(fn (User $record) => $this->accessBlocker($record) === null ? null : false)
+                ->modalCancelActionLabel(fn (User $record): string => $this->accessBlocker($record) === null ? 'Отмена' : 'Понятно')
                 ->action(function (User $record, ClientAccessService $access): void {
+                    if (($blocker = $this->accessBlocker($record)) !== null) {
+                        Notification::make()
+                            ->title('Не удалось отправить доступ')
+                            ->body($blocker)
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
+
                     try {
                         $result = $access->sendTemporaryPassword($record);
                     } catch (InvalidArgumentException $e) {
@@ -79,5 +94,26 @@ class EditUser extends EditRecord
                 }),
             DeleteAction::make(),
         ];
+    }
+
+    /**
+     * Почему доступ сейчас нельзя отправить (null — можно).
+     *
+     * Отправка идёт по сохранённой карточке, поэтому отдельно ловим случай,
+     * когда email уже вписан в форму, но «Сохранить» ещё не нажали.
+     */
+    private function accessBlocker(User $record): ?string
+    {
+        $formEmail = trim((string) ($this->data['email'] ?? ''));
+
+        if ($formEmail !== '' && $formEmail !== (string) $record->email) {
+            return 'Email в карточке изменён, но не сохранён. Нажмите «Сохранить» внизу страницы, затем снова «Отправить доступ».';
+        }
+
+        if (blank($record->email) && ! $record->hasTelegram()) {
+            return 'В карточке не указан email, а Telegram не привязан. Впишите email, нажмите «Сохранить» внизу страницы, затем снова «Отправить доступ».';
+        }
+
+        return null;
     }
 }
