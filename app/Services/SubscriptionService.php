@@ -24,13 +24,16 @@ class SubscriptionService
             ->orderBy('ends_at')
             ->orderBy('id')
             ->get()
+            ->filter(fn (Subscription $s) => $s->canTakeBookingOn($on))
+            ->values()
             ->all();
     }
 
     public function findUsableForUser(User $user, SubscriptionType $classType, ?Carbon $on = null): ?Subscription
     {
         // Историчность: списываем из абонемента, приобретённого раньше всех
-        // (первичный), затем — по сроку окончания.
+        // (первичный), затем — по сроку окончания. Абонемент, все занятия
+        // которого уже обещаны записям в ожидании списания, пропускаем.
         return $user->subscriptions()
             ->forType($classType)
             ->active($on?->copy()->startOfDay())
@@ -38,7 +41,8 @@ class SubscriptionService
             ->orderBy('starts_at')
             ->orderBy('ends_at')
             ->orderBy('id')
-            ->first();
+            ->get()
+            ->first(fn (Subscription $s) => $s->canTakeBookingOn($on ?? now()));
     }
 
     /**

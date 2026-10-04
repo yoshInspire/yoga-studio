@@ -75,7 +75,10 @@ class Booking extends Model
             return ['label' => 'Использовано', 'color' => 'success'];
         }
 
-        if ($this->subscription !== null && ! $this->subscription->hasStarted($this->classSession?->starts_at)) {
+        // Абонемент начинается в день занятия или позже: списание пройдёт
+        // ночью в день начала, а не «Без списания».
+        if ($this->subscription !== null
+            && (! $this->subscription->hasStarted($this->classSession?->starts_at) || ! $this->subscription->hasStarted())) {
             return ['label' => 'Ожидает списания', 'color' => 'warning'];
         }
 

@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Enums\AttendanceStatus;
+use App\Enums\BookingStatus;
 use App\Enums\SubscriptionType;
 use App\Support\RussianDate;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -116,6 +119,78 @@ class Subscription extends Model
         return $this->starts_at->lte($on)
             && $this->ends_at->gte($on)
             && $this->sessionsRemaining() > 0;
+    }
+
+    /**
+     * Сколько занятий уже обещано записям, которые ещё ждут списания.
+     *
+     * Запись по абонементу, который ещё не начал действовать, создаётся без
+     * списания — оно случится в день начала, — и `sessions_used` её не видит.
+     * Без этого счёта две записи, сделанные заранее, уходили на один разовый
+     * абонемент: первую списывали в день начала, вторая навсегда оставалась
+     * «Без списания», а следующий абонемент клиента стоял нетронутым.
+     *
+     * Неявку не считаем: занятие по ней вернули. Для «двойного» абонемента
+     * считаем дни, а не записи, и пропускаем уже оплаченные дни.
+     */
+    public function pendingSessions(?int $excludeBookingId = null): int
+    {
+        return $this->pendingSessionsAmong($this->bookingsHoldingSessions($excludeBookingId));
+    }
+
+    public function sessionsAvailableForBooking(?int $excludeBookingId = null): int
+    {
+        return max(0, $this->sessionsRemaining() - $this->pendingSessions($excludeBookingId));
+    }
+
+    /**
+     * Хватит ли абонемента ещё на одну запись в этот день — с учётом записей,
+     * которые ждут списания (см. `pendingSessions()`).
+     *
+     * У «двойного» абонемента второе занятие дня ничего не стоит: день уже
+     * оплачен или обещан другой записи.
+     */
+    public function canTakeBookingOn(Carbon $day, ?int $excludeBookingId = null): bool
+    {
+        $bookings = $this->bookingsHoldingSessions($excludeBookingId);
+
+        if ($this->isDoublePerDay()
+            && $bookings->contains(fn (Booking $b) => $b->classSession?->starts_at?->isSameDay($day))) {
+            return true;
+        }
+
+        return $this->sessionsRemaining() - $this->pendingSessionsAmong($bookings) >= $this->sessionsPerDay();
+    }
+
+    /**
+     * @return Collection<int, Booking>
+     */
+    private function bookingsHoldingSessions(?int $excludeBookingId): Collection
+    {
+        return $this->bookings()
+            ->where('status', BookingStatus::Confirmed)
+            ->where(fn ($q) => $q->whereNull('attendance_status')
+                ->orWhere('attendance_status', '!=', AttendanceStatus::NoShow))
+            ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId))
+            ->with('classSession')
+            ->get();
+    }
+
+    /**
+     * @param  Collection<int, Booking>  $bookings
+     */
+    private function pendingSessionsAmong(Collection $bookings): int
+    {
+        $pending = $bookings->whereNull('subscription_usage_id');
+
+        if (! $this->isDoublePerDay()) {
+            return $pending->count();
+        }
+
+        $day = fn (Booking $b) => $b->classSession?->starts_at?->toDateString();
+        $chargedDays = $bookings->whereNotNull('subscription_usage_id')->map($day)->filter()->unique();
+
+        return $pending->map($day)->filter()->unique()->diff($chargedDays)->count() * $this->sessionsPerDay();
     }
 
     /**

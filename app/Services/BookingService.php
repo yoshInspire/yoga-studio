@@ -12,6 +12,7 @@ use App\Models\Direction;
 use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -114,8 +115,12 @@ class BookingService
      * (или null, если списывать нечего — например, это второе занятие в день
      * по «двойному» абонементу, где день уже оплачен).
      */
-    private function chargeForBooking(User $user, ClassSession $session, Subscription $subscription): ?int
-    {
+    private function chargeForBooking(
+        User $user,
+        ClassSession $session,
+        Subscription $subscription,
+        ?int $bookingId = null,
+    ): ?int {
         $perDay = $subscription->sessionsPerDay();
         $description = $session->title.' · '.$session->starts_at->format('d.m.Y H:i');
 
@@ -134,6 +139,15 @@ class BookingService
             if ($alreadyCharged) {
                 return null;
             }
+        }
+
+        // Занятия, обещанные записям в ожидании списания, уже заняты: без этой
+        // проверки две ранние записи уходили на один разовый абонемент, и
+        // вторая так и оставалась несписанной.
+        if (! $subscription->canTakeBookingOn($session->starts_at, $bookingId)) {
+            throw new InvalidArgumentException(
+                'На выбранном абонементе не осталось свободных занятий: остальные уже заняты записями.',
+            );
         }
 
         // Абонемент с будущей датой начала: запись можно создать заранее,
@@ -158,7 +172,10 @@ class BookingService
      */
     public function chargePendingBooking(Booking $booking): bool
     {
-        if (! $booking->isConfirmed() || $booking->subscription_usage_id !== null) {
+        // Неявка: занятие по ней вернули намеренно, списывать его снова нельзя.
+        if (! $booking->isConfirmed()
+            || $booking->subscription_usage_id !== null
+            || $booking->attendance_status === AttendanceStatus::NoShow) {
             return false;
         }
 
@@ -169,11 +186,33 @@ class BookingService
             return false;
         }
 
-        if (! $subscription->isActive($session->starts_at)) {
-            return false;
+        // Абонемент уже израсходован другими записями: переводим запись на
+        // следующий подходящий, а не оставляем её молча «Без списания».
+        if (! $subscription->isActive($session->starts_at)
+            || ! $subscription->canTakeBookingOn($session->starts_at, $booking->id)) {
+            // У «двойного» абонемента такая запись — второе занятие уже
+            // оплаченного дня: списывать за неё нечего.
+            if ($subscription->isDoublePerDay()) {
+                return false;
+            }
+
+            $subscription = $this->subscriptions->findUsableForUser($booking->user, $session->type, $session->starts_at);
+
+            if ($subscription === null) {
+                $this->reportUnchargedBooking($booking);
+
+                return false;
+            }
+
+            $booking->update(['subscription_id' => $subscription->id]);
+            $booking->setRelation('subscription', $subscription);
+
+            if (! $subscription->hasStarted()) {
+                return false;
+            }
         }
 
-        $usageId = $this->chargeForBooking($booking->user, $session, $subscription);
+        $usageId = $this->chargeForBooking($booking->user, $session, $subscription, $booking->id);
 
         if ($usageId === null) {
             return false;
@@ -182,6 +221,30 @@ class BookingService
         $booking->update(['subscription_usage_id' => $usageId]);
 
         return true;
+    }
+
+    /**
+     * Списать не с чего — сообщить администратору один раз, а не каждую ночь.
+     */
+    private function reportUnchargedBooking(Booking $booking): void
+    {
+        if (! Cache::add('uncharged-booking-reported:'.$booking->id, true, now()->addDays(60))) {
+            return;
+        }
+
+        $session = $booking->classSession;
+
+        $this->notifications->notifyAdmin(
+            'Занятие не списано',
+            [
+                'Клиент: '.$booking->user->fullName().' ('.($booking->user->formattedPhone() ?? $booking->user->phone).')',
+                'Занятие: «'.$session->title.'» · '.$session->formattedDateTime(),
+                'На абонементе клиента не осталось занятий, другого подходящего абонемента нет. '
+                    .'Спишите занятие вручную или оформите клиенту абонемент.',
+            ],
+            subject: 'Занятие не списано',
+            payload: ['session_id' => $session->id],
+        );
     }
 
     /**
@@ -274,7 +337,7 @@ class BookingService
         $moved = 0;
 
         foreach ($this->bookingsToMoveOnto($freed, $excludeBookingId) as $booking) {
-            if ($freed->sessionsRemaining() < 1) {
+            if (! $freed->canTakeBookingOn($booking->classSession->starts_at, $booking->id)) {
                 break;
             }
 
@@ -282,7 +345,7 @@ class BookingService
 
             $booking->update([
                 'subscription_id' => $freed->id,
-                'subscription_usage_id' => $this->chargeForBooking($booking->user, $booking->classSession, $freed),
+                'subscription_usage_id' => $this->chargeForBooking($booking->user, $booking->classSession, $freed, $booking->id),
             ]);
 
             $freed->refresh();
@@ -391,7 +454,7 @@ class BookingService
 
             $this->releaseBooking($booking);
 
-            $usageId = $this->chargeForBooking($booking->user, $newSession, $subscription);
+            $usageId = $this->chargeForBooking($booking->user, $newSession, $subscription, $booking->id);
 
             $booking->update([
                 'class_session_id' => $newSession->id,
@@ -455,7 +518,7 @@ class BookingService
             // занятием упрётся в собственную же бронь.
             $freed = $this->releaseBooking($booking);
 
-            $usageId = $this->chargeForBooking($booking->user, $newSession, $subscription);
+            $usageId = $this->chargeForBooking($booking->user, $newSession, $subscription, $booking->id);
 
             $booking->update([
                 'class_session_id' => $newSession->id,
@@ -618,6 +681,18 @@ class BookingService
                 'attendance_status' => AttendanceStatus::Attended,
                 'attended_at' => now(),
             ]);
+
+            // Клиент был, а занятие не списано — например, раньше по ошибке
+            // отметили неявку (она возвращает занятие) или запись зависла без
+            // списания. Списываем сейчас, иначе посещение уйдёт бесплатно.
+            if (! $booking->isCharged()) {
+                try {
+                    $this->chargePendingBooking($booking);
+                } catch (InvalidArgumentException) {
+                    // Отметку посещения не срываем — администратор узнает из уведомления.
+                    $this->reportUnchargedBooking($booking);
+                }
+            }
 
             return $booking->refresh();
         });

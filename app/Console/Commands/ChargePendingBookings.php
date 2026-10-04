@@ -6,6 +6,8 @@ use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Services\BookingService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 
 class ChargePendingBookings extends Command
 {
@@ -26,8 +28,13 @@ class ChargePendingBookings extends Command
         $charged = 0;
 
         foreach ($pending as $booking) {
-            if ($bookings->chargePendingBooking($booking)) {
-                $charged++;
+            try {
+                if ($bookings->chargePendingBooking($booking)) {
+                    $charged++;
+                }
+            } catch (InvalidArgumentException $e) {
+                // Одна проблемная запись не должна останавливать списание остальных.
+                Log::warning('Не удалось списать занятие по брони #'.$booking->id.': '.$e->getMessage());
             }
         }
 
