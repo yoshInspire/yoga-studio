@@ -70,7 +70,8 @@ class AdminActivityNotifier
 
     public function clientCancelledBooking(User $user, Booking $booking): void
     {
-        $session = $booking->classSession;
+        $session = $booking->classSession->fresh() ?? $booking->classSession;
+        $withdrawn = $this->wasWithdrawnAfterReservedClient($session);
 
         $this->notify(
             'Отмена записи',
@@ -78,11 +79,25 @@ class AdminActivityNotifier
                 ...$this->clientLines($user),
                 'Действие: отмена записи клиентом',
                 ...$this->sessionLines($session),
+                ...($withdrawn ? [self::WITHDRAWN_LINE] : []),
             ],
             'Клиент отменил запись',
         );
 
-        $this->notifyTrainer($session, 'Клиент снялся с занятия', $user->fullName().' отменил запись.');
+        $this->notifyTrainer(
+            $session,
+            'Клиент снялся с занятия',
+            $user->fullName().' отменил запись.'.($withdrawn ? ' Занятие снято из расписания.' : ''),
+        );
+    }
+
+    private const WITHDRAWN_LINE = 'Занятие было открыто под этого клиента — оно снято из расписания. Чтобы открыть время снова, верните занятию статус «По расписанию».';
+
+    /** Слот, открытый под клиента, снимается, когда клиент от него отказался. */
+    private function wasWithdrawnAfterReservedClient(ClassSession $session): bool
+    {
+        return $session->isCancelled()
+            && $session->cancellation_reason === ClassSession::RESERVED_CLIENT_CANCELLED_REASON;
     }
 
     /**
@@ -114,6 +129,8 @@ class AdminActivityNotifier
 
     public function clientRescheduledBooking(User $user, ClassSession $fromSession, ClassSession $toSession): void
     {
+        $fromSession = $fromSession->fresh() ?? $fromSession;
+
         $this->notify(
             'Перенос записи',
             [
@@ -121,6 +138,7 @@ class AdminActivityNotifier
                 'Действие: перенос записи',
                 'Было: «'.$fromSession->title.'» · '.$fromSession->formattedDateTime(),
                 'Стало: «'.$toSession->title.'» · '.$toSession->formattedDateTime(),
+                ...($this->wasWithdrawnAfterReservedClient($fromSession) ? [self::WITHDRAWN_LINE] : []),
             ],
             'Клиент перенёс запись',
         );

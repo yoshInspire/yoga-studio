@@ -21,6 +21,7 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -110,6 +111,32 @@ class ClassSessionResource extends Resource
                                 ->default(fn ($get) => $get('type') === SubscriptionType::Individual->value ? 1 : config('studio.default_class_capacity'))
                                 ->required(),
                         ]),
+                        Select::make('reservedClients')
+                            ->label('Для кого открыта запись')
+                            ->relationship(
+                                name: 'reservedClients',
+                                titleAttribute: 'last_name',
+                                modifyQueryUsing: fn ($query) => $query
+                                    ->where('role', UserRole::Client->value)
+                                    ->whereNull('anonymized_at'),
+                            )
+                            ->multiple()
+                            ->getOptionLabelFromRecordUsing(fn (User $record) => $record->fullName()
+                                .($record->formattedPhone() ? ' · '.$record->formattedPhone() : ''))
+                            ->searchable(['last_name', 'first_name', 'phone'])
+                            ->placeholder('Для всех')
+                            ->visible(fn ($get) => self::isIndividual($get('type')))
+                            ->rule(fn ($get) => function (string $attribute, mixed $value, \Closure $fail) use ($get): void {
+                                $capacity = max(1, (int) $get('capacity'));
+
+                                if (is_array($value) && count($value) > $capacity) {
+                                    $fail('Клиентов больше, чем мест на занятии ('.$capacity.').');
+                                }
+                            })
+                            ->helperText('Пусто — записаться может любой клиент. Выберите клиента — запись откроется только ему, '
+                                .'остальные увидят «Занято». Если у клиента есть индивидуальный абонемент, он будет записан сразу. '
+                                .'Если клиент сам отменит запись, занятие снимется из расписания, а вам придёт уведомление.')
+                            ->columnSpanFull(),
                         Select::make('trainer_id')
                             ->label('Тренер')
                             ->relationship(
@@ -137,6 +164,7 @@ class ClassSessionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('reservedClients'))
             ->columns([
                 TextColumn::make('starts_at')
                     ->label('Время')
@@ -165,6 +193,15 @@ class ClassSessionResource extends Resource
                 TextColumn::make('taken')
                     ->label('Записано')
                     ->state(fn (ClassSession $record) => $record->confirmedCount().' / '.$record->capacity),
+                TextColumn::make('reserved_for')
+                    ->label('Для кого')
+                    ->state(fn (ClassSession $record) => $record->type === SubscriptionType::Individual
+                        ? ($record->reservedClients->isEmpty()
+                            ? 'Для всех'
+                            : $record->reservedClients->map(fn (User $u) => $u->shortName())->join(', '))
+                        : null)
+                    ->placeholder('—')
+                    ->toggleable(),
                 TextColumn::make('trainer.last_name')
                     ->label('Тренер')
                     ->formatStateUsing(fn ($record) => $record->trainerName()),
@@ -255,6 +292,36 @@ class ClassSessionResource extends Resource
                 ]),
             ])
             ->stackedOnMobile();
+    }
+
+    /**
+     * Итог автозаписи клиентов, под которых открыто занятие.
+     *
+     * @param  array{booked: list<string>, pending: array<string, string>}  $result
+     */
+    public static function notifyReservedBooking(array $result): void
+    {
+        foreach ($result['booked'] as $name) {
+            Notification::make()
+                ->title($name.' записан(а) на занятие')
+                ->success()
+                ->send();
+        }
+
+        foreach ($result['pending'] as $name => $reason) {
+            Notification::make()
+                ->title($name.' пока не записан(а)')
+                ->body($reason.' Время закреплено за клиентом — он сможет записаться сам после покупки абонемента.')
+                ->warning()
+                ->persistent()
+                ->send();
+        }
+    }
+
+    /** Состояние поля «Тип» в форме: строка на создании, enum — при правке. */
+    public static function isIndividual(mixed $type): bool
+    {
+        return ($type instanceof SubscriptionType ? $type->value : $type) === SubscriptionType::Individual->value;
     }
 
     public static function getRelations(): array

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
@@ -33,7 +34,18 @@ class ClassSession extends Model
         static::saving(function (ClassSession $session) {
             $session->title = $session->composeTitle();
         });
+
+        // Открыть запись под клиента можно только на индивидуальное занятие:
+        // если тип сменили, привязка теряет смысл и молча закрывала бы слот.
+        static::saved(function (ClassSession $session) {
+            if ($session->type !== SubscriptionType::Individual) {
+                $session->reservedClients()->detach();
+            }
+        });
     }
+
+    /** Причина, с которой снимается слот, когда клиент, под которого он открыт, отменил запись. */
+    public const RESERVED_CLIENT_CANCELLED_REASON = 'Клиент отменил запись';
 
     protected function casts(): array
     {
@@ -78,6 +90,38 @@ class ClassSession extends Model
             ?? $this->attributes['title']
             ?? $this->getRawOriginal('title')
             ?? 'Занятие';
+    }
+
+    /**
+     * Клиенты, под которых открыта запись. Пусто — записаться может любой.
+     */
+    public function reservedClients(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'class_session_reservations')->withTimestamps();
+    }
+
+    public function isReserved(): bool
+    {
+        return $this->relationLoaded('reservedClients')
+            ? $this->reservedClients->isNotEmpty()
+            : $this->reservedClients()->exists();
+    }
+
+    public function isReservedFor(?User $user): bool
+    {
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->relationLoaded('reservedClients')
+            ? $this->reservedClients->contains('id', $user->id)
+            : $this->reservedClients()->whereKey($user->id)->exists();
+    }
+
+    /** Может ли этот человек записаться сам: запись открыта для всех или именно под него. */
+    public function isOpenFor(?User $user): bool
+    {
+        return ! $this->isReserved() || $this->isReservedFor($user);
     }
 
     public function bookings(): HasMany
@@ -159,6 +203,15 @@ class ClassSession extends Model
         }
 
         return 'open';
+    }
+
+    /**
+     * Подпись занятого слота. Индивидуальное занятие «Занято» — мест там одно
+     * (или два у парного), «Мест нет» звучит как про переполненную группу.
+     */
+    public function fullLabel(): string
+    {
+        return $this->type === SubscriptionType::Individual ? 'Занято' : 'Мест нет';
     }
 
     public function formattedTime(): string

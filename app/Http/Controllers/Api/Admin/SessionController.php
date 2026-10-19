@@ -4,13 +4,18 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\BookingStatus;
 use App\Enums\ClassSessionStatus;
+use App\Enums\SubscriptionType;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\ClassSession;
+use App\Models\User;
 use App\Services\BookingService;
 use App\Support\RussianDate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 /**
@@ -41,7 +46,7 @@ class SessionController extends Controller
             ->whereBetween('starts_at', [$start, $end])
             ->when($data['type'] ?? null, fn ($q, $type) => $q->where('type', $type))
             ->when($data['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
-            ->with(['trainer', 'direction'])
+            ->with(['trainer', 'direction', 'reservedClients'])
             ->withCount(['bookings as taken' => fn ($q) => $q->where('status', BookingStatus::Confirmed)])
             ->orderBy('starts_at')
             ->get()
@@ -65,6 +70,10 @@ class SessionController extends Controller
                 'status' => $s->status->value,
                 'cancelled' => $s->isCancelled(),
                 'reason' => $s->cancellation_reason,
+                // Под кого открыта запись; пусто — для всех.
+                'reserved_clients' => $s->reservedClients
+                    ->map(fn (User $u) => ['id' => $u->id, 'name' => $u->fullName()])
+                    ->values(),
                 // Поля для формы правки: отдельного запроса на одно занятие
                 // не делаем, неделя и так приходит целиком.
                 'form' => [
@@ -77,6 +86,7 @@ class SessionController extends Controller
                     'duration_minutes' => $s->durationMinutes(),
                     'capacity' => $s->capacity,
                     'trainer_id' => $s->trainer_id,
+                    'reserved_client_ids' => $s->reservedClients->pluck('id')->values(),
                 ],
             ]);
 
@@ -92,16 +102,25 @@ class SessionController extends Controller
     }
 
     /** Создать занятие. */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, BookingService $bookings): JsonResponse
     {
         $data = $this->validateForm($request);
 
-        $session = ClassSession::query()->create([
-            ...$this->attributes($data),
-            'status' => ClassSessionStatus::Scheduled,
-        ]);
+        $session = DB::transaction(function () use ($data) {
+            $session = ClassSession::query()->create([
+                ...$this->attributes($data),
+                'status' => ClassSessionStatus::Scheduled,
+            ]);
 
-        return response()->json(['message' => 'Занятие создано: «'.$session->title.'».', 'id' => $session->id]);
+            $this->syncReservedClients($session, $data);
+
+            return $session;
+        });
+
+        $message = 'Занятие создано: «'.$session->title.'».';
+        $message .= $this->bookingSummary($bookings->bookReservedClients($session));
+
+        return response()->json(['message' => $message, 'id' => $session->id]);
     }
 
     /**
@@ -111,7 +130,7 @@ class SessionController extends Controller
      * на абонементы и письма записавшимся, за это отвечает `cancel()`. Обратный
      * перевод в «по расписанию» разрешён — так снимают ошибочную отмену.
      */
-    public function update(Request $request, ClassSession $session): JsonResponse
+    public function update(Request $request, ClassSession $session, BookingService $bookings): JsonResponse
     {
         $data = $this->validateForm($request, [
             'status' => ['nullable', 'in:scheduled'],
@@ -124,9 +143,76 @@ class SessionController extends Controller
             $session->cancellation_reason = null;
         }
 
-        $session->save();
+        $added = DB::transaction(function () use ($session, $data) {
+            $session->save();
 
-        return response()->json(['message' => 'Занятие обновлено: «'.$session->title.'».']);
+            return $this->syncReservedClients($session, $data);
+        });
+
+        $message = 'Занятие обновлено: «'.$session->title.'».';
+
+        // Записываем только добавленных сейчас — как в веб-админке.
+        if ($added !== []) {
+            $message .= $this->bookingSummary($bookings->bookReservedClients($session, $added));
+        }
+
+        return response()->json(['message' => $message]);
+    }
+
+    /**
+     * Сохранить, под кого открыта запись. Поле не прислали — не трогаем
+     * (старая версия приложения о нём не знает). Только для индивидуальных:
+     * у остальных привязку снимает сама модель.
+     *
+     * @param  array<string, mixed>  $data
+     * @return list<int> добавленные клиенты
+     */
+    private function syncReservedClients(ClassSession $session, array $data): array
+    {
+        if (! array_key_exists('reserved_client_ids', $data) || $session->type !== SubscriptionType::Individual) {
+            return [];
+        }
+
+        $ids = array_values(array_unique(array_map('intval', $data['reserved_client_ids'] ?? [])));
+
+        if (count($ids) > $session->capacity) {
+            throw ValidationException::withMessages([
+                'reserved_client_ids' => ['Клиентов больше, чем мест на занятии ('.$session->capacity.').'],
+            ]);
+        }
+
+        $clients = User::query()
+            ->whereKey($ids)
+            ->where('role', UserRole::Client)
+            ->whereNull('anonymized_at')
+            ->pluck('id')
+            ->all();
+
+        if (count($clients) !== count($ids)) {
+            throw ValidationException::withMessages([
+                'reserved_client_ids' => ['Открыть запись можно только под клиента студии.'],
+            ]);
+        }
+
+        return array_values(array_map('intval', $session->reservedClients()->sync($ids)['attached']));
+    }
+
+    /**
+     * @param  array{booked: list<string>, pending: array<string, string>}  $result
+     */
+    private function bookingSummary(array $result): string
+    {
+        $parts = [];
+
+        if ($result['booked'] !== []) {
+            $parts[] = 'Записаны: '.implode(', ', $result['booked']).'.';
+        }
+
+        foreach ($result['pending'] as $name => $reason) {
+            $parts[] = $name.' пока не записан(а): '.$reason.' Время закреплено за клиентом.';
+        }
+
+        return $parts === [] ? '' : ' '.implode(' ', $parts);
     }
 
     /**
@@ -170,6 +256,8 @@ class SessionController extends Controller
             'capacity' => ['required', 'integer', 'between:1,99'],
             'trainer_id' => ['nullable', 'integer', 'exists:users,id'],
             'duration_minutes' => ['nullable', 'integer', 'between:15,300'],
+            'reserved_client_ids' => ['sometimes', 'nullable', 'array', 'max:99'],
+            'reserved_client_ids.*' => ['integer'],
             ...$extra,
         ]);
     }

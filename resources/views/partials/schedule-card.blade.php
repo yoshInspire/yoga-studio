@@ -25,7 +25,7 @@
     @if($slot['status'] === 'cancelled')
       <strong>Отменено</strong>
     @elseif($slot['status'] === 'full')
-      <strong>Мест нет</strong>
+      <strong>{{ $slot['full_label'] ?? 'Мест нет' }}</strong>
     @else
       <strong>Свободно: {{ $slot['free'] }}</strong> из {{ $slot['total'] }}
     @endif

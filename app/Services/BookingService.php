@@ -34,6 +34,79 @@ class BookingService
         return $this->bookInternal($user, $session, $subscription, forAdmin: true);
     }
 
+    /**
+     * Записать клиентов, под которых открыто занятие, — сразу при создании
+     * или когда клиента добавили в уже созданное. Ирина открывает слот под
+     * человека, с которым уже договорилась: если у него есть абонемент, ждать,
+     * пока он запишется сам, незачем.
+     *
+     * Без абонемента записать нельзя — такой клиент остаётся в списке, слот
+     * держится за ним, и он запишется сам после покупки.
+     *
+     * @param  list<int>|null  $onlyUserIds  кого из привязанных записывать; null — всех
+     * @return array{booked: list<string>, pending: array<string, string>} имена записанных и незаписанных с причиной
+     */
+    public function bookReservedClients(ClassSession $session, ?array $onlyUserIds = null): array
+    {
+        $result = ['booked' => [], 'pending' => []];
+
+        if ($session->isCancelled()) {
+            return $result;
+        }
+
+        $clients = $session->reservedClients()
+            ->when($onlyUserIds !== null, fn ($q) => $q->whereKey($onlyUserIds))
+            ->get();
+
+        foreach ($clients as $client) {
+            $alreadyBooked = $session->bookings()
+                ->where('user_id', $client->id)
+                ->where('status', BookingStatus::Confirmed)
+                ->exists();
+
+            if ($alreadyBooked) {
+                continue;
+            }
+
+            try {
+                $this->bookForAdmin($client, $session);
+                $result['booked'][] = $client->fullName();
+            } catch (InvalidArgumentException $e) {
+                $result['pending'][$client->fullName()] = $e->getMessage();
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Клиент, под которого открыт слот, отменил или перенёс запись — слот
+     * снимается из расписания, чтобы его не занял случайный человек. Ирина
+     * узнаёт об этом из уведомления об отмене и при желании откроет снова.
+     *
+     * Если на занятии ещё кто-то записан (парное), занятие остаётся.
+     * Возвращает true, если занятие снято.
+     */
+    private function withdrawReservedSlot(int $sessionId, int $userId): bool
+    {
+        $session = ClassSession::query()->lockForUpdate()->find($sessionId);
+
+        if ($session === null
+            || $session->status !== ClassSessionStatus::Scheduled
+            || ! $session->reservedClients()->whereKey($userId)->exists()
+            || $session->confirmedCount() > 0) {
+            return false;
+        }
+
+        $session->update([
+            'status' => ClassSessionStatus::Cancelled,
+            'cancellation_reason' => ClassSession::RESERVED_CLIENT_CANCELLED_REASON,
+            'cancelled_at' => now(),
+        ]);
+
+        return true;
+    }
+
     private function bookInternal(User $user, ClassSession $session, ?Subscription $subscription, bool $forAdmin): Booking
     {
         $booking = DB::transaction(function () use ($user, $session, $subscription, $forAdmin) {
@@ -456,11 +529,15 @@ class BookingService
 
             $usageId = $this->chargeForBooking($booking->user, $newSession, $subscription, $booking->id);
 
+            $fromSessionId = $booking->class_session_id;
+
             $booking->update([
                 'class_session_id' => $newSession->id,
                 'subscription_id' => $subscription->id,
                 'subscription_usage_id' => $usageId,
             ]);
+
+            $this->withdrawReservedSlot($fromSessionId, $booking->user_id);
 
             return $booking->refresh();
         });
@@ -561,6 +638,8 @@ class BookingService
                 'cancelled_at' => now(),
                 'subscription_usage_id' => null,
             ]);
+
+            $this->withdrawReservedSlot($booking->class_session_id, $booking->user_id);
 
             if ($freed !== null) {
                 $this->rebalanceFreedSessions($freed, $booking->id);
@@ -738,6 +817,9 @@ class BookingService
             }
         } elseif (! $session->isBookable()) {
             throw new InvalidArgumentException('Бронирование на это занятие недоступно.');
+        } elseif (! $session->isOpenFor($user)) {
+            // Слот открыт под другого клиента. Кому именно — не говорим.
+            throw new InvalidArgumentException('Это время уже занято.');
         }
 
         if (Booking::query()
@@ -885,7 +967,7 @@ class BookingService
             ->inDateRange($rangeStart, $rangeEnd)
             ->where('status', ClassSessionStatus::Scheduled)
             ->when($directionIds !== [], fn ($q) => $q->whereIn('direction_id', $directionIds))
-            ->with(['trainer', 'direction'])
+            ->with(['trainer', 'direction', 'reservedClients:id'])
             ->withCount(['bookings as taken' => fn ($q) => $q->where('status', BookingStatus::Confirmed)])
             ->orderBy('starts_at');
 
@@ -943,7 +1025,7 @@ class BookingService
     {
         $sessionsQuery = ClassSession::query()
             ->inWeek($weekStart)
-            ->with(['trainer', 'direction'])
+            ->with(['trainer', 'direction', 'reservedClients:id'])
             ->withCount(['bookings as taken' => fn ($q) => $q->where('status', BookingStatus::Confirmed)])
             ->orderBy('starts_at');
 
@@ -995,15 +1077,21 @@ class BookingService
         $isRescheduleSource = $rescheduleFrom !== null
             && $session->id === $rescheduleFrom->class_session_id;
 
+        // Слот открыт под другого клиента: для всех остальных он выглядит
+        // занятым — так Ирина и просила, без пометок «для кого-то».
+        $closedForViewer = ! $session->isCancelled() && ! $userBooked && ! $session->isOpenFor($viewer);
+
         $canRescheduleHere = $rescheduleFrom !== null
             && ! $isRescheduleSource
+            && ! $closedForViewer
             && $session->slotStatus() === 'open'
             && $session->isBookable()
             && ! $userBooked;
 
         $durationMinutes = $session->durationMinutes();
         $startMinutes = ((int) $session->starts_at->format('H')) * 60 + (int) $session->starts_at->format('i');
-        $free = max(0, $session->capacity - (int) $session->taken);
+        $taken = $closedForViewer ? $session->capacity : (int) $session->taken;
+        $free = max(0, $session->capacity - $taken);
 
         return [
             'id' => $session->id,
@@ -1023,12 +1111,13 @@ class BookingService
             'type' => $session->type->badgeClass(),
             'type_label' => $session->type->shortLabel(),
             'date_time' => $session->formattedDateTime(),
-            'taken' => (int) $session->taken,
+            'taken' => $taken,
             'total' => $session->capacity,
             'free' => $free,
-            'status' => $session->slotStatus(),
+            'status' => $closedForViewer ? 'full' : $session->slotStatus(),
+            'full_label' => $session->fullLabel(),
             'reason' => $session->cancellation_reason,
-            'bookable' => $session->isBookable() && ! $userBooked && $rescheduleFrom === null,
+            'bookable' => $session->isBookable() && ! $closedForViewer && ! $userBooked && $rescheduleFrom === null,
             'user_booked' => $userBooked && ! $isRescheduleSource,
             'is_reschedule_source' => $isRescheduleSource,
             'can_reschedule_here' => $canRescheduleHere,

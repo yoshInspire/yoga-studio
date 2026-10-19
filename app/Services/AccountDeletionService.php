@@ -80,6 +80,10 @@ class AccountDeletionService
             $this->bookings->cancelByAdmin($booking, 'Клиент удалил аккаунт', refund: false);
         }
 
+        // Слоты, открытые под этого клиента, иначе навсегда остались бы
+        // «занятыми» для всех остальных.
+        DB::table('class_session_reservations')->where('user_id', $user->id)->delete();
+
         return $future->count();
     }
 

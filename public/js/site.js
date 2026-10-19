@@ -202,7 +202,9 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
     if (slot.status === 'cancelled') {
       seatsEl.textContent = `Отменено${slot.reason ? `: ${slot.reason}` : ''}`;
     } else if (slot.status === 'full') {
-      seatsEl.textContent = `Мест нет · ${slot.total} из ${slot.total} занято`;
+      seatsEl.textContent = slot.full_label === 'Занято'
+        ? 'Занято'
+        : `Мест нет · ${slot.total} из ${slot.total} занято`;
     } else {
       seatsEl.textContent = `Свободно ${slot.free} из ${slot.total}`;
     }
@@ -238,7 +240,7 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
     } else if (slot.status === 'open' && slot.bookable) {
       actionEl.innerHTML = `<a href="${cfg.loginUrl}" class="btn btn--solid">Войти и забронировать</a>`;
     } else if (slot.status === 'full') {
-      actionEl.innerHTML = '<button type="button" class="btn btn--ghost" disabled style="width:100%">Мест нет</button>';
+      actionEl.innerHTML = `<button type="button" class="btn btn--ghost" disabled style="width:100%">${slot.full_label || 'Мест нет'}</button>`;
     } else {
       actionEl.innerHTML = '<button type="button" class="btn btn--ghost" disabled style="width:100%">Отменено</button>';
     }
