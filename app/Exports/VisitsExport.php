@@ -45,7 +45,7 @@ class VisitsExport implements FromCollection, ShouldAutoSize, WithHeadings
                 $booking->user->last_name,
                 $booking->user->first_name,
                 $booking->user->patronymic ?? '',
-                $booking->user->formattedPhone() ?? $booking->user->phone ?? '',
+                $booking->user->contactPhone() ?? '',
                 $booking->classSession->title,
                 $booking->classSession->type->label(),
                 // Пусто — свой абонемент; иначе чей абонемент семьи списан.

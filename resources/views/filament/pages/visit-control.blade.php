@@ -104,7 +104,7 @@
                         @foreach ($session['attendees'] as $attendee)
                             <li class="vc-attendee" wire:key="booking-{{ $attendee['booking_id'] }}">
                                 <div class="vc-attendee__top">
-                                    <div class="vc-attendee__name">{{ $attendee['name'] }}</div>
+                                    <div class="vc-attendee__name">{{ $attendee['name'] }}@if ($attendee['is_child'] ?? false) <small>· ребёнок, представитель {{ $attendee['guardian_name'] }}</small>@endif</div>
                                     @if ($attendee['phone_href'])
                                         <a href="{{ $attendee['phone_href'] }}" class="vc-attendee__phone">{{ $attendee['phone'] }}</a>
                                     @endif

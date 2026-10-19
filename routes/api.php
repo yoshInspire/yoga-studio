@@ -114,6 +114,8 @@ Route::prefix('v1')->group(function () {
             Route::post('/family/leave', [FamilyController::class, 'leave']);
             Route::delete('/family', [FamilyController::class, 'dissolve']);
             Route::put('/family/subscriptions/{subscription}/shares', [FamilyController::class, 'updateShares']);
+            Route::post('/family/children', [FamilyController::class, 'addChild'])->middleware('throttle:10,1');
+            Route::put('/family/children/{child}', [FamilyController::class, 'updateChild']);
             Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel']);
             Route::post('/bookings/{booking}/reschedule', [BookingController::class, 'reschedule']);
 
@@ -160,6 +162,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/clients', [AdminClientController::class, 'store']);
             Route::get('/clients/{client}', [AdminClientController::class, 'show']);
             Route::put('/clients/{client}', [AdminClientController::class, 'update']);
+            Route::post('/clients/{client}/separate', [AdminClientController::class, 'separate']);
             Route::post('/clients/{client}/access', [AdminClientController::class, 'access'])
                 ->middleware('throttle:10,1');
             // Семья клиента — для тех, кто не пользуется ни сайтом, ни приложением.

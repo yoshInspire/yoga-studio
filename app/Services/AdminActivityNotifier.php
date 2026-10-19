@@ -51,15 +51,18 @@ class AdminActivityNotifier
         $this->notify('Новый клиент', $lines, 'Новый клиент на сайте');
     }
 
-    public function clientBooked(User $user, Booking $booking): void
+    /** @param  User|null  $bookedBy  кто записал, если не сам клиент (член семьи) */
+    public function clientBooked(User $user, Booking $booking, ?User $bookedBy = null): void
     {
         $session = $booking->classSession;
+        $by = $this->actorLine($user, $bookedBy, 'записал(а)');
 
         $this->notify(
             'Запись на занятие',
             [
                 ...$this->clientLines($user),
                 'Действие: запись на занятие',
+                ...($by !== null ? [$by] : []),
                 ...$this->sessionLines($session),
             ],
             'Клиент записался на занятие',
@@ -68,16 +71,27 @@ class AdminActivityNotifier
         $this->notifyTrainer($session, 'Новая запись на занятие', $user->fullName().' записался.');
     }
 
-    public function clientCancelledBooking(User $user, Booking $booking): void
+    /** «Член семьи: Анна Иванова записал(а)» — когда действовал не сам клиент. */
+    private function actorLine(User $user, ?User $actor, string $verb): ?string
+    {
+        return $actor !== null && $actor->id !== $user->id
+            ? 'Член семьи: '.$actor->fullName().' '.$verb
+            : null;
+    }
+
+    /** @param  User|null  $by  кто отменил, если не сам клиент (член семьи) */
+    public function clientCancelledBooking(User $user, Booking $booking, ?User $by = null): void
     {
         $session = $booking->classSession->fresh() ?? $booking->classSession;
         $withdrawn = $this->wasWithdrawnAfterReservedClient($session);
+        $byLine = $this->actorLine($user, $by, 'отменил(а)');
 
         $this->notify(
             'Отмена записи',
             [
                 ...$this->clientLines($user),
                 'Действие: отмена записи клиентом',
+                ...($byLine !== null ? [$byLine] : []),
                 ...$this->sessionLines($session),
                 ...($withdrawn ? [self::WITHDRAWN_LINE] : []),
             ],
@@ -127,15 +141,17 @@ class AdminActivityNotifier
         );
     }
 
-    public function clientRescheduledBooking(User $user, ClassSession $fromSession, ClassSession $toSession): void
+    public function clientRescheduledBooking(User $user, ClassSession $fromSession, ClassSession $toSession, ?User $by = null): void
     {
         $fromSession = $fromSession->fresh() ?? $fromSession;
+        $byLine = $this->actorLine($user, $by, 'перенёс(ла)');
 
         $this->notify(
             'Перенос записи',
             [
                 ...$this->clientLines($user),
                 'Действие: перенос записи',
+                ...($byLine !== null ? [$byLine] : []),
                 'Было: «'.$fromSession->title.'» · '.$fromSession->formattedDateTime(),
                 'Стало: «'.$toSession->title.'» · '.$toSession->formattedDateTime(),
                 ...($this->wasWithdrawnAfterReservedClient($fromSession) ? [self::WITHDRAWN_LINE] : []),
@@ -214,6 +230,7 @@ class AdminActivityNotifier
             [
                 ...$this->clientLines($user),
                 'Действие: клиент перешёл к оплате абонемента',
+                ...($payment->isGift() ? ['В подарок: '.$payment->recipient?->fullName()] : []),
                 'Товар: '.$payment->description,
                 'Сумма: '.$payment->formattedAmount(),
                 'Дата начала абонемента: '.RussianDate::dayMonthYear($payment->starts_at),
@@ -229,6 +246,7 @@ class AdminActivityNotifier
             [
                 ...$this->clientLines($user),
                 'Действие: успешная оплата абонемента',
+                ...($payment->isGift() ? ['В подарок: '.$payment->recipient?->fullName().' — абонемент выдан ему(ей)'] : []),
                 'Товар: '.$payment->description,
                 'Сумма: '.$payment->formattedAmount(),
                 'Абонемент: '.$subscription->type->label().', '.$subscription->sessions_total.' зан.',
@@ -288,7 +306,7 @@ class AdminActivityNotifier
     {
         return [
             'Клиент: '.$user->fullName(),
-            'Телефон: '.($user->formattedPhone() ?? $user->phone ?? '—'),
+            'Телефон: '.($user->contactPhone() ?? '—'),
             'Email: '.($user->email ?? '—'),
         ];
     }

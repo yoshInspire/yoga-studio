@@ -51,15 +51,12 @@ class FamilyController extends Controller
     /** Кому из семьи владельца открыт абонемент — полный список. */
     public function shares(Request $request, Subscription $subscription): JsonResponse
     {
-        $data = $request->validate([
-            'user_ids' => ['present', 'array', 'max:'.FamilyService::MAX_MEMBERS],
-            'user_ids.*' => ['integer'],
-        ]);
+        $shares = FamilyService::sharesFromRequest($request);
 
-        return $this->attempt($subscription->user, function () use ($subscription, $data) {
-            $this->family->setSharesByAdmin($subscription, $data['user_ids']);
+        return $this->attempt($subscription->user, function () use ($subscription, $shares) {
+            $this->family->setSharesByAdmin($subscription, $shares);
 
-            return $data['user_ids'] === [] ? 'Абонемент больше никому не открыт.' : 'Доступ к абонементу сохранён.';
+            return $shares === [] ? 'Абонемент больше никому не открыт.' : 'Доступ к абонементу сохранён.';
         });
     }
 

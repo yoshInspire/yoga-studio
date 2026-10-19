@@ -45,6 +45,7 @@ use Laravel\Sanctum\HasApiTokens;
     'password',
     'offer_accepted_at',
     'mailings_subscribed',
+    'guardian_id',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
@@ -126,6 +127,46 @@ class User extends Authenticatable implements FilamentUser
     public function formattedPhone(): ?string
     {
         return PhoneNormalizer::format($this->phone);
+    }
+
+    /**
+     * Профиль ребёнка без своего входа: телефона и почты нет, управляет им
+     * представитель из семьи, уведомления уходят ему (`NotificationService`).
+     */
+    public function isManagedProfile(): bool
+    {
+        return $this->guardian_id !== null;
+    }
+
+    /** Представитель ребёнка. */
+    public function guardian(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'guardian_id');
+    }
+
+    /** Дети без своего входа, которыми управляет этот человек. */
+    public function wards(): HasMany
+    {
+        return $this->hasMany(User::class, 'guardian_id');
+    }
+
+    /**
+     * Телефон для связи — в выгрузках, карточках и уведомлениях
+     * администратору. У ребёнка своего нет: показываем телефон представителя
+     * с пометкой, иначе звонить некуда.
+     */
+    public function contactPhone(): ?string
+    {
+        $own = $this->formattedPhone() ?? $this->phone;
+
+        if ($own !== null || ! $this->isManagedProfile()) {
+            return $own;
+        }
+
+        $guardian = $this->guardian;
+        $phone = $guardian?->formattedPhone() ?? $guardian?->phone;
+
+        return $phone !== null ? $phone.' (представитель: '.$guardian->shortName().')' : null;
     }
 
     public function formattedBirthDate(): ?string
@@ -299,6 +340,8 @@ class User extends Authenticatable implements FilamentUser
         return $query
             ->where('role', UserRole::Client)
             ->whereNotNull('offer_accepted_at')
+            // Дети без входа: рассылку и так получает представитель.
+            ->whereNull('guardian_id')
             ->where(function (Builder $query) {
                 $query->whereNotNull('email')
                     ->orWhereNotNull('telegram_id');
@@ -368,7 +411,7 @@ class User extends Authenticatable implements FilamentUser
     /** Чужие абонементы, которые владельцы открыли этому человеку. */
     public function sharedSubscriptions(): BelongsToMany
     {
-        return $this->belongsToMany(Subscription::class, 'subscription_shares')->withTimestamps();
+        return $this->belongsToMany(Subscription::class, 'subscription_shares')->withPivot('sessions_limit')->withTimestamps();
     }
 
     public function payments(): HasMany

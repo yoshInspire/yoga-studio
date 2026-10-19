@@ -30,6 +30,17 @@ class FamilyMember extends Model
         return $this->belongsTo(User::class);
     }
 
+    /** Оба в одной семье. */
+    public static function inSameFamily(User $a, User $b): bool
+    {
+        return self::query()
+            ->whereIn('user_id', [$a->id, $b->id])
+            ->select('family_group_id')
+            ->groupBy('family_group_id')
+            ->havingRaw('count(*) = 2')
+            ->exists();
+    }
+
     public function isOwner(): bool
     {
         return $this->role === self::ROLE_OWNER;

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\FamilyService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 use InvalidArgumentException;
 
@@ -124,17 +125,56 @@ class FamilyController extends Controller
 
     public function updateShares(Request $request, Subscription $subscription): RedirectResponse
     {
-        $data = $request->validate([
-            'user_ids' => ['nullable', 'array', 'max:'.FamilyService::MAX_MEMBERS],
-            'user_ids.*' => ['integer'],
+        $shares = FamilyService::sharesFromRequest($request, requirePresent: false);
+
+        return $this->attempt(function () use ($request, $subscription, $shares) {
+            $this->family->setShares($request->user(), $subscription, $shares);
+
+            return $shares === [] ? 'Абонемент больше никому не открыт.' : 'Доступ к абонементу сохранён.';
+        });
+    }
+
+    /** Завести профиль ребёнка без своего входа (раздел «Семья» кабинета). */
+    public function addChild(Request $request): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), FamilyService::childRules(creating: true), [
+            'guardian_consent.accepted' => 'Подтвердите, что вы законный представитель ребёнка.',
         ]);
 
-        return $this->attempt(function () use ($request, $subscription, $data) {
-            $ids = $data['user_ids'] ?? [];
-            $this->family->setShares($request->user(), $subscription, $ids);
+        if ($validator->fails()) {
+            return $this->childFormFailed($validator->errors()->first(), 'new');
+        }
 
-            return $ids === [] ? 'Абонемент больше никому не открыт.' : 'Доступ к абонементу сохранён.';
+        return $this->attempt(function () use ($request, $validator) {
+            $child = $this->family->addChild($request->user(), $validator->validated());
+
+            return $child->shortName().' — в семье. Записывайте на занятия из расписания: «Кого записать».';
         });
+    }
+
+    public function updateChild(Request $request, User $child): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), FamilyService::childRules(creating: false));
+
+        if ($validator->fails()) {
+            return $this->childFormFailed($validator->errors()->first(), (string) $child->id);
+        }
+
+        return $this->attempt(function () use ($request, $child, $validator) {
+            $this->family->updateChild($request->user(), $child, $validator->validated());
+
+            return 'Профиль ребёнка сохранён.';
+        });
+    }
+
+    /** Ошибка формы ребёнка — назад в «Семью» с раскрытой формой и введённым. */
+    private function childFormFailed(string $message, string $form): RedirectResponse
+    {
+        return redirect()->route('account')
+            ->with('lk_section', 'family')
+            ->with('family_child_form', $form)
+            ->withInput()
+            ->withErrors(['family' => $message]);
     }
 
     /**

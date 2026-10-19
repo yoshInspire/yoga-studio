@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'user_id',
+    'booked_by_id',
     'class_session_id',
     'subscription_id',
     'subscription_usage_id',
@@ -35,6 +36,32 @@ class Booking extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Кто записал, если записал не сам идущий (член семьи — фаза 2). null —
+     * записался сам или записал администратор.
+     */
+    public function bookedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'booked_by_id');
+    }
+
+    /**
+     * Может ли клиент отменить или перенести эту запись: сам идущий, тот, кто
+     * его записал, и представитель ребёнка без своего входа.
+     */
+    public function isManageableBy(?User $user): bool
+    {
+        if ($user === null) {
+            return false;
+        }
+
+        if ($this->user_id === $user->id || ($this->booked_by_id !== null && $this->booked_by_id === $user->id)) {
+            return true;
+        }
+
+        return $this->user?->guardian_id !== null && $this->user->guardian_id === $user->id;
     }
 
     public function classSession(): BelongsTo

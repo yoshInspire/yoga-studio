@@ -24,6 +24,9 @@
         @csrf
         <button type="submit" class="btn btn--solid">Пригласить в семью</button>
       </form>
+      @if ($family['can_add_child'])
+        @include('partials.family-child-form', ['child' => null])
+      @endif
       <form action="{{ route('family.join') }}" method="get" class="family-code">
         <label class="lk-profile-form__label" for="family-code">Есть код приглашения?</label>
         <div class="family-code__row">
@@ -47,15 +50,26 @@
           </span>
           <div class="lk-row__main">
             <h3>{{ $m['name'] }}@if ($m['is_me']) <span class="family-member__me">(вы)</span>@endif</h3>
-            <p>{{ $m['is_owner'] ? 'Глава семьи' : 'В семье с '.$m['joined_at'] }}</p>
+            <p>
+              @if ($m['is_child'] ?? false)
+                Ребёнок · представитель: {{ $m['guardian_name'] }}@if ($m['child']) · {{ $m['child']['birth_date_label'] }}@endif
+              @else
+                {{ $m['is_owner'] ? 'Глава семьи' : 'В семье с '.$m['joined_at'] }}
+              @endif
+            </p>
+            @if ($m['child'] ?? null)
+              @include('partials.family-child-form', ['child' => $m['child']])
+            @endif
           </div>
           @if ($group['is_owner'] && ! $m['is_me'])
             <div class="lk-row__actions">
-              <form action="{{ route('account.family.members.owner', $m['id']) }}" method="post"
-                    data-confirm="Сделать {{ $m['name'] }} главой семьи? Приглашать и исключать участников сможет только он(а).">
-                @csrf
-                <button type="submit" class="btn btn--ghost">Сделать главой</button>
-              </form>
+              @unless ($m['is_child'] ?? false)
+                <form action="{{ route('account.family.members.owner', $m['id']) }}" method="post"
+                      data-confirm="Сделать {{ $m['name'] }} главой семьи? Приглашать и исключать участников сможет только он(а).">
+                  @csrf
+                  <button type="submit" class="btn btn--ghost">Сделать главой</button>
+                </form>
+              @endunless
               <form action="{{ route('account.family.members.destroy', $m['id']) }}" method="post"
                     data-confirm="Исключить {{ $m['name'] }} из семьи? Будущие записи по абонементам семьи отменятся, занятия вернутся владельцам.">
                 @csrf
@@ -67,6 +81,12 @@
         </div>
       @endforeach
     </div>
+
+    @if ($group['can_add_child'] ?? false)
+      <div style="margin: -8px 0 24px">
+        @include('partials.family-child-form', ['child' => null])
+      </div>
+    @endif
 
     {{-- Приглашения — только у главы --}}
     @if ($group['is_owner'])
@@ -102,8 +122,9 @@
     {{-- Свои абонементы: кому открыт доступ --}}
     @if ($family['my_subscriptions'] !== [])
       <h2 class="family__heading">Мои абонементы для семьи</h2>
-      <p class="family__note">Отметьте, кто может записываться по абонементу. Сняли галочку — будущие записи этого человека по абонементу отменятся, занятия вернутся вам.</p>
+      <p class="family__note">Отметьте, кто может записываться по абонементу, и при желании ограничьте число занятий на весь срок (пусто — без ограничений). Сняли галочку — будущие записи этого человека по абонементу отменятся, занятия вернутся вам.</p>
       @foreach ($family['my_subscriptions'] as $sub)
+        @php($limits = (array) $sub['limits'])
         <form action="{{ route('account.family.shares', $sub['id']) }}" method="post" class="family-share">
           @csrf
           @method('PUT')
@@ -112,12 +133,20 @@
             <span>осталось {{ $sub['sessions_remaining'] }} из {{ $sub['sessions_total'] }}, до {{ $sub['ends_at'] }}</span>
           </div>
           <div class="family-share__people">
-            @foreach ($group['members'] as $m)
+            @foreach ($group['members'] as $i => $m)
               @continue($m['is_me'])
-              <label class="auth__check">
-                <input type="checkbox" name="user_ids[]" value="{{ $m['id'] }}" @checked(in_array($m['id'], $sub['shared_with'], true)) />
-                {{ $m['name'] }}
-              </label>
+              <div class="family-share__person">
+                <label class="auth__check">
+                  <input type="checkbox" name="shares[{{ $i }}][user_id]" value="{{ $m['id'] }}" @checked(in_array($m['id'], $sub['shared_with'], true)) />
+                  {{ $m['name'] }}
+                </label>
+                <label class="family-share__limit">
+                  не больше
+                  <input class="lk-profile-form__input" type="number" name="shares[{{ $i }}][limit]" min="1" max="{{ \App\Services\FamilyService::MAX_SHARE_LIMIT }}"
+                         value="{{ $limits[(string) $m['id']] ?? '' }}" placeholder="—" inputmode="numeric" aria-label="Лимит занятий для {{ $m['name'] }}" />
+                  занятий
+                </label>
+              </div>
             @endforeach
           </div>
           <button type="submit" class="btn btn--line">Сохранить доступ</button>
@@ -156,6 +185,9 @@
             <h3 class="sub__name">Владелец: {{ $sub['owner_name'] }}</h3>
           </div>
           <div class="sub__count"><strong>{{ $sub['sessions_remaining'] }}</strong> из {{ $sub['sessions_total'] }} занятий осталось</div>
+          @if ($sub['limit'] !== null)
+            <p class="sub__shared">Осталось вам: {{ $sub['limit_left'] }} из {{ $sub['limit'] }}</p>
+          @endif
           <dl class="sub__dates">
             <div><dt>Начало</dt><dd>{{ $sub['starts_at'] }}</dd></div>
             <div><dt>Действует до</dt><dd>{{ $sub['ends_at'] }}</dd></div>

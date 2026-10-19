@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Support\RussianDate;
+use App\Support\RussianPlural;
 use App\Enums\AttendanceStatus;
 use App\Exceptions\SharedSubscriptionRequired;
 use App\Enums\BookingStatus;
@@ -10,6 +11,7 @@ use App\Enums\ClassSessionStatus;
 use App\Models\Booking;
 use App\Models\ClassSession;
 use App\Models\Direction;
+use App\Models\FamilyMember;
 use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -31,6 +33,28 @@ class BookingService
     }
 
     /**
+     * Участник семьи записывает другого участника (родитель — подростка,
+     * жена — мужа). Запись — на того, кто идёт (`user_id`): на этом держатся
+     * места, лимит дня и ростер тренера; кто записал — в `booked_by_id`.
+     *
+     * Проверки те же, что у записи самого идущего, и абонемент — только из
+     * тех, что годятся ему (свои и открытые ему). Хочет записавший платить
+     * своим — пусть откроет абонемент идущему: это и есть согласие владельца.
+     */
+    public function bookFor(User $bookedBy, User $attendee, ClassSession $session, ?Subscription $subscription = null): Booking
+    {
+        if ($bookedBy->id === $attendee->id) {
+            return $this->book($attendee, $session, $subscription);
+        }
+
+        if (! FamilyMember::inSameFamily($bookedBy, $attendee)) {
+            throw new InvalidArgumentException('Записать можно только участника своей семьи.');
+        }
+
+        return $this->bookInternal($attendee, $session, $subscription, forAdmin: false, bookedBy: $bookedBy);
+    }
+
+    /**
      * С каких абонементов человек может оплатить это занятие: сначала свои
      * (в порядке автовыбора), потом открытые семьёй. Пустой список — записаться
      * не получится. По этому списку приложение решает, спрашивать ли, с какого
@@ -38,30 +62,40 @@ class BookingService
      *
      * @return list<array<string, mixed>>
      */
-    public function bookingSources(User $user, ClassSession $session): array
+    public function bookingSources(User $user, ClassSession $session, ?User $viewer = null): array
     {
         $own = $this->subscriptions->usableForUserOnDate($user, $session->type, $session->starts_at);
         $shared = $this->subscriptions->usableSharedForUserOnDate($user, $session->type, $session->starts_at);
 
-        return $this->presentSources([...$own, ...$shared], $user);
+        return $this->presentSources([...$own, ...$shared], $user, $viewer);
     }
 
     /**
      * @param  list<Subscription>  $subscriptions
      * @return list<array<string, mixed>>
      */
-    public function presentSources(array $subscriptions, User $user): array
+    public function presentSources(array $subscriptions, User $user, ?User $viewer = null): array
     {
-        return array_map(fn (Subscription $s) => $this->presentSource($s, $user), $subscriptions);
+        return array_map(fn (Subscription $s) => $this->presentSource($s, $user, $viewer ?? $user), $subscriptions);
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function presentSource(Subscription $subscription, User $user): array
+    private function presentSource(Subscription $subscription, User $user, User $viewer): array
     {
         $own = $subscription->user_id === $user->id;
         $owner = $own ? null : $subscription->user?->shortName();
+        $type = mb_strtolower($subscription->type->shortLabel());
+
+        // Записывают другого — подписи с точки зрения того, кто выбирает:
+        // «Абонемент Петра», «Мой групповой» (если свой открыт идущему).
+        $label = match (true) {
+            $own && $viewer->id === $user->id => 'Мой '.$type,
+            $own => 'Свой абонемент · '.$user->shortName(),
+            $subscription->user_id === $viewer->id => 'Мой '.$type,
+            default => 'Абонемент семьи · '.$owner,
+        };
 
         return [
             'id' => $subscription->id,
@@ -72,9 +106,9 @@ class BookingService
             'total' => $subscription->sessions_total,
             'starts_at' => $subscription->starts_at->format('d.m.Y'),
             'ends_at' => $subscription->ends_at->format('d.m.Y'),
-            'label' => $own
-                ? 'Мой '.mb_strtolower($subscription->type->shortLabel())
-                : 'Абонемент семьи · '.$owner,
+            'label' => $label,
+            // Сколько ещё можно взять по лимиту владельца; null — без ограничений.
+            'limit_left' => $own ? null : $subscription->shareLimitLeftFor($user),
         ];
     }
 
@@ -156,12 +190,17 @@ class BookingService
         return true;
     }
 
-    private function bookInternal(User $user, ClassSession $session, ?Subscription $subscription, bool $forAdmin): Booking
-    {
-        $booking = DB::transaction(function () use ($user, $session, $subscription, $forAdmin) {
+    private function bookInternal(
+        User $user,
+        ClassSession $session,
+        ?Subscription $subscription,
+        bool $forAdmin,
+        ?User $bookedBy = null,
+    ): Booking {
+        $booking = DB::transaction(function () use ($user, $session, $subscription, $forAdmin, $bookedBy) {
             $session = ClassSession::query()->lockForUpdate()->findOrFail($session->id);
 
-            $this->assertCanBook($user, $session, forAdmin: $forAdmin);
+            $this->assertCanBook($user, $session, forAdmin: $forAdmin, bookedBy: $bookedBy);
 
             if ($subscription !== null) {
                 // Перечитываем под блокировкой: абонемент семьи делят несколько
@@ -173,6 +212,8 @@ class BookingService
                 if (! $subscription->isUsableBy($user)) {
                     throw new InvalidArgumentException('Выбранный абонемент принадлежит другому клиенту.');
                 }
+
+                $this->assertShareLimit($subscription, $user);
 
                 if (! $this->subscriptions->typesMatch($subscription->type, $session->type)) {
                     throw new InvalidArgumentException('Тип абонемента не подходит для этого занятия.');
@@ -233,6 +274,7 @@ class BookingService
                     'class_session_id' => $session->id,
                 ],
                 [
+                    'booked_by_id' => $bookedBy?->id,
                     'subscription_id' => $subscription->id,
                     'subscription_usage_id' => $usageId,
                     'status' => BookingStatus::Confirmed,
@@ -251,7 +293,47 @@ class BookingService
 
         $this->notifyOwnerOfSharedBooking($booking);
 
+        // Ребёнка записал его же представитель — писать ему о его действии незачем.
+        if ($bookedBy !== null && $user->guardian_id !== $bookedBy->id) {
+            $this->notifyAttendeeOfFamilyBooking($booking, $bookedBy);
+        }
+
         return $booking;
+    }
+
+    /** «Анна записала вас на …» — идущий узнаёт и может отменить. */
+    private function notifyAttendeeOfFamilyBooking(Booking $booking, User $bookedBy): void
+    {
+        $booking->loadMissing(['classSession', 'user']);
+        $session = $booking->classSession;
+
+        $this->notifications->notifyUser(
+            $booking->user,
+            'Вас записали на занятие',
+            [
+                'Здравствуйте, '.$booking->user->first_name.'!',
+                $bookedBy->shortName().' записал(а) вас на «'.$session->title.'», '.$session->formattedDateTime().'.',
+                'Если не получается прийти, отмените запись в кабинете — в обычные сроки отмены.',
+            ],
+            subject: 'Вас записали на занятие',
+            type: 'family',
+            payload: ['session_id' => $session->id],
+        );
+    }
+
+    /** Владелец открыл абонемент «не больше N занятий», и они набраны. */
+    private function assertShareLimit(Subscription $subscription, User $user): void
+    {
+        if ($subscription->shareLimitLeftFor($user) !== 0) {
+            return;
+        }
+
+        $limit = (int) $subscription->sharedWith()->whereKey($user->id)->value('subscription_shares.sessions_limit');
+
+        throw new InvalidArgumentException(
+            'Владелец открыл вам этот абонемент на '.$limit.' '.RussianPlural::sessions($limit)
+                .' — они уже использованы.',
+        );
     }
 
     /**
@@ -263,7 +345,12 @@ class BookingService
         $booking->loadMissing(['subscription.user', 'classSession', 'user']);
         $owner = $booking->subscription?->user;
 
-        if ($owner === null || $owner->id === $booking->user_id || $booking->classSession === null) {
+        // Владелец сам и записал (своим абонементом — члена семьи): сообщать
+        // ему о его же действии незачем.
+        if ($owner === null
+            || $owner->id === $booking->user_id
+            || $owner->id === $booking->booked_by_id
+            || $booking->classSession === null) {
             return;
         }
 
@@ -416,7 +503,7 @@ class BookingService
         $this->notifications->notifyAdmin(
             'Занятие не списано',
             [
-                'Клиент: '.$booking->user->fullName().' ('.($booking->user->formattedPhone() ?? $booking->user->phone).')',
+                'Клиент: '.$booking->user->fullName().' ('.($booking->user->contactPhone()).')',
                 'Занятие: «'.$session->title.'» · '.$session->formattedDateTime(),
                 'На абонементе клиента не осталось занятий, другого подходящего абонемента нет. '
                     .'Спишите занятие вручную или оформите клиенту абонемент.',
@@ -602,7 +689,7 @@ class BookingService
 
     public function rescheduleByClient(Booking $booking, ClassSession $newSession): Booking
     {
-        if ($booking->user_id !== auth()->id()) {
+        if (! $booking->isManageableBy(auth()->user())) {
             throw new InvalidArgumentException('Нельзя перенести чужое бронирование.');
         }
 
@@ -703,6 +790,12 @@ class BookingService
                 throw new InvalidArgumentException('Выбранный абонемент принадлежит другому клиенту.');
             }
 
+            // Перенос внутри того же абонемента лимит не тратит, а переход на
+            // абонемент семьи — новое занятие по нему.
+            if ($subscription->id !== $booking->subscription_id) {
+                $this->assertShareLimit($subscription, $booking->user);
+            }
+
             if (! $this->subscriptions->typesMatch($subscription->type, $newSession->type)) {
                 throw new InvalidArgumentException('Тип абонемента не подходит для этого занятия.');
             }
@@ -735,7 +828,7 @@ class BookingService
 
     public function cancelByClient(Booking $booking): Booking
     {
-        if ($booking->user_id !== auth()->id()) {
+        if (! $booking->isManageableBy(auth()->user())) {
             throw new InvalidArgumentException('Нельзя отменить чужое бронирование.');
         }
 
@@ -743,7 +836,7 @@ class BookingService
             throw new InvalidArgumentException($booking->cancellationBlockedMessage());
         }
 
-        return DB::transaction(function () use ($booking) {
+        $cancelled = DB::transaction(function () use ($booking) {
             $booking = Booking::query()->lockForUpdate()->findOrFail($booking->id);
 
             if (! $booking->isConfirmed()) {
@@ -766,6 +859,51 @@ class BookingService
 
             return $booking->refresh();
         });
+
+        $this->notifyFamilyOfCancellation($cancelled, auth()->user());
+
+        return $cancelled;
+    }
+
+    /**
+     * Запись, сделанную членом семьи, отменил не сам идущий — идущему
+     * сообщаем; отменил идущий — сообщаем тому, кто записывал.
+     */
+    private function notifyFamilyOfCancellation(Booking $booking, ?User $actor): void
+    {
+        $booking->loadMissing(['user', 'bookedBy', 'classSession']);
+
+        if ($actor === null || $booking->classSession === null) {
+            return;
+        }
+
+        $recipient = match (true) {
+            $actor->id !== $booking->user_id => $booking->user,
+            $booking->bookedBy !== null && $booking->booked_by_id !== $actor->id => $booking->bookedBy,
+            default => null,
+        };
+
+        // Ребёнку без входа писать незачем: уведомление всё равно придёт
+        // представителю, а он и отменил.
+        if ($recipient === null || $recipient->guardian_id === $actor->id) {
+            return;
+        }
+
+        $session = $booking->classSession;
+        $about = $recipient->id === $booking->user_id ? 'вашу запись' : 'запись ('.$booking->user->shortName().')';
+
+        $this->notifications->notifyUser(
+            $recipient,
+            'Запись отменена',
+            [
+                'Здравствуйте, '.$recipient->first_name.'!',
+                $actor->shortName().' отменил(а) '.$about.' на «'.$session->title.'», '.$session->formattedDateTime().'.',
+                'Занятие вернулось на абонемент.',
+            ],
+            subject: 'Запись отменена',
+            type: 'family',
+            payload: ['session_id' => $session->id],
+        );
     }
 
     public function cancelClass(ClassSession $session, string $reason, bool $refundClients = true): ClassSession
@@ -924,8 +1062,13 @@ class BookingService
         });
     }
 
-    protected function assertCanBook(User $user, ClassSession $session, ?int $excludeBookingId = null, bool $forAdmin = false): void
-    {
+    protected function assertCanBook(
+        User $user,
+        ClassSession $session,
+        ?int $excludeBookingId = null,
+        bool $forAdmin = false,
+        ?User $bookedBy = null,
+    ): void {
         if ($forAdmin) {
             if ($session->status !== ClassSessionStatus::Scheduled) {
                 throw new InvalidArgumentException('Занятие отменено или недоступно для бронирования.');
@@ -947,7 +1090,9 @@ class BookingService
             ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId))
             ->where('status', BookingStatus::Confirmed)
             ->exists()) {
-            throw new InvalidArgumentException('Вы уже забронировали место на это занятие.');
+            throw new InvalidArgumentException($bookedBy !== null
+                ? $user->shortName().' уже записан(а) на это занятие.'
+                : 'Вы уже забронировали место на это занятие.');
         }
 
         if (! $forAdmin) {

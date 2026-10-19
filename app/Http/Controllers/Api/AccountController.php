@@ -19,7 +19,7 @@ class AccountController extends Controller
         $user = $request->user();
 
         $subscriptions = $user->subscriptions()
-            ->with('sharedWith')
+            ->with(['sharedWith', 'paymentItem.payment.user'])
             ->orderByDesc('ends_at')
             ->get()
             ->map(fn ($s) => [
@@ -38,15 +38,11 @@ class AccountController extends Controller
                 'has_started' => $s->hasStarted(),
                 // Кому из семьи открыт абонемент — подпись на билете.
                 'shared_with' => $s->sharedWith->map(fn ($u) => $u->shortName())->values(),
+                // Подарок от члена семьи — «Подарок от Анны».
+                'gift_from' => $s->giftFrom()?->shortName(),
             ]);
 
-        $bookings = $user->bookings()
-            ->upcoming()
-            ->with(['classSession.trainer', 'classSession.direction', 'subscription.user'])
-            ->get()
-            ->sortBy(fn ($b) => $b->classSession->starts_at)
-            ->values()
-            ->map(fn ($b) => [
+        $present = fn ($b) => [
                 'id' => $b->id,
                 'session_id' => $b->class_session_id,
                 'title' => $b->classSession->title,
@@ -64,7 +60,25 @@ class AccountController extends Controller
                     : null,
                 'can_cancel' => $b->canBeCancelledByClient(),
                 'can_reschedule' => $b->canBeRescheduledByClient(),
-            ]);
+                // Записал член семьи — «Записала Анна».
+                'booked_by_name' => $b->booked_by_id !== null && $b->booked_by_id !== $user->id
+                    ? $b->bookedBy?->shortName()
+                    : null,
+            ];
+
+        $bookings = $user->bookings()
+            ->upcoming()
+            ->with(['classSession.trainer', 'classSession.direction', 'subscription.user', 'bookedBy'])
+            ->get()
+            ->sortBy(fn ($b) => $b->classSession->starts_at)
+            ->values()
+            ->map($present);
+
+        // Записи, которыми я управляю: сделанные мной за членов семьи и записи
+        // моих детей. `for_name` — кто идёт; отменить можно отсюда же.
+        $familyBookings = $family->managedBookings($user)
+            ->map(fn ($b) => [...$present($b), 'for_user_id' => $b->user_id, 'for_name' => $b->user->shortName()])
+            ->values();
 
         $history = $user->subscriptions()
             ->with(['usages' => fn ($q) => $q->orderByDesc('used_at')])
@@ -99,6 +113,7 @@ class AccountController extends Controller
         return response()->json([
             'subscriptions' => $subscriptions,
             'bookings' => $bookings,
+            'family_bookings' => $familyBookings,
             'history' => $history,
             'cancelled' => $cancelled,
             'offer_available' => OfferStorage::exists(),
@@ -121,8 +136,10 @@ class AccountController extends Controller
             'in_group' => $membership !== null,
             'is_owner' => $membership?->isOwner() ?? false,
             'members_count' => $membership?->group->members()->count() ?? 0,
+            // Кого можно записать на занятие вместе с собой (блок Б фазы 2).
+            'relatives' => $family->bookableRelatives($user),
             'shared_with_me' => $family->subscriptionsSharedWith($user)
-                ->map(fn ($s) => $family->presentSharedSubscription($s))
+                ->map(fn ($s) => $family->presentSharedSubscription($s, $user))
                 ->values(),
         ];
     }

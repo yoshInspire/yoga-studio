@@ -219,6 +219,21 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
 
     actionEl.innerHTML = '';
 
+    // Кого записать: себя или члена семьи. Слот считает только зрителя
+    // («вы записаны», «закрыт под другого») — за остальных проверит сервер.
+    const family = Array.isArray(cfg.family) ? cfg.family : [];
+    const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (ch) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    })[ch]);
+    const familySelect = (withMe) => `
+      <label class="sched-modal__for">
+        <span>Кого записать</span>
+        <select name="for_user_id" class="lk-profile-form__input">
+          ${withMe ? '<option value="">Меня</option>' : ''}
+          ${family.map((m) => `<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('')}
+        </select>
+      </label>`;
+
     if (slot.is_reschedule_source) {
       actionEl.innerHTML = '<span class="btn btn--ghost" style="pointer-events:none;width:100%">Текущее бронирование</span>';
     } else if (slot.can_reschedule_here && cfg.rescheduleUrl) {
@@ -230,11 +245,21 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
         </form>`;
     } else if (slot.user_booked) {
       actionEl.innerHTML = '<span class="btn btn--ghost" style="pointer-events:none;width:100%">Место забронировано</span>';
+      if (family.length && slot.free > 0 && slot.status === 'open') {
+        actionEl.innerHTML += `
+          <form action="${cfg.bookUrl}" method="post" class="sched-modal__family">
+            <input type="hidden" name="_token" value="${cfg.csrf}" />
+            <input type="hidden" name="class_session_id" value="${slot.id}" />
+            ${familySelect(false)}
+            <button type="submit" class="btn btn--line">Записать члена семьи</button>
+          </form>`;
+      }
     } else if (slot.status === 'open' && slot.bookable && cfg.isClient) {
       actionEl.innerHTML = `
         <form action="${cfg.bookUrl}" method="post">
           <input type="hidden" name="_token" value="${cfg.csrf}" />
           <input type="hidden" name="class_session_id" value="${slot.id}" />
+          ${family.length ? familySelect(true) : ''}
           <button type="submit" class="btn btn--solid">Забронировать</button>
         </form>`;
     } else if (slot.status === 'open' && slot.bookable) {

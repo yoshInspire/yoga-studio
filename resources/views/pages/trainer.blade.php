@@ -79,7 +79,7 @@
                     <ul class="trainer__roster">
                       @foreach($slot['attendees'] as $guest)
                         <li>
-                          {{ $guest['name'] }}
+                          {{ $guest['name'] }}@if ($guest['is_child'] ?? false) <small>(ребёнок)</small>@endif
                           @if(!empty($guest['health_note']))
                             <span class="trainer__health-note">{{ $guest['health_note'] }}</span>
                           @endif

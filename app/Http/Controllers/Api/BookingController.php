@@ -6,7 +6,9 @@ use App\Exceptions\SharedSubscriptionRequired;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\ClassSession;
+use App\Models\FamilyMember;
 use App\Models\Subscription;
+use App\Models\User;
 use App\Services\AdminActivityNotifier;
 use App\Services\BookingService;
 use Illuminate\Http\JsonResponse;
@@ -28,11 +30,34 @@ class BookingController extends Controller
     {
         $request->validate([
             'class_session_id' => ['required', 'integer', 'exists:class_sessions,id'],
+            'for_user_id' => ['nullable', 'integer'],
         ]);
 
         $session = ClassSession::query()->findOrFail($request->integer('class_session_id'));
+        $attendee = $this->attendee($request);
 
-        return response()->json(['data' => $bookings->bookingSources($request->user(), $session)]);
+        if ($attendee === null) {
+            return response()->json(['message' => 'Записать можно только участника своей семьи.'], 422);
+        }
+
+        return response()->json(['data' => $bookings->bookingSources($attendee, $session, $request->user())]);
+    }
+
+    /**
+     * Кого записывают: себя или участника своей семьи (`for_user_id`). null —
+     * чужой человек: его абонементы показывать нельзя.
+     */
+    private function attendee(Request $request): ?User
+    {
+        $me = $request->user();
+
+        if (! $request->filled('for_user_id') || $request->integer('for_user_id') === $me->id) {
+            return $me;
+        }
+
+        $attendee = User::query()->find($request->integer('for_user_id'));
+
+        return $attendee !== null && FamilyMember::inSameFamily($me, $attendee) ? $attendee : null;
     }
 
     /**
@@ -47,48 +72,57 @@ class BookingController extends Controller
         $request->validate([
             'class_session_id' => ['required', 'integer', 'exists:class_sessions,id'],
             'subscription_id' => ['nullable', 'integer', 'exists:subscriptions,id'],
+            'for_user_id' => ['nullable', 'integer'],
         ]);
 
+        $me = $request->user();
         $session = ClassSession::query()->findOrFail($request->integer('class_session_id'));
         $subscription = $request->filled('subscription_id')
             ? Subscription::query()->findOrFail($request->integer('subscription_id'))
             : null;
+        $attendee = $this->attendee($request);
+
+        if ($attendee === null) {
+            return response()->json(['message' => 'Записать можно только участника своей семьи.'], 422);
+        }
 
         try {
-            $booking = $bookings->book($request->user(), $session, $subscription);
+            $booking = $bookings->bookFor($me, $attendee, $session, $subscription);
             $booking->load(['classSession', 'subscription.user']);
-            $this->adminActivity->clientBooked($request->user(), $booking);
+            $this->adminActivity->clientBooked($attendee, $booking, $me);
         } catch (SharedSubscriptionRequired $e) {
             return response()->json([
                 'message' => $e->getMessage(),
                 'code' => 'shared_subscription_required',
-                'sources' => $bookings->presentSources($e->subscriptions, $request->user()),
+                'sources' => $bookings->presentSources($e->subscriptions, $attendee, $me),
             ], 422);
         } catch (InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        $owner = $booking->subscription !== null && $booking->subscription->user_id !== $request->user()->id
+        $owner = $booking->subscription !== null && $booking->subscription->user_id !== $attendee->id
             ? $booking->subscription->user
             : null;
 
         return response()->json([
-            'message' => 'Место на занятие «'.$session->title.'» забронировано.'
+            'message' => ($attendee->id === $me->id
+                    ? 'Место на занятие «'.$session->title.'» забронировано.'
+                    : $attendee->shortName().' записан(а) на занятие «'.$session->title.'».')
                 .($owner !== null ? ' Занятие спишется с абонемента семьи ('.$owner->shortName().').' : ''),
         ]);
     }
 
-    /** Отменить свою запись. */
+    /** Отменить свою запись или запись, сделанную мной за члена семьи. */
     public function cancel(Request $request, Booking $booking, BookingService $bookings): JsonResponse
     {
-        if ($booking->user_id !== $request->user()->id) {
+        if (! $booking->isManageableBy($request->user())) {
             return response()->json(['message' => 'Нет доступа.'], 403);
         }
 
         try {
-            $booking->load('classSession');
+            $booking->load(['classSession', 'user']);
             $bookings->cancelByClient($booking);
-            $this->adminActivity->clientCancelledBooking($request->user(), $booking);
+            $this->adminActivity->clientCancelledBooking($booking->user, $booking, $request->user());
         } catch (InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
@@ -99,7 +133,7 @@ class BookingController extends Controller
     /** Перенести запись на другое занятие. */
     public function reschedule(Request $request, Booking $booking, BookingService $bookings): JsonResponse
     {
-        if ($booking->user_id !== $request->user()->id) {
+        if (! $booking->isManageableBy($request->user())) {
             return response()->json(['message' => 'Нет доступа.'], 403);
         }
 
@@ -112,7 +146,7 @@ class BookingController extends Controller
 
         try {
             $bookings->rescheduleByClient($booking, $session);
-            $this->adminActivity->clientRescheduledBooking($request->user(), $fromSession, $session);
+            $this->adminActivity->clientRescheduledBooking($booking->user, $fromSession, $session, $request->user());
         } catch (InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }

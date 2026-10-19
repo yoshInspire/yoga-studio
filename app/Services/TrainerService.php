@@ -25,7 +25,7 @@ class TrainerService
                 'direction',
                 'bookings' => fn ($q) => $q
                     ->where('status', BookingStatus::Confirmed)
-                    ->with('user:id,first_name,last_name,avatar_path,health_note,health_note_visible_to_trainer'),
+                    ->with('user:id,first_name,last_name,avatar_path,health_note,health_note_visible_to_trainer,guardian_id'),
             ])
             ->withCount(['bookings as taken' => fn ($q) => $q->where('status', BookingStatus::Confirmed)])
             ->orderBy('starts_at')
@@ -52,6 +52,8 @@ class TrainerService
                             'name' => trim($user->first_name.' '.$user->last_name),
                             'initials' => $user->initials(),
                             'avatar' => $user->avatarUrl(),
+                            // Ребёнок без своего входа — тренеру пометка «ребёнок».
+                            'is_child' => $user->isManagedProfile(),
                         ];
 
                         if ($user->health_note_visible_to_trainer && filled($user->health_note)) {

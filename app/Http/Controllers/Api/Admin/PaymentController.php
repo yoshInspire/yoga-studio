@@ -29,7 +29,7 @@ class PaymentController extends Controller
         $q = trim((string) ($data['q'] ?? ''));
 
         $payments = Payment::query()
-            ->with('user')
+            ->with(['user', 'recipient'])
             ->when($data['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($q !== '', function ($query) use ($q) {
                 $phone = PhoneNormalizer::normalize($q);
@@ -50,6 +50,9 @@ class PaymentController extends Controller
                 'id' => $p->id,
                 'client' => $p->user?->fullName() ?? '—',
                 'client_id' => $p->user_id,
+                // Подарок члену семьи: абонемент у получателя, платёж и чек — у плательщика.
+                'recipient' => $p->isGift() ? $p->recipient?->fullName() : null,
+                'recipient_id' => $p->isGift() ? $p->recipient_id : null,
                 'amount' => $p->amount,
                 'status' => $p->status->value,
                 'status_label' => $p->status->label(),

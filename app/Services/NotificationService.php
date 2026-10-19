@@ -59,6 +59,15 @@ class NotificationService
     ): array {
         $result = ['email' => false, 'telegram' => false, 'push' => 0, 'stored' => false];
 
+        // Профиль ребёнка без своего входа: всё, что ему пишется, получает
+        // представитель — с именем ребёнка в заголовке. Одна точка на все
+        // напоминания, отмены и «абонемент заканчивается».
+        [$user, $heading, $lines, $subject] = $this->forGuardian($user, $heading, $lines, $subject);
+
+        if ($user === null) {
+            return $result;
+        }
+
         // Сначала лента: она должна получить уведомление, даже если все внешние
         // каналы отвалятся. Провал записи не должен ронять отправку остального.
         try {
@@ -154,9 +163,46 @@ class NotificationService
      *
      * @param  list<string>  $lines
      */
+    /**
+     * Уведомление ребёнку — его представителю: «Маша: напоминание о занятии»,
+     * обращение — к представителю. У обычного клиента всё как есть; null —
+     * ребёнок без представителя (удалён), писать некому.
+     *
+     * @param  list<string>  $lines
+     * @return array{0: User|null, 1: string, 2: list<string>, 3: string|null}
+     */
+    private function forGuardian(User $user, string $heading, array $lines, ?string $subject): array
+    {
+        if (! $user->isManagedProfile()) {
+            return [$user, $heading, $lines, $subject];
+        }
+
+        $guardian = $user->guardian;
+
+        if ($guardian === null) {
+            return [null, $heading, $lines, $subject];
+        }
+
+        $greeting = 'Здравствуйте, '.$user->first_name.'!';
+        $lines = array_values(array_map(
+            fn (string $line) => $line === $greeting ? 'Здравствуйте, '.$guardian->first_name.'!' : $line,
+            $lines,
+        ));
+
+        array_splice($lines, $lines !== [] && str_starts_with($lines[0], 'Здравствуйте') ? 1 : 0, 0, [
+            'Сообщение для профиля ребёнка: '.$user->shortName().'.',
+        ]);
+
+        $prefix = $user->first_name.': ';
+
+        return [$guardian, $prefix.$heading, $lines, $subject !== null ? $prefix.$subject : null];
+    }
+
     public function notifyUserTelegram(User $user, string $heading, array $lines): bool
     {
-        if ($user->telegram_id === null) {
+        [$user, $heading, $lines] = $this->forGuardian($user, $heading, $lines, null);
+
+        if ($user === null || $user->telegram_id === null) {
             return false;
         }
 

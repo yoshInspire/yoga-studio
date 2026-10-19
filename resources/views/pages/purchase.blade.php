@@ -31,6 +31,17 @@
                     · срок {{ $product['validity_days'] }} {{ \App\Support\RussianPlural::days($product['validity_days']) }}
                   </p>
                   <div class="purchase-card__price">{{ number_format($product['price'], 0, '', ' ') }} ₽</div>
+                  @if ($relatives !== [] && ! \App\Support\PurchaseCatalog::isOncePerClient($product['key']))
+                    <label class="purchase-card__field">
+                      <span>Кому</span>
+                      <select name="recipient_id">
+                        <option value="">Себе</option>
+                        @foreach ($relatives as $r)
+                          <option value="{{ $r['id'] }}" @selected((string) old('recipient_id') === (string) $r['id'])>В подарок: {{ $r['name'] }}</option>
+                        @endforeach
+                      </select>
+                    </label>
+                  @endif
                   <label class="purchase-card__field">
                     <span>Дата начала абонемента</span>
                     <input type="date" name="starts_at" value="{{ old('starts_at', now()->format('Y-m-d')) }}" min="{{ now()->format('Y-m-d') }}" max="{{ now()->addMonths(3)->format('Y-m-d') }}" required>
@@ -42,7 +53,7 @@
           </div>
         @endforeach
 
-        <p class="purchase-note">Оплата проходит через защищённую форму ЮKassa. После оплаты вы вернётесь на сайт — абонемент активируется автоматически. Оплачивая абонемент, вы принимаете условия <a href="{{ route('legal.offer') }}" target="_blank" rel="noopener">договора-оферты</a>.</p>
+        <p class="purchase-note">Оплата проходит через защищённую форму ЮKassa. После оплаты вы вернётесь на сайт — абонемент активируется автоматически. Оплачивая абонемент, вы принимаете условия <a href="{{ route('legal.offer') }}" target="_blank" rel="noopener">договора-оферты</a>.@if ($relatives !== []) Абонемент в подарок оплачиваете вы, чек приходит вам, а абонемент появляется в кабинете того, кому вы его подарили.@endif</p>
 
         <a href="{{ route('account') }}" class="btn btn--line" style="margin-top: 8px">Вернуться в личный кабинет</a>
       </div>

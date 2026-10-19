@@ -13,6 +13,7 @@ use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Schemas\Components\Utilities\Get;
@@ -30,7 +31,9 @@ class EditUser extends EditRecord
                 ->label('Отправить доступ')
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
-                ->visible(fn (User $record): bool => in_array($record->role, [UserRole::Client, UserRole::Trainer], true))
+                // У ребёнка без входа доступа нет: пароль ушёл бы представителю.
+                ->visible(fn (User $record): bool => in_array($record->role, [UserRole::Client, UserRole::Trainer], true)
+                    && ! $record->isManagedProfile())
                 ->requiresConfirmation()
                 // Кнопку не отключаем: бледная неактивная кнопка без пояснений выглядит
                 // как поломка. Если отправлять некуда — модалка объясняет, что сделать.
@@ -123,6 +126,7 @@ class EditUser extends EditRecord
                         ->options(fn (User $record) => User::query()
                             ->where('role', UserRole::Client)
                             ->whereNull('anonymized_at')
+                            ->whereNull('guardian_id')
                             ->whereKeyNot($record->id)
                             ->whereDoesntHave('familyMembership')
                             ->orderBy('last_name')
@@ -139,31 +143,64 @@ class EditUser extends EditRecord
                 ->label('Открыть абонемент семье')
                 ->icon('heroicon-o-share')
                 ->visible(fn (User $record, FamilyService $family): bool => ($family->groupOf($record)?->members()->count() ?? 0) > 1)
-                ->modalDescription('Отмеченные участники смогут записываться по абонементу. Снятая галочка отменит их будущие записи по нему — занятия вернутся владельцу.')
-                ->form([
-                    Select::make('subscription_id')
-                        ->label('Абонемент')
-                        ->options(fn (User $record, FamilyService $family) => $family->shareableSubscriptionsOf($record)
-                            ->mapWithKeys(fn ($s) => [$s->id => $s->type->shortLabel().' · осталось '.$s->sessionsRemaining().' · до '.$s->ends_at->format('d.m.Y')])
-                            ->all())
-                        ->required()
-                        ->live()
-                        ->afterStateUpdated(fn (Set $set, ?string $state) => $set('user_ids', $state
-                            ? Subscription::query()->find($state)?->sharedWith()->pluck('users.id')->map(fn ($id) => (string) $id)->all() ?? []
-                            : [])),
-                    CheckboxList::make('user_ids')
-                        ->label('Кому открыт')
-                        ->options(fn (User $record, FamilyService $family) => $family->groupOf($record)?->members()->with('user')->get()
-                            ->reject(fn ($m) => $m->user_id === $record->id)
-                            ->mapWithKeys(fn ($m) => [$m->user_id => $m->user->shortName()])
-                            ->all() ?? [])
-                        ->visible(fn (Get $get) => filled($get('subscription_id'))),
-                ])
+                ->modalDescription('Отмеченные участники смогут записываться по абонементу; лимит — сколько занятий за весь срок (пусто — без ограничений). Снятая галочка отменит их будущие записи по нему — занятия вернутся владельцу.')
+                ->form(function (User $record, FamilyService $family): array {
+                    $others = $family->groupOf($record)?->members()->with('user')->get()
+                        ->reject(fn ($m) => $m->user_id === $record->id)
+                        ->mapWithKeys(fn ($m) => [$m->user_id => $m->user->shortName()])
+                        ->all() ?? [];
+
+                    return [
+                        Select::make('subscription_id')
+                            ->label('Абонемент')
+                            ->options($family->shareableSubscriptionsOf($record)
+                                ->mapWithKeys(fn ($s) => [$s->id => $s->type->shortLabel().' · осталось '.$s->sessionsRemaining().' · до '.$s->ends_at->format('d.m.Y')])
+                                ->all())
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(function (Set $set, ?string $state) use ($others): void {
+                                $shared = $state ? Subscription::query()->find($state)?->sharedWith()->get() ?? collect() : collect();
+                                $set('user_ids', $shared->pluck('id')->map(fn ($id) => (string) $id)->all());
+
+                                foreach (array_keys($others) as $id) {
+                                    $set('limits.'.$id, $shared->firstWhere('id', $id)?->pivot->sessions_limit);
+                                }
+                            }),
+                        CheckboxList::make('user_ids')
+                            ->label('Кому открыт')
+                            ->options($others)
+                            ->visible(fn (Get $get) => filled($get('subscription_id'))),
+                        ...collect($others)->map(fn (string $name, int $id) => TextInput::make('limits.'.$id)
+                            ->label('Лимит занятий: '.$name)
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(FamilyService::MAX_SHARE_LIMIT)
+                            ->placeholder('без ограничений')
+                            ->visible(fn (Get $get) => filled($get('subscription_id')) && in_array((string) $id, $get('user_ids') ?? [], true)))
+                            ->values()->all(),
+                    ];
+                })
                 ->action(function (array $data, FamilyService $family): void {
+                    $shares = collect($data['user_ids'] ?? [])
+                        ->mapWithKeys(fn ($id) => [(int) $id => filled($data['limits'][$id] ?? null) ? (int) $data['limits'][$id] : null])
+                        ->all();
+
                     $this->runFamily(fn () => $family->setSharesByAdmin(
                         Subscription::query()->findOrFail($data['subscription_id']),
-                        array_map('intval', $data['user_ids'] ?? []),
+                        $shares,
                     ), 'Доступ к абонементу сохранён');
+                }),
+            Action::make('familySeparate')
+                ->label('Отделить профиль ребёнка')
+                ->icon('heroicon-o-arrow-top-right-on-square')
+                ->visible(fn (User $record): bool => $record->isManagedProfile())
+                ->modalDescription('Ребёнок вырос и будет входить сам. Впишите его телефон (и почту, если есть) — представитель снимется, история посещений и абонементы останутся. Потом нажмите «Отправить доступ».')
+                ->form([
+                    TextInput::make('phone')->label('Телефон')->required()->tel(),
+                    TextInput::make('email')->label('Email')->email(),
+                ])
+                ->action(function (array $data, User $record, FamilyService $family): void {
+                    $this->runFamily(fn () => $family->separateChild($record, $data['phone'], $data['email'] ?? null), 'Профиль отделён');
                 }),
             Action::make('familyRemove')
                 ->label('Убрать из семьи')

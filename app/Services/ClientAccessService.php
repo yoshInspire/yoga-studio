@@ -24,6 +24,8 @@ class ClientAccessService
             throw new InvalidArgumentException('Отправка доступа доступна только для клиентов и тренеров.');
         }
 
+        $this->assertNotManagedProfile($user);
+
         if (blank($user->email) && $user->telegram_id === null) {
             throw new InvalidArgumentException('Нет email, а Telegram не привязан. Укажите email в карточке или дождитесь, пока пользователь привяжет Telegram после входа на сайт.');
         }
@@ -51,6 +53,8 @@ class ClientAccessService
      */
     public function issueTemporaryPassword(User $user): string
     {
+        $this->assertNotManagedProfile($user);
+
         $password = Str::password(10, letters: true, numbers: true, symbols: false);
 
         $user->update(['password' => $password]);
@@ -90,5 +94,18 @@ class ClientAccessService
                 'Доступ в личный кабинет',
             ],
         };
+    }
+
+    /**
+     * У профиля ребёнка нет своего входа: уведомления ему уходят
+     * представителю, и пароль ушёл бы тоже ему. Сначала «Отделить профиль».
+     */
+    private function assertNotManagedProfile(User $user): void
+    {
+        if ($user->isManagedProfile()) {
+            throw new InvalidArgumentException(
+                'Это профиль ребёнка без своего входа. Чтобы выдать доступ, сначала отделите профиль: впишите телефон.',
+            );
+        }
     }
 }

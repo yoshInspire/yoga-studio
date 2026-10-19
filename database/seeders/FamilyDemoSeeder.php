@@ -21,6 +21,9 @@ use Illuminate\Database\Seeder;
  *  - Анна (глава, абонемент открыт Петру): +7 999 555-00-01
  *  - Пётр (участник, своего абонемента нет): +7 999 555-00-02
  *  - Мария (не в семье, для проверки приглашения): +7 999 555-00-03
+ *
+ * Фаза 2: Петру абонемент Анны открыт на 3 занятия; у Анны ребёнок Соня без
+ * своего входа (Анна — представитель, записывает её из расписания).
  */
 class FamilyDemoSeeder extends Seeder
 {
@@ -52,7 +55,17 @@ class FamilyDemoSeeder extends Seeder
 
         if ($family->membershipOf($anna) === null) {
             $family->accept($family->createInvite($anna), $petr);
-            $family->setShares($anna, $sub, [$petr->id]);
+        }
+
+        $family->setShares($anna, $sub, [$petr->id => 3]);
+
+        if (! $anna->wards()->exists()) {
+            $family->addChild($anna, [
+                'first_name' => 'Соня',
+                'last_name' => 'Демо',
+                'birth_date' => now()->subYears(10)->toDateString(),
+                'health_note' => 'Сколиоз, без глубоких прогибов',
+            ]);
         }
 
         // Приглашение для Марии — его код печатается ниже.

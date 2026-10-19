@@ -393,6 +393,9 @@
                   @if ($sub->sharedWith->isNotEmpty())
                     <p class="sub__shared">Открыт семье: {{ $sub->sharedWith->map(fn ($u) => $u->shortName())->implode(', ') }}</p>
                   @endif
+                  @if ($giftFrom = $sub->giftFrom())
+                    <p class="sub__shared">Подарок от {{ $giftFrom->shortName() }}</p>
+                  @endif
                 </div>
               @empty
                 <p class="lk__empty">У вас пока нет абонементов. <a href="{{ route('purchase.index') }}">Купите абонемент онлайн</a> или уточните в студии.</p>
@@ -435,6 +438,9 @@
                     @if ($booking->subscription && $booking->subscription->user_id !== $user->id)
                       <p class="lk-row__family">Абонемент семьи · {{ $booking->subscription->user?->shortName() }}</p>
                     @endif
+                    @if ($booking->booked_by_id && $booking->booked_by_id !== $user->id && $booking->bookedBy)
+                      <p class="lk-row__family">Записал(а) {{ $booking->bookedBy->shortName() }}</p>
+                    @endif
                   </div>
                   <div class="lk-row__actions">
                     @if($booking->canBeCancelledByClient())
@@ -450,6 +456,36 @@
                 <p class="lk__empty">Пока нет активных бронирований. <a href="{{ route('schedule') }}">Посмотреть расписание</a></p>
               @endforelse
             </div>
+            @if ($familyBookings->isNotEmpty())
+              <h2 class="family__heading">Записи семьи</h2>
+              <p class="family__note">Записи, которые вы сделали за членов семьи, и записи ваших детей.</p>
+              <div class="lk-list">
+                @foreach ($familyBookings as $booking)
+                  @php $session = $booking->classSession; @endphp
+                  <div class="lk-row">
+                    <div class="lk-row__when">
+                      <strong>{{ $session->formattedTime() }}</strong>
+                      <span>{{ \App\Support\RussianDate::weekdayShortDayMonth($session->starts_at) }}</span>
+                    </div>
+                    <div class="lk-row__main">
+                      <h3>{{ $session->direction?->title ?: $session->topic ?: $session->title }}</h3>
+                      <p>
+                        <span class="badge badge--{{ $session->type->badgeClass() }}">{{ $session->type->shortLabel() }}</span>
+                        {{ $session->trainerName() }}
+                      </p>
+                      <p class="lk-row__family">Идёт: {{ $booking->user->shortName() }}</p>
+                    </div>
+                    <div class="lk-row__actions">
+                      <form action="{{ route('bookings.cancel', $booking) }}" method="post"
+                            data-confirm="Отменить запись ({{ $booking->user->shortName() }})? Занятие вернётся на абонемент.">
+                        @csrf
+                        <button type="submit" class="btn btn--ghost">Отменить</button>
+                      </form>
+                    </div>
+                  </div>
+                @endforeach
+              </div>
+            @endif
             <a href="{{ route('schedule') }}" class="btn btn--solid" style="margin-top: 6px">Забронировать место</a>
           </div>
 

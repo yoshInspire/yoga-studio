@@ -38,6 +38,11 @@ class PaymentResource extends Resource
                     ->formatStateUsing(fn (Payment $record) => $record->user?->fullName())
                     ->searchable(['last_name', 'first_name'])
                     ->sortable(),
+                TextColumn::make('recipient.last_name')
+                    ->label('Получатель')
+                    ->formatStateUsing(fn (Payment $record) => $record->isGift() ? 'в подарок: '.$record->recipient?->fullName() : null)
+                    ->placeholder('себе')
+                    ->toggleable(),
                 TextColumn::make('description')
                     ->label('Тариф')
                     ->wrap(),

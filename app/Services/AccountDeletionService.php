@@ -43,6 +43,13 @@ class AccountDeletionService
      */
     public function delete(User $user): void
     {
+        // Дети без своего входа переходят к самому давнему взрослому семьи;
+        // передать некому — обезличиваются раньше представителя, иначе
+        // остались бы профили, которыми никто не управляет.
+        foreach ($this->family->handOverWards($user) as $orphan) {
+            $this->delete($orphan);
+        }
+
         // Сначала семья: записи по чужим абонементам и записи других по
         // абонементам удаляемого отменяются С ВОЗВРАТОМ — абонементы
         // остальных живут дальше. Ниже свои записи отменяются уже без возврата.
@@ -169,6 +176,9 @@ class AccountDeletionService
             'password' => Str::password(40),
             'remember_token' => null,
             'offer_accepted_at' => null,
+            // Обезличенный ребёнок больше ничей: уведомлять и показывать его
+            // в «Записях семьи» некому.
+            'guardian_id' => null,
             'anonymized_at' => now(),
         ])->save();
     }

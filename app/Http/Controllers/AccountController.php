@@ -23,16 +23,19 @@ class AccountController extends Controller
         $user = auth()->user();
 
         $allSubscriptions = $user->subscriptions()
-            ->with('sharedWith')
+            ->with(['sharedWith', 'paymentItem.payment.user'])
             ->orderByDesc('ends_at')
             ->get();
 
         $upcomingBookings = $user->bookings()
             ->upcoming()
-            ->with(['classSession.trainer', 'classSession.direction', 'subscription.user'])
+            ->with(['classSession.trainer', 'classSession.direction', 'subscription.user', 'bookedBy'])
             ->get()
             ->sortBy(fn ($b) => $b->classSession->starts_at)
             ->values();
+
+        // Записи членов семьи, сделанные мной, и записи моих детей.
+        $familyBookings = $family->managedBookings($user);
 
         $history = $user->subscriptions()
             ->with(['usages' => fn ($q) => $q->orderByDesc('used_at')])
@@ -74,6 +77,7 @@ class AccountController extends Controller
             'user' => $user,
             'subscriptions' => $allSubscriptions,
             'bookings' => $upcomingBookings,
+            'familyBookings' => $familyBookings,
             'history' => $history,
             'cancelled' => $cancelled,
             'offerAvailable' => OfferStorage::exists(),

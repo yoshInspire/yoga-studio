@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Services\BookingService;
+use App\Services\FamilyService;
 use App\Support\RussianDate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -98,6 +99,10 @@ class ScheduleController extends Controller
             'nextOffset' => $offset + 1,
             'rangeLabel' => RussianDate::dayMonthRange($startDate, $endDate),
             'rescheduleFrom' => $rescheduleFrom,
+            // Кого ещё можно записать из модалки — участники семьи зрителя.
+            'familyMembers' => $viewer?->isClient() && $rescheduleFrom === null
+                ? app(FamilyService::class)->bookableRelatives($viewer)
+                : [],
             'typeLabels' => [
                 'group' => 'Групповое',
                 'indiv' => 'Индивидуальное',

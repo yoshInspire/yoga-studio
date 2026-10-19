@@ -128,7 +128,7 @@ class BookingController extends Controller
             'client' => [
                 'id' => $user->id,
                 'name' => $user->fullName(),
-                'phone' => $user->formattedPhone() ?? $user->phone,
+                'phone' => $user->contactPhone(),
                 'health_note' => filled($user->health_note) ? $user->health_note : null,
             ],
             'session' => [

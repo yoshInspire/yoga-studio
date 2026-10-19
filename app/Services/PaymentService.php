@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\PaymentStatus;
 use App\Enums\SubscriptionType;
+use App\Models\FamilyMember;
 use App\Models\Payment;
 use App\Models\PaymentItem;
 use App\Models\Subscription;
@@ -26,7 +27,36 @@ class PaymentService
         private YooKassaService $yookassa,
         private SubscriptionService $subscriptions,
         private AdminActivityNotifier $adminActivity,
+        private NotificationService $notifications,
     ) {}
+
+    /**
+     * Почему этому человеку нельзя купить абонемент в подарок (null — можно).
+     * Дарить можно только участнику своей семьи (Ирина, 19.10.2026): поиск по
+     * телефону раскрывал бы, есть ли человек в студии.
+     *
+     * @param  list<string>  $productKeys
+     */
+    public static function giftBlocker(User $payer, User $recipient, array $productKeys = []): ?string
+    {
+        if (! $recipient->isClient() || $recipient->isAnonymized()) {
+            return 'Подарить абонемент можно только клиенту студии.';
+        }
+
+        if (! FamilyMember::inSameFamily($payer, $recipient)) {
+            return 'Подарить абонемент можно только участнику своей семьи.';
+        }
+
+        // Пробное — знакомство со студией «один раз на клиента». В подарок
+        // его не продаём, иначе его можно брать бесконечно через родственников.
+        foreach ($productKeys as $key) {
+            if (PurchaseCatalog::isOncePerClient($key)) {
+                return '«'.PurchaseCatalog::find($key)['name'].'» в подарок не продаётся — его покупает сам новый клиент.';
+            }
+        }
+
+        return null;
+    }
 
     /**
      * Одноразовый тариф (пробное занятие) клиенту больше не положен.
@@ -69,9 +99,14 @@ class PaymentService
      * одним платежом до этого было нельзя.
      *
      * @param  string|list<string>  $productKeys  один ключ или набор разных
+     * @param  User|null  $recipient  кому в подарок (член семьи); null — себе
      */
-    public function initiate(User $user, string|array $productKeys, Carbon $startsAt): Payment
+    public function initiate(User $user, string|array $productKeys, Carbon $startsAt, ?User $recipient = null): Payment
     {
+        if ($recipient !== null && $recipient->id === $user->id) {
+            $recipient = null;
+        }
+
         if (! $this->yookassa->isConfigured()) {
             throw new InvalidArgumentException('Онлайн-оплата временно недоступна. Обратитесь в студию.');
         }
@@ -82,6 +117,10 @@ class PaymentService
 
         if ($keys === []) {
             throw new InvalidArgumentException('Выберите хотя бы один абонемент.');
+        }
+
+        if ($recipient !== null && ($blocker = self::giftBlocker($user, $recipient, $keys)) !== null) {
+            throw new InvalidArgumentException($blocker);
         }
 
         $products = array_map(PurchaseCatalog::find(...), $keys);
@@ -107,6 +146,7 @@ class PaymentService
 
         $payment = Payment::query()->create([
             'user_id' => $user->id,
+            'recipient_id' => $recipient?->id,
             // Для покупки из одной позиции колонка заполняется как раньше —
             // на неё опираются прежние платежи, админка и отчёты.
             'product_key' => $keys[0],
@@ -144,12 +184,13 @@ class PaymentService
                     'return_url' => $this->signedReturnUrl($payment),
                 ],
                 'capture' => true,
-                'description' => $this->paymentDescription($user, $payment->description),
+                'description' => $this->paymentDescription($user, $payment->description, $recipient),
                 'metadata' => [
                     'payment_id' => (string) $payment->id,
                     'user_id' => (string) $user->id,
                     'product_key' => $keys[0],
                     'product_keys' => implode(',', $keys),
+                    ...($recipient !== null ? ['recipient_id' => (string) $recipient->id] : []),
                 ],
                 'receipt' => PaymentReceiptBuilder::build($user, $products),
             ], $payment->idempotence_key);
@@ -265,16 +306,20 @@ class PaymentService
             }
 
             $first = null;
+            $holder = $payment->holder();
+            $note = $payment->isGift()
+                ? 'Подарок от '.$payment->user->fullName().' · '
+                : 'Онлайн-оплата · ';
 
             foreach ($items as $item) {
                 $subscription = $this->subscriptions->createFromPurchase(
-                    $payment->user,
+                    $holder,
                     $item->type,
                     $item->sessions,
                     $payment->starts_at,
                     now(),
                     $item->validity_days,
-                    'Онлайн-оплата · '.$item->name.' · платёж #'.$payment->id,
+                    $note.$item->name.' · платёж #'.$payment->id,
                 );
 
                 $item->update(['subscription_id' => $subscription->id]);
@@ -295,8 +340,31 @@ class PaymentService
 
             $this->adminActivity->clientPaidSubscription($payment->user, $payment->refresh(), $first);
 
+            if ($payment->isGift()) {
+                $this->notifyGiftRecipient($payment, $first);
+            }
+
             return $first;
         });
+    }
+
+    private function notifyGiftRecipient(Payment $payment, Subscription $subscription): void
+    {
+        $recipient = $payment->recipient;
+
+        $this->notifications->notifyUser(
+            $recipient,
+            'Вам подарили абонемент',
+            [
+                'Здравствуйте, '.$recipient->first_name.'!',
+                $payment->user->shortName().' подарил(а) вам абонемент: '.$payment->description.'.',
+                'Действует с '.$subscription->formattedStartsAt().' до '.$subscription->formattedEndsAt()
+                    .'. Записывайтесь на занятия — оно спишется с этого абонемента.',
+            ],
+            subject: 'Вам подарили абонемент',
+            type: 'family',
+            payload: ['screen' => 'account'],
+        );
     }
 
     /**
@@ -366,12 +434,13 @@ class PaymentService
         }
     }
 
-    private function paymentDescription(User $user, string $productName): string
+    private function paymentDescription(User $user, string $productName, ?User $recipient = null): string
     {
         return sprintf(
-            '%s · %s',
+            '%s · %s%s',
             $productName,
             $user->fullName(),
+            $recipient !== null ? ' · в подарок: '.$recipient->fullName() : '',
         );
     }
 

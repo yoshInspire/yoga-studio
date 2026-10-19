@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Services\PaymentService;
 use App\Support\PurchaseCatalog;
 use Illuminate\Http\JsonResponse;
@@ -29,6 +30,8 @@ class PurchaseController extends Controller
                     'sessions' => $p['sessions'],
                     'price' => $p['price'],
                     'validity_days' => $p['validity_days'],
+                    // Пробное «один раз на клиента» в подарок не продаётся.
+                    'giftable' => ! PurchaseCatalog::isOncePerClient($p['key']),
                 ], $products),
             ];
         }
@@ -47,13 +50,21 @@ class PurchaseController extends Controller
             'product_keys.*' => ['required', 'string', 'max:64'],
             'product_key' => ['required_without:product_keys', 'string', 'max:64'],
             'starts_at' => ['required', 'date'],
+            // Кому в подарок — участнику своей семьи; без поля — себе.
+            'recipient_id' => ['nullable', 'integer'],
         ]);
 
         try {
+            $recipient = isset($validated['recipient_id'])
+                ? (User::query()->find($validated['recipient_id'])
+                    ?? throw new InvalidArgumentException('Подарить абонемент можно только участнику своей семьи.'))
+                : null;
+
             $payment = $payments->initiate(
                 $request->user(),
                 $validated['product_keys'] ?? $validated['product_key'],
                 Carbon::parse($validated['starts_at']),
+                $recipient,
             );
         } catch (InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);

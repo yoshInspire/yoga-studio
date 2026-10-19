@@ -112,17 +112,44 @@ class FamilyController extends Controller
     /** Кому из семьи открыт абонемент: полный список, остальным доступ закрывается. */
     public function updateShares(Request $request, Subscription $subscription): JsonResponse
     {
-        $data = $request->validate([
-            'user_ids' => ['present', 'array', 'max:'.FamilyService::MAX_MEMBERS],
-            'user_ids.*' => ['integer'],
-        ]);
+        // Старое приложение шлёт `{user_ids}`, новое — `{shares: [{user_id, limit}]}`.
+        $shares = FamilyService::sharesFromRequest($request);
 
-        return $this->attempt($request, function () use ($request, $subscription, $data) {
-            $this->family->setShares($request->user(), $subscription, $data['user_ids']);
+        return $this->attempt($request, function () use ($request, $subscription, $shares) {
+            $this->family->setShares($request->user(), $subscription, $shares);
 
-            return ['message' => $data['user_ids'] === []
+            return ['message' => $shares === []
                 ? 'Абонемент больше никому не открыт.'
                 : 'Доступ к абонементу сохранён.'];
+        });
+    }
+
+    /**
+     * Завести профиль ребёнка без своего входа. `guardian_consent` — галочка
+     * «я законный представитель, принимаю оферту и даю согласие на
+     * обработку данных ребёнка».
+     */
+    public function addChild(Request $request): JsonResponse
+    {
+        $data = $request->validate(FamilyService::childRules(creating: true), [
+            'guardian_consent.accepted' => 'Подтвердите, что вы законный представитель ребёнка.',
+        ]);
+
+        return $this->attempt($request, function () use ($request, $data) {
+            $child = $this->family->addChild($request->user(), $data);
+
+            return ['message' => $child->shortName().' — в семье. Записывайте на занятия с карточки занятия.'];
+        });
+    }
+
+    public function updateChild(Request $request, User $child): JsonResponse
+    {
+        $data = $request->validate(FamilyService::childRules(creating: false));
+
+        return $this->attempt($request, function () use ($request, $child, $data) {
+            $this->family->updateChild($request->user(), $child, $data);
+
+            return ['message' => 'Профиль ребёнка сохранён.'];
         });
     }
 

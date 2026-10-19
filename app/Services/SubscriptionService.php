@@ -50,7 +50,11 @@ class SubscriptionService
             ->orderBy('ends_at')
             ->orderBy('subscriptions.id')
             ->get()
-            ->filter(fn (Subscription $s) => $s->isShareable() && $s->canTakeBookingOn($on))
+            // Лимит участника выбран — абонемент в выбор не отдаём, иначе он
+            // придёт в список и упадёт при записи.
+            ->filter(fn (Subscription $s) => $s->isShareable()
+                && $s->canTakeBookingOn($on)
+                && $s->shareLimitLeftFor($user) !== 0)
             ->values()
             ->all();
     }

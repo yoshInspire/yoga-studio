@@ -57,9 +57,10 @@ class ClientController extends Controller
                 // так же устроен список переписок.
                 'initials' => $u->initials(),
                 'avatar' => $u->avatarUrl(),
-                'phone' => $u->formattedPhone() ?? $u->phone,
+                'phone' => $u->contactPhone() ?? '',
                 'email' => $u->email,
                 'active_subscriptions' => $u->subscriptions()->active()->count(),
+                'is_child' => $u->isManagedProfile(),
             ]);
 
         return response()->json(['data' => $clients]);
@@ -180,12 +181,16 @@ class ClientController extends Controller
             $request->merge(['email' => mb_strtolower(trim((string) $request->input('email')))]);
         }
 
+        // Профиль ребёнка: телефона и почты нет, вход появляется только через
+        // «Отделить профиль» — здесь контакты молча не меняем.
+        $child = $client->isManagedProfile();
+
         $data = $request->validate([
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
             'patronymic' => ['nullable', 'string', 'max:100'],
-            'phone' => ['required', 'string', 'size:11', 'unique:users,phone,'.$client->id],
-            'email' => ['nullable', 'email', 'max:255', 'unique:users,email,'.$client->id],
+            'phone' => $child ? ['nullable'] : ['required', 'string', 'size:11', 'unique:users,phone,'.$client->id],
+            'email' => $child ? ['nullable'] : ['nullable', 'email', 'max:255', 'unique:users,email,'.$client->id],
             'birth_day' => ['nullable', 'integer', 'between:1,31'],
             'birth_month' => ['nullable', 'integer', 'between:1,12'],
             'birth_year' => ['nullable', 'integer', 'between:1920,'.now()->year],
@@ -197,10 +202,14 @@ class ClientController extends Controller
             'email.unique' => 'Этот email уже занят.',
         ]);
 
+        if ($child) {
+            unset($data['phone'], $data['email']);
+        }
+
         $client->update([
             ...$data,
             'health_note' => filled($data['health_note'] ?? null) ? $data['health_note'] : null,
-            'email' => $data['email'] ?? null,
+            ...($child ? [] : ['email' => $data['email'] ?? null]),
         ]);
 
         return response()->json([
@@ -265,7 +274,39 @@ class ClientController extends Controller
             'offer_accepted' => $client->hasAcceptedOffer(),
             'has_telegram' => $client->hasTelegram(),
             'registered_at' => RussianDate::dayMonthYear($client->created_at),
+            // Ребёнок без входа: звонить представителю, доступ не высылается.
+            'is_child' => $client->isManagedProfile(),
+            'guardian' => $client->isManagedProfile() && $client->guardian !== null ? [
+                'id' => $client->guardian->id,
+                'name' => $client->guardian->fullName(),
+                'phone' => $client->guardian->formattedPhone() ?? $client->guardian->phone,
+            ] : null,
         ];
+    }
+
+    /**
+     * Отделить профиль ребёнка: вписать телефон (и почту), снять представителя.
+     * Доступ высылается потом обычной кнопкой.
+     */
+    public function separate(Request $request, User $client, FamilyService $family): JsonResponse
+    {
+        $this->assertClient($client);
+
+        $data = $request->validate([
+            'phone' => ['required', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:255'],
+        ]);
+
+        try {
+            $family->separateChild($client, $data['phone'], $data['email'] ?? null);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'message' => 'Профиль отделён. Теперь можно отправить доступ.',
+            'client' => $this->card($client->refresh()),
+        ]);
     }
 
     /**

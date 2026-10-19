@@ -173,7 +173,7 @@ class VisitControlService
         $subscription = $booking->subscription;
         $attendance = $booking->attendance_status ?? AttendanceStatus::Expected;
         $charge = $booking->chargeStatus();
-        $phone = $user?->phone;
+        $phone = $user?->phone ?? $user?->guardian?->phone;
         $balance = $subscription !== null ? $this->subscriptionBalanceFor($subscription) : null;
         $familyOwner = $subscription !== null && $subscription->user_id !== $booking->user_id
             ? $subscription->user?->shortName()
@@ -206,6 +206,9 @@ class VisitControlService
             'attendance_color' => $attendance->badgeColor(),
             'attendance_pending' => $booking->attendancePending(),
             'health_note' => filled($user?->health_note) ? $user->health_note : null,
+            // Ребёнок без входа: телефон выше — представителя.
+            'is_child' => $user?->isManagedProfile() ?? false,
+            'guardian_name' => $user?->isManagedProfile() ? $user->guardian?->shortName() : null,
         ];
     }
 

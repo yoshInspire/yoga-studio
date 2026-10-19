@@ -50,7 +50,7 @@ class ClientStatsExport implements FromCollection, ShouldAutoSize, WithHeadings
                         $client->last_name,
                         $client->first_name,
                         $client->patronymic ?? '',
-                        $client->formattedPhone() ?? $client->phone ?? '',
+                        $client->contactPhone() ?? '',
                         $client->created_at->format('d.m.Y'),
                         $client->hasAcceptedOffer() ? 'Да' : 'Нет',
                         $client->formattedOfferAcceptedAt() ?? '',

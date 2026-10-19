@@ -38,8 +38,13 @@
       @if ($familyOffer = session('family_booking_offer'))
         <div class="family-offer reveal">
           <p>
-            Своего абонемента для «{{ $familyOffer['title'] }}» ({{ $familyOffer['date_time'] }}) нет,
-            но можно записаться по абонементу семьи — занятие спишется с него.
+            @if (! empty($familyOffer['for_name']))
+              {{ $familyOffer['for_name'] }}: своего абонемента для «{{ $familyOffer['title'] }}» ({{ $familyOffer['date_time'] }}) нет,
+              но можно записать по абонементу семьи, открытому ему(ей), — занятие спишется с него.
+            @else
+              Своего абонемента для «{{ $familyOffer['title'] }}» ({{ $familyOffer['date_time'] }}) нет,
+              но можно записаться по абонементу семьи — занятие спишется с него.
+            @endif
           </p>
           <div class="family-offer__options">
             @foreach ($familyOffer['sources'] as $source)
@@ -47,8 +52,11 @@
                 @csrf
                 <input type="hidden" name="class_session_id" value="{{ $familyOffer['session_id'] }}" />
                 <input type="hidden" name="subscription_id" value="{{ $source['id'] }}" />
+                @if (! empty($familyOffer['for_user_id']))
+                  <input type="hidden" name="for_user_id" value="{{ $familyOffer['for_user_id'] }}" />
+                @endif
                 <button type="submit" class="btn btn--solid">
-                  {{ $source['label'] }} · осталось {{ $source['remaining'] }}
+                  {{ $source['label'] }} · осталось {{ $source['remaining'] }}@if (($source['limit_left'] ?? null) !== null) · по лимиту ещё {{ $source['limit_left'] }}@endif
                 </button>
               </form>
             @endforeach
@@ -128,6 +136,7 @@
         'rescheduleFrom' => ($rescheduleFrom ?? null)?->id,
         'rescheduleUrl' => ($rescheduleFrom ?? null) ? route('bookings.reschedule', $rescheduleFrom) : null,
         'isClient' => auth()->check() && auth()->user()->isClient(),
+        'family' => $familyMembers ?? [],
     ];
   @endphp
   <script>

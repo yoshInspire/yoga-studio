@@ -108,7 +108,11 @@ class UserResource extends Resource
                     ->schema([
                         TextInput::make('phone')
                             ->label('Телефон')
-                            ->required()
+                            // У ребёнка без входа телефона нет: звонят представителю.
+                            ->required(fn (?User $record): bool => ! ($record?->isManagedProfile() ?? false))
+                            ->helperText(fn (?User $record): ?string => $record?->isManagedProfile()
+                                ? 'Профиль ребёнка: телефон представителя — '.($record->guardian?->formattedPhone() ?? '—').'. Чтобы дать ребёнку свой вход — «Семья» → «Отделить профиль».'
+                                : null)
                             ->placeholder('+7 (___) ___-__-__')
                             ->maxLength(18)
                             ->extraInputAttributes([
@@ -205,12 +209,23 @@ class UserResource extends Resource
         if ($group === null) {
             $lines = ['Не состоит в семье.'];
         } else {
+            $lines = [];
+
+            if ($record->isManagedProfile()) {
+                $lines[] = '<strong>Профиль ребёнка без своего входа.</strong> Представитель: '.e($record->guardian?->fullName() ?? '—')
+                    .'. Уведомления уходят ему.';
+            }
+
             $names = collect($group['members'])
-                ->map(fn (array $m) => e($m['name']).($m['is_owner'] ? ' (глава)' : ''))
+                ->map(fn (array $m) => e($m['name']).match (true) {
+                    $m['is_owner'] => ' (глава)',
+                    $m['is_child'] ?? false => ' (ребёнок, представитель — '.e((string) $m['guardian_name']).')',
+                    default => '',
+                })
                 ->implode(', ');
             $byId = collect($group['members'])->pluck('name', 'id');
 
-            $lines = ['<strong>Состав:</strong> '.$names];
+            $lines[] = '<strong>Состав:</strong> '.$names;
 
             foreach ($family['my_subscriptions'] as $sub) {
                 $to = collect($sub['shared_with'])->map(fn (int $id) => e($byId[$id] ?? ''))->filter()->implode(', ');
@@ -242,6 +257,9 @@ class UserResource extends Resource
                 TextColumn::make('phone')
                     ->label('Телефон')
                     ->formatStateUsing(fn (?string $state) => PhoneNormalizer::format($state) ?? '—')
+                    ->placeholder(fn (User $record) => $record->isManagedProfile()
+                        ? 'ребёнок · '.($record->guardian?->shortName() ?? '')
+                        : '—')
                     ->searchable(),
                 TextColumn::make('email')
                     ->label('Email')

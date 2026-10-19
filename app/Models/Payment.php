@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'user_id',
+    'recipient_id',
     'subscription_id',
     'product_key',
     'amount',
@@ -37,6 +38,26 @@ class Payment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Кому куплен абонемент в подарок (член семьи). null — себе. Платит и
+     * получает чек всегда `user_id`: по 54-ФЗ чек отдаётся покупателю.
+     */
+    public function recipient(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recipient_id');
+    }
+
+    public function isGift(): bool
+    {
+        return $this->recipient_id !== null && $this->recipient_id !== $this->user_id;
+    }
+
+    /** Кому выдать абонемент. */
+    public function holder(): User
+    {
+        return $this->isGift() ? $this->recipient : $this->user;
     }
 
     public function subscription(): BelongsTo

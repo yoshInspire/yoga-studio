@@ -184,6 +184,11 @@ Route::middleware(['auth', 'role:client', 'noindex'])->group(function () {
         ->name('account.family.members.owner');
     Route::post('/account/family/leave', [FamilyController::class, 'leave'])->name('account.family.leave');
     Route::delete('/account/family', [FamilyController::class, 'dissolve'])->name('account.family.dissolve');
+    Route::post('/account/family/children', [FamilyController::class, 'addChild'])
+        ->middleware('throttle:10,1')
+        ->name('account.family.children.store');
+    Route::put('/account/family/children/{child}', [FamilyController::class, 'updateChild'])
+        ->name('account.family.children.update');
     Route::put('/account/family/subscriptions/{subscription}/shares', [FamilyController::class, 'updateShares'])
         ->name('account.family.shares');
     Route::middleware('offer.accepted')->group(function () {

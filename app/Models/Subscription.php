@@ -77,6 +77,17 @@ class Subscription extends Model
         return $price !== null ? (int) $price : null;
     }
 
+    /**
+     * Кто подарил абонемент (член семьи оплатил его на этого человека). null —
+     * куплен самим владельцем или выдан студией.
+     */
+    public function giftFrom(): ?User
+    {
+        $payment = $this->paymentItem?->payment;
+
+        return $payment !== null && $payment->isGift() ? $payment->user : null;
+    }
+
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
@@ -90,7 +101,42 @@ class Subscription extends Model
      */
     public function sharedWith(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'subscription_shares')->withTimestamps();
+        return $this->belongsToMany(User::class, 'subscription_shares')
+            ->withPivot('sessions_limit')
+            ->withTimestamps();
+    }
+
+    /**
+     * Сколько ещё занятий участник может взять по этому абонементу, если
+     * владелец открыл его «не больше N». null — без ограничений (или абонемент
+     * свой, или не открыт вовсе — это проверяет `isUsableBy()`).
+     *
+     * Лимит на весь срок абонемента (Ирина, 19.10.2026). Считаются действующие
+     * записи участника — и прошедшие, и будущие, кроме неявок: неявка
+     * возвращает занятие, значит и лимит. Перенос запись не меняет, отмена
+     * снимает её из счёта.
+     */
+    public function shareLimitLeftFor(User $user, ?int $excludeBookingId = null): ?int
+    {
+        if ($this->user_id === $user->id) {
+            return null;
+        }
+
+        $limit = $this->sharedWith()->whereKey($user->id)->value('subscription_shares.sessions_limit');
+
+        if ($limit === null) {
+            return null;
+        }
+
+        $taken = $this->bookings()
+            ->where('user_id', $user->id)
+            ->where('status', BookingStatus::Confirmed)
+            ->where(fn ($q) => $q->whereNull('attendance_status')
+                ->orWhere('attendance_status', '!=', AttendanceStatus::NoShow))
+            ->when($excludeBookingId, fn ($q) => $q->where('id', '!=', $excludeBookingId))
+            ->count();
+
+        return max(0, (int) $limit - $taken);
     }
 
     /**

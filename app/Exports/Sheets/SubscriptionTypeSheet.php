@@ -54,7 +54,7 @@ class SubscriptionTypeSheet implements FromCollection, ShouldAutoSize, WithHeadi
                 $subscription->user->last_name,
                 $subscription->user->first_name,
                 $subscription->user->patronymic ?? '',
-                $subscription->user->formattedPhone() ?? $subscription->user->phone ?? '',
+                $subscription->user->contactPhone() ?? '',
                 $subscription->sessions_total,
                 $this->reports->completedSessionsUsed($subscription),
                 $this->reports->reservedSessionsAsOf($subscription),
