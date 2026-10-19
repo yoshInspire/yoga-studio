@@ -77,7 +77,7 @@ class VisitControlService
                 'trainer:id,first_name,last_name',
                 'bookings' => fn ($q) => $q
                     ->where('status', BookingStatus::Confirmed)
-                    ->with(['user', 'subscription', 'subscriptionUsage']),
+                    ->with(['user', 'subscription.user', 'subscriptionUsage']),
             ])
             ->withCount(['bookings as taken' => fn ($q) => $q->where('status', BookingStatus::Confirmed)])
             ->orderBy('starts_at')
@@ -175,6 +175,9 @@ class VisitControlService
         $charge = $booking->chargeStatus();
         $phone = $user?->phone;
         $balance = $subscription !== null ? $this->subscriptionBalanceFor($subscription) : null;
+        $familyOwner = $subscription !== null && $subscription->user_id !== $booking->user_id
+            ? $subscription->user?->shortName()
+            : null;
 
         return [
             'booking_id' => $booking->id,
@@ -186,7 +189,11 @@ class VisitControlService
             'avatar' => $user?->avatarUrl(),
             'phone' => $phone,
             'phone_href' => filled($phone) ? 'tel:'.preg_replace('/\s+/', '', $phone) : null,
-            'subscription_label' => $subscription?->type?->shortLabel() ?? '—',
+            // Запись по абонементу семьи: в подписи сразу видно, чей абонемент
+            // списывается, — и на сайте, и в приложении без правок вёрстки.
+            'subscription_label' => ($subscription?->type?->shortLabel() ?? '—')
+                .($familyOwner !== null ? ' · семья: '.$familyOwner : ''),
+            'family_owner' => $familyOwner,
             'subscription_starts_at' => $subscription?->starts_at?->format('d.m.Y'),
             'sessions_remaining' => $balance['sessions_remaining'] ?? null,
             'sessions_total' => $balance['sessions_total'] ?? null,

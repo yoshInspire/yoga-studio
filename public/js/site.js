@@ -810,3 +810,47 @@ if (avatarBlock) {
     avatarForm?.submit();
   });
 }
+
+// ===== Семья: копирование приглашения, «Поделиться», подтверждения =====
+document.querySelectorAll('[data-copy]').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    const text = btn.dataset.copy;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // http или старый браузер: запасной путь через выделение.
+      const area = document.createElement('textarea');
+      area.value = text;
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand('copy');
+      area.remove();
+    }
+    const label = btn.textContent;
+    btn.textContent = 'Скопировано';
+    setTimeout(() => { btn.textContent = label; }, 1800);
+  });
+});
+
+// Системное «Поделиться» есть не везде (на компьютере обычно нет) —
+// кнопку показываем только там, где оно работает.
+document.querySelectorAll('[data-share]').forEach((btn) => {
+  if (!navigator.share) return;
+  btn.hidden = false;
+  btn.addEventListener('click', () => {
+    navigator.share({ text: btn.dataset.share }).catch(() => {});
+  });
+});
+
+document.querySelectorAll('form[data-confirm]').forEach((form) => {
+  form.addEventListener('submit', (event) => {
+    if (!window.confirm(form.dataset.confirm)) event.preventDefault();
+  });
+});
+
+// Ссылка внутри раздела кабинета, ведущая в другой раздел.
+document.querySelectorAll('[data-sec-link]').forEach((link) => {
+  link.addEventListener('click', () => {
+    document.querySelector(`#lkNav .lk__navlink[data-sec="${link.dataset.secLink}"]`)?.click();
+  });
+});

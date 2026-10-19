@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Admin\AsanaLibraryController as AdminAsanaLibraryCo
 use App\Http\Controllers\Api\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Api\Admin\ClientController as AdminClientController;
 use App\Http\Controllers\Api\Admin\DirectionController as AdminDirectionController;
+use App\Http\Controllers\Api\Admin\FamilyController as AdminFamilyController;
 use App\Http\Controllers\Api\Admin\MailingController as AdminMailingController;
 use App\Http\Controllers\Api\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Api\Admin\OfferController as AdminOfferController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\Api\AvatarController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\ContentController;
+use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PasswordResetController;
@@ -97,7 +99,21 @@ Route::prefix('v1')->group(function () {
             Route::post('/chat/read', [ChatController::class, 'read']);
 
             Route::get('/account', [AccountController::class, 'show']);
+            Route::get('/bookings/sources', [BookingController::class, 'sources']);
             Route::post('/bookings', [BookingController::class, 'store']);
+
+            // Семья. Код приглашения можно перебирать — поэтому throttle на
+            // просмотр и принятие; остальное проверяет FamilyService.
+            Route::get('/family', [FamilyController::class, 'show']);
+            Route::post('/family/invites', [FamilyController::class, 'createInvite'])->middleware('throttle:10,1');
+            Route::delete('/family/invites/{invite}', [FamilyController::class, 'revokeInvite']);
+            Route::get('/family/join/{code}', [FamilyController::class, 'previewInvite'])->middleware('throttle:20,1');
+            Route::post('/family/join/{code}', [FamilyController::class, 'acceptInvite'])->middleware('throttle:10,1');
+            Route::delete('/family/members/{member}', [FamilyController::class, 'removeMember']);
+            Route::post('/family/members/{member}/owner', [FamilyController::class, 'transferOwnership']);
+            Route::post('/family/leave', [FamilyController::class, 'leave']);
+            Route::delete('/family', [FamilyController::class, 'dissolve']);
+            Route::put('/family/subscriptions/{subscription}/shares', [FamilyController::class, 'updateShares']);
             Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel']);
             Route::post('/bookings/{booking}/reschedule', [BookingController::class, 'reschedule']);
 
@@ -146,6 +162,10 @@ Route::prefix('v1')->group(function () {
             Route::put('/clients/{client}', [AdminClientController::class, 'update']);
             Route::post('/clients/{client}/access', [AdminClientController::class, 'access'])
                 ->middleware('throttle:10,1');
+            // Семья клиента — для тех, кто не пользуется ни сайтом, ни приложением.
+            Route::post('/clients/{client}/family', [AdminFamilyController::class, 'add']);
+            Route::delete('/clients/{client}/family', [AdminFamilyController::class, 'remove']);
+            Route::put('/subscriptions/{subscription}/shares', [AdminFamilyController::class, 'shares']);
 
             Route::get('/subscriptions', [AdminSubscriptionController::class, 'index']);
             Route::post('/subscriptions', [AdminSubscriptionController::class, 'store']);

@@ -25,6 +25,7 @@
           <nav class="lk__nav" id="lkNav" data-initial-section="{{ $lkSection ?? '' }}">
             <button type="button" class="lk__navlink is-active" data-sec="profile">Профиль</button>
             <button type="button" class="lk__navlink" data-sec="subs">Мои абонементы</button>
+            <button type="button" class="lk__navlink" data-sec="family">Семья</button>
             <a href="{{ route('purchase.index') }}" class="lk__navlink lk__navlink--buy">Купить абонемент</a>
             <button type="button" class="lk__navlink" data-sec="bookings">Мои бронирования</button>
             <button type="button" class="lk__navlink" data-sec="history">История посещений</button>
@@ -40,6 +41,12 @@
 
         {{-- Контент --}}
         <div class="lk__content">
+          @if ($pendingFamilyInvite !== null && $pendingFamilyInvite->isPending() && $family['group'] === null)
+            <div class="auth__alert auth__alert--ok lk__alert">
+              {{ $pendingFamilyInvite->inviter->shortName() }} приглашает вас в семью.
+              <a href="{{ route('family.join', ['code' => $pendingFamilyInvite->code]) }}">Открыть приглашение</a>
+            </div>
+          @endif
           @if (! $user->hasAcceptedOffer())
             <div class="auth__alert auth__alert--error lk__alert">
               <p>Чтобы бронировать места и покупать абонементы, примите договор-оферту в разделе «Договор-оферта».</p>
@@ -383,12 +390,23 @@
                     <div><dt>Начало</dt><dd>{{ $sub->formattedStartsAt() }}</dd></div>
                     <div><dt>Действует до</dt><dd>{{ $sub->formattedEndsAt() }}</dd></div>
                   </dl>
+                  @if ($sub->sharedWith->isNotEmpty())
+                    <p class="sub__shared">Открыт семье: {{ $sub->sharedWith->map(fn ($u) => $u->shortName())->implode(', ') }}</p>
+                  @endif
                 </div>
               @empty
                 <p class="lk__empty">У вас пока нет абонементов. <a href="{{ route('purchase.index') }}">Купите абонемент онлайн</a> или уточните в студии.</p>
               @endforelse
             </div>
+            @if ($family['shared_with_me'] !== [])
+              <p class="lk__lead" style="margin-top: 22px">
+                Вам открыты абонементы семьи: {{ count($family['shared_with_me']) }}.
+                <button type="button" class="lk__inline-link" data-sec-link="family">Посмотреть в разделе «Семья»</button>
+              </p>
+            @endif
           </div>
+
+          @include('partials.account-family')
 
           {{-- Мои бронирования --}}
           <div class="lk__panel is-hidden" data-panel="bookings">
@@ -414,6 +432,9 @@
                       <span class="badge badge--{{ $session->type->badgeClass() }}">{{ $session->type->shortLabel() }}</span>
                       {{ $session->trainerName() }}
                     </p>
+                    @if ($booking->subscription && $booking->subscription->user_id !== $user->id)
+                      <p class="lk-row__family">Абонемент семьи · {{ $booking->subscription->user?->shortName() }}</p>
+                    @endif
                   </div>
                   <div class="lk-row__actions">
                     @if($booking->canBeCancelledByClient())

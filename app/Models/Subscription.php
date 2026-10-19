@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
@@ -79,6 +80,41 @@ class Subscription extends Model
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
+    }
+
+    /**
+     * Участники семьи, которым владелец открыл этот абонемент.
+     *
+     * Строка здесь — единственное, что даёт чужому человеку записываться по
+     * абонементу: членство в семье само по себе доступа не открывает.
+     */
+    public function sharedWith(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'subscription_shares')->withTimestamps();
+    }
+
+    /**
+     * Можно ли открыть абонемент семье.
+     *
+     * Групповые и индивидуальные — да. «Двойной» — нет: там оплачивается день
+     * одного человека, и второй участник в тот же день сломал бы дневной учёт.
+     * Мероприятия вне абонемента — разовые, делить там нечего.
+     */
+    public function isShareable(): bool
+    {
+        return in_array($this->type, [SubscriptionType::Group, SubscriptionType::Individual], true)
+            && ! $this->isDoublePerDay();
+    }
+
+    /** Абонемент принадлежит этому человеку или открыт ему владельцем. */
+    public function isUsableBy(User $user): bool
+    {
+        if ($this->user_id === $user->id) {
+            return true;
+        }
+
+        return $this->isShareable()
+            && $this->sharedWith()->whereKey($user->id)->exists();
     }
 
     public function sessionsRemaining(): int

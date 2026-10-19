@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\BookingStatus;
+use App\Services\FamilyService;
 use App\Services\ProfileEmailVerificationService;
 use App\Services\SubscriptionService;
 use App\Services\TelegramAuthService;
@@ -16,17 +17,19 @@ class AccountController extends Controller
         SubscriptionService $subscriptions,
         TelegramAuthService $telegram,
         ProfileEmailVerificationService $profileEmailVerification,
+        FamilyService $family,
     ): View
     {
         $user = auth()->user();
 
         $allSubscriptions = $user->subscriptions()
+            ->with('sharedWith')
             ->orderByDesc('ends_at')
             ->get();
 
         $upcomingBookings = $user->bookings()
             ->upcoming()
-            ->with(['classSession.trainer', 'classSession.direction', 'subscription'])
+            ->with(['classSession.trainer', 'classSession.direction', 'subscription.user'])
             ->get()
             ->sortBy(fn ($b) => $b->classSession->starts_at)
             ->values();
@@ -39,6 +42,13 @@ class AccountController extends Controller
                 'date' => RussianDate::dayMonthYear($usage->used_at),
                 'title' => $usage->description ?? 'Занятие',
                 'sub' => $sub->type->shortLabel().' абонемент',
+            ]))
+            // Посещения по абонементам семьи: списания лежат на чужих абонементах.
+            ->concat(collect($family->sharedUsageHistory($user))->map(fn (array $row) => [
+                'sort' => $row['used_at'],
+                'date' => RussianDate::dayMonthYear($row['used_at']),
+                'title' => $row['title'],
+                'sub' => 'Абонемент семьи · '.$row['owner_name'],
             ]))
             ->sortByDesc('sort')
             ->values()
@@ -74,6 +84,11 @@ class AccountController extends Controller
             'profileEmailVerified' => session('profile_email_verified') ?? $profileEmailVerification->verifiedEmail($user),
             'profilePendingEmail' => $profileEmailVerification->pendingEmail($user),
             'lkSection' => session('lk_section'),
+            'family' => $family->overview($user),
+            // Приглашение, открытое до входа: напоминаем о нём в кабинете.
+            'pendingFamilyInvite' => ($code = session(FamilyController::PENDING_INVITE_KEY)) !== null
+                ? $family->findInvite($code)
+                : null,
         ]);
     }
 }

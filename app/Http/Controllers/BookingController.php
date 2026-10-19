@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\SharedSubscriptionRequired;
 use App\Models\Booking;
 use App\Models\ClassSession;
+use App\Models\Subscription;
 use App\Services\AdminActivityNotifier;
 use App\Services\BookingService;
 use Illuminate\Http\RedirectResponse;
@@ -20,19 +22,37 @@ class BookingController extends Controller
     {
         $request->validate([
             'class_session_id' => ['required', 'integer', 'exists:class_sessions,id'],
+            'subscription_id' => ['nullable', 'integer', 'exists:subscriptions,id'],
         ]);
 
         $session = ClassSession::query()->findOrFail($request->integer('class_session_id'));
+        $subscription = $request->filled('subscription_id')
+            ? Subscription::query()->findOrFail($request->integer('subscription_id'))
+            : null;
 
         try {
-            $booking = $bookings->book($request->user(), $session);
-            $booking->load('classSession');
+            $booking = $bookings->book($request->user(), $session, $subscription);
+            $booking->load(['classSession', 'subscription.user']);
             $this->adminActivity->clientBooked($request->user(), $booking);
+        } catch (SharedSubscriptionRequired $e) {
+            // Своего абонемента нет, а семья открыла свои: страница расписания
+            // покажет кнопки «Записаться по абонементу…» — согласие человека.
+            return back()->with('family_booking_offer', [
+                'session_id' => $session->id,
+                'title' => $session->title,
+                'date_time' => $session->formattedDateTime(),
+                'sources' => $bookings->presentSources($e->subscriptions, $request->user()),
+            ]);
         } catch (InvalidArgumentException $e) {
             return back()->withErrors(['booking' => $e->getMessage()]);
         }
 
-        return back()->with('status', 'Место на занятие «'.$session->title.'» забронировано.');
+        $owner = $booking->subscription !== null && $booking->subscription->user_id !== $request->user()->id
+            ? $booking->subscription->user
+            : null;
+
+        return back()->with('status', 'Место на занятие «'.$session->title.'» забронировано.'
+            .($owner !== null ? ' Занятие спишется с абонемента семьи ('.$owner->shortName().').' : ''));
     }
 
     public function reschedule(Request $request, Booking $booking, BookingService $bookings): RedirectResponse

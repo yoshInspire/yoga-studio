@@ -45,6 +45,7 @@ class ReportService
         $asOf ??= now();
 
         return $subscription->usages
+            ->loadMissing('booking.user')
             ->filter(fn ($usage) => $usage->used_at->lt($asOf))
             ->values();
     }
@@ -102,7 +103,15 @@ class ReportService
     public function visitDatesForSubscription(Subscription $subscription, ?Carbon $asOf = null): string
     {
         $dates = $this->completedUsagesForSubscription($subscription, $asOf)
-            ->map(fn ($usage) => $usage->used_at->format('d.m.Y'))
+            ->map(function ($usage) use ($subscription) {
+                $date = $usage->used_at->format('d.m.Y');
+                $visitor = $usage->booking?->user;
+
+                // Ходил кто-то из семьи по общему абонементу — пишем кто.
+                return $visitor !== null && $visitor->id !== $subscription->user_id
+                    ? $date.' ('.$visitor->shortName().')'
+                    : $date;
+            })
             ->values()
             ->all();
 
@@ -282,6 +291,7 @@ class ReportService
             ->with([
                 'user:id,first_name,last_name,patronymic,phone',
                 'classSession:id,title,starts_at,type',
+                'subscription.user:id,first_name,last_name',
             ])
             ->orderBy('class_sessions.starts_at')
             ->get();

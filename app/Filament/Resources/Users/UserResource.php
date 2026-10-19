@@ -7,6 +7,7 @@ use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Models\User;
+use App\Services\FamilyService;
 use App\Support\PhoneNormalizer;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
@@ -14,6 +15,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -27,6 +29,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 class UserResource extends Resource
 {
@@ -151,6 +154,14 @@ class UserResource extends Resource
                             ->minLength(8)
                             ->helperText('Только для администраторов. Клиентам и тренерам пароль высылается кнопкой «Отправить доступ».'),
                     ]),
+                Section::make('Семья')
+                    ->description('Владелец абонемента может открыть его участникам семьи — занятие спишется с его абонемента. Управление — кнопкой «Семья» вверху страницы.')
+                    ->visible(fn (?User $record): bool => $record !== null && $record->isClient())
+                    ->schema([
+                        Placeholder::make('family_overview')
+                            ->hiddenLabel()
+                            ->content(fn (?User $record) => $record !== null ? self::familySummary($record) : ''),
+                    ]),
                 Section::make('Профиль на сайте')
                     ->description('Для пользователей с ролью «Тренер»: фото и описание на главной странице.')
                     ->visible(fn (Get $get): bool => $get('role') === UserRole::Trainer->value)
@@ -181,6 +192,39 @@ class UserResource extends Resource
                             ->maxLength(2000),
                     ]),
             ]);
+    }
+
+    /**
+     * Семья клиента одним блоком: состав и кому открыты абонементы.
+     */
+    public static function familySummary(User $record): HtmlString
+    {
+        $family = app(FamilyService::class)->overview($record);
+        $group = $family['group'];
+
+        if ($group === null) {
+            $lines = ['Не состоит в семье.'];
+        } else {
+            $names = collect($group['members'])
+                ->map(fn (array $m) => e($m['name']).($m['is_owner'] ? ' (глава)' : ''))
+                ->implode(', ');
+            $byId = collect($group['members'])->pluck('name', 'id');
+
+            $lines = ['<strong>Состав:</strong> '.$names];
+
+            foreach ($family['my_subscriptions'] as $sub) {
+                $to = collect($sub['shared_with'])->map(fn (int $id) => e($byId[$id] ?? ''))->filter()->implode(', ');
+                $lines[] = e($sub['type_short']).' до '.e($sub['ends_at']).' (осталось '.$sub['sessions_remaining'].'): '
+                    .($to !== '' ? 'открыт — '.$to : 'никому не открыт');
+            }
+        }
+
+        foreach ($family['shared_with_me'] as $sub) {
+            $lines[] = 'Открыт ему: '.e($sub['type_short']).' владельца '.e($sub['owner_name'])
+                .', осталось '.$sub['sessions_remaining'].', до '.e($sub['ends_at']);
+        }
+
+        return new HtmlString(implode('<br>', $lines));
     }
 
     public static function table(Table $table): Table

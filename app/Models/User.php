@@ -12,7 +12,9 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -355,6 +357,18 @@ class User extends Authenticatable implements FilamentUser
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
+    }
+
+    /** Членство в семейной группе: у человека она одна или ни одной. */
+    public function familyMembership(): HasOne
+    {
+        return $this->hasOne(FamilyMember::class);
+    }
+
+    /** Чужие абонементы, которые владельцы открыли этому человеку. */
+    public function sharedSubscriptions(): BelongsToMany
+    {
+        return $this->belongsToMany(Subscription::class, 'subscription_shares')->withTimestamps();
     }
 
     public function payments(): HasMany

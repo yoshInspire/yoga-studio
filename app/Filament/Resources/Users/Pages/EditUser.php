@@ -4,12 +4,19 @@ namespace App\Filament\Resources\Users\Pages;
 
 use App\Enums\UserRole;
 use App\Filament\Resources\Users\UserResource;
+use App\Models\Subscription;
 use App\Models\User;
 use App\Services\ClientAccessService;
+use App\Services\FamilyService;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use InvalidArgumentException;
 
 class EditUser extends EditRecord
@@ -92,8 +99,102 @@ class EditUser extends EditRecord
                         ->success()
                         ->send();
                 }),
+            $this->familyActions(),
             DeleteAction::make(),
         ];
+    }
+
+    /**
+     * Семья клиента — для тех, кто просит по телефону. Правила те же, что у
+     * клиента в кабинете (`FamilyService`): убрали человека или закрыли ему
+     * абонемент — его будущие записи по нему отменяются с возвратом занятий.
+     */
+    private function familyActions(): ActionGroup
+    {
+        return ActionGroup::make([
+            Action::make('familyAdd')
+                ->label('Добавить в семью')
+                ->icon('heroicon-o-user-plus')
+                ->modalHeading('Добавить клиента в семью')
+                ->modalDescription('Если семьи ещё нет, этот клиент станет её главой. В семье до '.FamilyService::MAX_MEMBERS.' человек.')
+                ->form([
+                    Select::make('member_id')
+                        ->label('Кого добавить')
+                        ->options(fn (User $record) => User::query()
+                            ->where('role', UserRole::Client)
+                            ->whereNull('anonymized_at')
+                            ->whereKeyNot($record->id)
+                            ->whereDoesntHave('familyMembership')
+                            ->orderBy('last_name')
+                            ->get()
+                            ->mapWithKeys(fn (User $u) => [$u->id => $u->fullName().' · '.($u->formattedPhone() ?? $u->phone)])
+                            ->all())
+                        ->searchable()
+                        ->required(),
+                ])
+                ->action(function (array $data, User $record, FamilyService $family): void {
+                    $this->runFamily(fn () => $family->addByAdmin($record, User::query()->findOrFail($data['member_id'])), 'Клиент добавлен в семью');
+                }),
+            Action::make('familyShares')
+                ->label('Открыть абонемент семье')
+                ->icon('heroicon-o-share')
+                ->visible(fn (User $record, FamilyService $family): bool => ($family->groupOf($record)?->members()->count() ?? 0) > 1)
+                ->modalDescription('Отмеченные участники смогут записываться по абонементу. Снятая галочка отменит их будущие записи по нему — занятия вернутся владельцу.')
+                ->form([
+                    Select::make('subscription_id')
+                        ->label('Абонемент')
+                        ->options(fn (User $record, FamilyService $family) => $family->shareableSubscriptionsOf($record)
+                            ->mapWithKeys(fn ($s) => [$s->id => $s->type->shortLabel().' · осталось '.$s->sessionsRemaining().' · до '.$s->ends_at->format('d.m.Y')])
+                            ->all())
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(fn (Set $set, ?string $state) => $set('user_ids', $state
+                            ? Subscription::query()->find($state)?->sharedWith()->pluck('users.id')->map(fn ($id) => (string) $id)->all() ?? []
+                            : [])),
+                    CheckboxList::make('user_ids')
+                        ->label('Кому открыт')
+                        ->options(fn (User $record, FamilyService $family) => $family->groupOf($record)?->members()->with('user')->get()
+                            ->reject(fn ($m) => $m->user_id === $record->id)
+                            ->mapWithKeys(fn ($m) => [$m->user_id => $m->user->shortName()])
+                            ->all() ?? [])
+                        ->visible(fn (Get $get) => filled($get('subscription_id'))),
+                ])
+                ->action(function (array $data, FamilyService $family): void {
+                    $this->runFamily(fn () => $family->setSharesByAdmin(
+                        Subscription::query()->findOrFail($data['subscription_id']),
+                        array_map('intval', $data['user_ids'] ?? []),
+                    ), 'Доступ к абонементу сохранён');
+                }),
+            Action::make('familyRemove')
+                ->label('Убрать из семьи')
+                ->icon('heroicon-o-user-minus')
+                ->color('danger')
+                ->visible(fn (User $record, FamilyService $family): bool => $family->membershipOf($record) !== null)
+                ->requiresConfirmation()
+                ->modalDescription('Будущие записи клиента по абонементам семьи и записи других по его абонементам отменятся, занятия вернутся владельцам. Если клиент — глава, главой станет самый давний участник.')
+                ->action(function (User $record, FamilyService $family): void {
+                    $this->runFamily(fn () => $family->removeByAdmin($record), 'Клиент убран из семьи');
+                }),
+        ])
+            ->label('Семья')
+            ->icon('heroicon-o-users')
+            ->button()
+            // У группы нет своей записи в замыкании — берём запись страницы.
+            ->visible(fn (): bool => $this->getRecord()->isClient());
+    }
+
+    private function runFamily(callable $action, string $success): void
+    {
+        try {
+            $action();
+        } catch (InvalidArgumentException $e) {
+            Notification::make()->title('Не получилось')->body($e->getMessage())->danger()->send();
+
+            return;
+        }
+
+        Notification::make()->title($success)->success()->send();
+        $this->refreshFormData([]);
     }
 
     /**

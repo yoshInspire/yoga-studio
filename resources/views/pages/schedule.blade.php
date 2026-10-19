@@ -35,6 +35,26 @@
       @if ($errors->has('booking'))
         <div class="auth__alert auth__alert--error reveal" style="margin-bottom: 20px">{{ $errors->first('booking') }}</div>
       @endif
+      @if ($familyOffer = session('family_booking_offer'))
+        <div class="family-offer reveal">
+          <p>
+            Своего абонемента для «{{ $familyOffer['title'] }}» ({{ $familyOffer['date_time'] }}) нет,
+            но можно записаться по абонементу семьи — занятие спишется с него.
+          </p>
+          <div class="family-offer__options">
+            @foreach ($familyOffer['sources'] as $source)
+              <form action="{{ route('bookings.store') }}" method="post">
+                @csrf
+                <input type="hidden" name="class_session_id" value="{{ $familyOffer['session_id'] }}" />
+                <input type="hidden" name="subscription_id" value="{{ $source['id'] }}" />
+                <button type="submit" class="btn btn--solid">
+                  {{ $source['label'] }} · осталось {{ $source['remaining'] }}
+                </button>
+              </form>
+            @endforeach
+          </div>
+        </div>
+      @endif
 
       @if ($rescheduleFrom ?? null)
         <div class="auth__alert auth__alert--ok reveal" style="margin-bottom: 20px">

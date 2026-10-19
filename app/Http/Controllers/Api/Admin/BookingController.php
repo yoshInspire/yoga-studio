@@ -118,7 +118,11 @@ class BookingController extends Controller
         $user = $this->client((int) $data['user_id']);
         $session = ClassSession::query()->findOrFail($data['class_session_id']);
 
-        $usable = $subscriptions->usableForUserOnDate($user, $session->type, $session->starts_at);
+        // Сначала свои, потом открытые семьёй — с пометкой, чей абонемент.
+        $usable = [
+            ...$subscriptions->usableForUserOnDate($user, $session->type, $session->starts_at),
+            ...$subscriptions->usableSharedForUserOnDate($user, $session->type, $session->starts_at),
+        ];
 
         return response()->json([
             'client' => [
@@ -137,7 +141,9 @@ class BookingController extends Controller
             ],
             'subscriptions' => collect($usable)->map(fn (Subscription $s) => [
                 'id' => $s->id,
-                'label' => $s->type->shortLabel(),
+                'label' => $s->type->shortLabel()
+                    .($s->user_id !== $user->id ? ' · семья: '.$s->user?->shortName() : ''),
+                'family_owner' => $s->user_id !== $user->id ? $s->user?->shortName() : null,
                 'remaining' => $s->sessionsRemaining(),
                 'total' => $s->sessions_total,
                 'starts_at' => $s->starts_at->format('d.m.Y'),

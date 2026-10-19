@@ -116,12 +116,15 @@ class BookingResource extends Resource
                                     return [];
                                 }
 
-                                return collect(app(SubscriptionService::class)->usableForUserOnDate(
-                                    $user,
-                                    $session->type,
-                                    $session->starts_at,
-                                ))->mapWithKeys(fn (Subscription $s) => [
-                                    $s->id => $s->type->shortLabel()
+                                $service = app(SubscriptionService::class);
+
+                                // Свои, затем открытые клиенту семьёй — с пометкой, чей.
+                                return collect([
+                                    ...$service->usableForUserOnDate($user, $session->type, $session->starts_at),
+                                    ...$service->usableSharedForUserOnDate($user, $session->type, $session->starts_at),
+                                ])->mapWithKeys(fn (Subscription $s) => [
+                                    $s->id => ($s->user_id !== $user->id ? 'Семья: '.$s->user?->shortName().' · ' : '')
+                                        .$s->type->shortLabel()
                                         .' · остаток '.$s->sessionsRemaining().'/'.$s->sessions_total
                                         .' · с '.$s->starts_at->format('d.m.Y')
                                         .' до '.$s->ends_at->format('d.m.Y'),

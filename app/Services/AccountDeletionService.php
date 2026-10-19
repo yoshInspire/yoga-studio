@@ -30,10 +30,12 @@ class AccountDeletionService
     public function __construct(
         private readonly BookingService $bookings,
         private readonly AdminActivityNotifier $adminActivity,
+        private readonly FamilyService $family,
     ) {}
 
     /**
      * Что именно происходит:
+     *  0) человек уходит из семьи, общие записи отменяются с возвратом занятий;
      *  1) будущие записи отменяются — места возвращаются в расписание;
      *  2) действующие абонементы закрываются сегодняшним днём;
      *  3) переписка, вложения, уведомления, реакции и токены устройств удаляются;
@@ -41,6 +43,12 @@ class AccountDeletionService
      */
     public function delete(User $user): void
     {
+        // Сначала семья: записи по чужим абонементам и записи других по
+        // абонементам удаляемого отменяются С ВОЗВРАТОМ — абонементы
+        // остальных живут дальше. Ниже свои записи отменяются уже без возврата.
+        // Глава уходит — главой становится самый давний участник.
+        $this->family->handleAccountDeletion($user);
+
         $cancelled = $this->cancelFutureBookings($user);
 
         // Письмо администратору собирается до обезличивания: после него имени

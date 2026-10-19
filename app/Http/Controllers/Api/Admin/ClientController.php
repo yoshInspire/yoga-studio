@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\ClientAccessService;
+use App\Services\FamilyService;
 use App\Services\SubscriptionBalanceService;
 use App\Support\PhoneNormalizer;
 use App\Support\RussianDate;
@@ -110,7 +111,7 @@ class ClientController extends Controller
     }
 
     /** Карточка клиента: данные, абонементы, записи, оплаты. */
-    public function show(User $client, SubscriptionBalanceService $balances): JsonResponse
+    public function show(User $client, SubscriptionBalanceService $balances, FamilyService $family): JsonResponse
     {
         $this->assertClient($client);
 
@@ -156,6 +157,9 @@ class ClientController extends Controller
                 ->values()
                 ->map(fn (Booking $b) => $this->booking($b)),
             'past' => $past->take(30)->map(fn (Booking $b) => $this->booking($b))->values(),
+            // Семья клиента: состав, его абонементы с отметкой «кому открыт» и
+            // чужие абонементы, открытые ему. Та же сборка, что видит клиент.
+            'family' => $family->overview($client),
             'payments' => $client->payments()->latest()->limit(20)->get()->map(fn (Payment $p) => [
                 'id' => $p->id,
                 'amount' => $p->amount,

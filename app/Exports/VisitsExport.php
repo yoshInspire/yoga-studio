@@ -31,6 +31,7 @@ class VisitsExport implements FromCollection, ShouldAutoSize, WithHeadings
             'Телефон',
             'Занятие',
             'Тип занятия',
+            'Абонемент семьи',
         ];
     }
 
@@ -47,6 +48,10 @@ class VisitsExport implements FromCollection, ShouldAutoSize, WithHeadings
                 $booking->user->formattedPhone() ?? $booking->user->phone ?? '',
                 $booking->classSession->title,
                 $booking->classSession->type->label(),
+                // Пусто — свой абонемент; иначе чей абонемент семьи списан.
+                $booking->subscription !== null && $booking->subscription->user_id !== $booking->user_id
+                    ? $booking->subscription->user?->shortName() ?? ''
+                    : '',
             ]);
     }
 }

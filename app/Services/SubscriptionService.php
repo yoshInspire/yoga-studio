@@ -29,6 +29,32 @@ class SubscriptionService
             ->all();
     }
 
+    /**
+     * Чужие абонементы, которые владельцы открыли человеку в семье и которыми
+     * можно оплатить занятие этого типа в этот день.
+     *
+     * Отдельно от `usableForUserOnDate()` намеренно: автовыбор при записи
+     * смотрит только на свои абонементы, общий берётся лишь тогда, когда
+     * человек выбрал его сам, — иначе занятия семьи тратились бы молча.
+     *
+     * @return list<Subscription>
+     */
+    public function usableSharedForUserOnDate(User $user, SubscriptionType $classType, Carbon $on): array
+    {
+        return $user->sharedSubscriptions()
+            ->with('user')
+            ->forType($classType)
+            ->active($on->copy()->startOfDay())
+            ->orderBy('purchased_at')
+            ->orderBy('starts_at')
+            ->orderBy('ends_at')
+            ->orderBy('subscriptions.id')
+            ->get()
+            ->filter(fn (Subscription $s) => $s->isShareable() && $s->canTakeBookingOn($on))
+            ->values()
+            ->all();
+    }
+
     public function findUsableForUser(User $user, SubscriptionType $classType, ?Carbon $on = null): ?Subscription
     {
         // Историчность: списываем из абонемента, приобретённого раньше всех

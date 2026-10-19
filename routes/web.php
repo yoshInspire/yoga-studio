@@ -16,6 +16,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\TelegramAuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\DirectionController;
+use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LegalController;
@@ -80,6 +81,16 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', LogoutController::class)->name('logout')->middleware('auth');
+
+/*
+ * Ссылка-приглашение в семью. Открыта всем: гостя страница отправит войти и
+ * вернёт обратно. GET только показывает — мессенджеры открывают ссылки ради
+ * превью, и вступление на GET сработало бы без человека. Код перебирают —
+ * поэтому throttle.
+ */
+Route::get('/family/join/{code?}', [FamilyController::class, 'show'])
+    ->middleware(['throttle:30,1', 'noindex'])
+    ->name('family.join');
 
 /*
  * Правовые документы. Открыты всем: их проверяют роботы магазинов приложений,
@@ -157,6 +168,24 @@ Route::middleware(['auth', 'role:client', 'noindex'])->group(function () {
         ->name('account.telegram.callback');
     Route::delete('/account/telegram', [TelegramLinkController::class, 'destroy'])
         ->name('account.telegram.unlink');
+
+    // Семья: вступление по приглашению и раздел «Семья» в кабинете.
+    Route::post('/family/join/{code}', [FamilyController::class, 'accept'])
+        ->middleware('throttle:10,1')
+        ->name('family.accept');
+    Route::post('/account/family/invites', [FamilyController::class, 'createInvite'])
+        ->middleware('throttle:10,1')
+        ->name('account.family.invites.store');
+    Route::delete('/account/family/invites/{invite}', [FamilyController::class, 'revokeInvite'])
+        ->name('account.family.invites.destroy');
+    Route::delete('/account/family/members/{member}', [FamilyController::class, 'removeMember'])
+        ->name('account.family.members.destroy');
+    Route::post('/account/family/members/{member}/owner', [FamilyController::class, 'transferOwnership'])
+        ->name('account.family.members.owner');
+    Route::post('/account/family/leave', [FamilyController::class, 'leave'])->name('account.family.leave');
+    Route::delete('/account/family', [FamilyController::class, 'dissolve'])->name('account.family.dissolve');
+    Route::put('/account/family/subscriptions/{subscription}/shares', [FamilyController::class, 'updateShares'])
+        ->name('account.family.shares');
     Route::middleware('offer.accepted')->group(function () {
         Route::get('/purchase', [PurchaseController::class, 'index'])->name('purchase.index');
         Route::post('/purchase', [PurchaseController::class, 'store'])->name('purchase.store');

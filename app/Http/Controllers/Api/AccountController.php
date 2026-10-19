@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\BookingStatus;
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Services\FamilyService;
 use App\Support\OfferStorage;
 use App\Support\RussianDate;
 use Illuminate\Http\JsonResponse;
@@ -12,11 +14,12 @@ use Illuminate\Http\Request;
 class AccountController extends Controller
 {
     /** Данные личного кабинета клиента. */
-    public function show(Request $request): JsonResponse
+    public function show(Request $request, FamilyService $family): JsonResponse
     {
         $user = $request->user();
 
         $subscriptions = $user->subscriptions()
+            ->with('sharedWith')
             ->orderByDesc('ends_at')
             ->get()
             ->map(fn ($s) => [
@@ -33,11 +36,13 @@ class AccountController extends Controller
                 'days_until_end' => $s->daysUntilEnd(),
                 'is_active' => $s->isActive(),
                 'has_started' => $s->hasStarted(),
+                // Кому из семьи открыт абонемент — подпись на билете.
+                'shared_with' => $s->sharedWith->map(fn ($u) => $u->shortName())->values(),
             ]);
 
         $bookings = $user->bookings()
             ->upcoming()
-            ->with(['classSession.trainer', 'classSession.direction', 'subscription'])
+            ->with(['classSession.trainer', 'classSession.direction', 'subscription.user'])
             ->get()
             ->sortBy(fn ($b) => $b->classSession->starts_at)
             ->values()
@@ -53,6 +58,10 @@ class AccountController extends Controller
                 'date_time' => $b->classSession->formattedDateTime(),
                 'time_range' => $b->classSession->formattedTimeRange(),
                 'subscription' => $b->subscription?->type->shortLabel(),
+                // Запись по абонементу семьи: чей абонемент — бирка в списке.
+                'family_owner' => $b->subscription !== null && $b->subscription->user_id !== $user->id
+                    ? $b->subscription->user?->shortName()
+                    : null,
                 'can_cancel' => $b->canBeCancelledByClient(),
                 'can_reschedule' => $b->canBeRescheduledByClient(),
             ]);
@@ -65,6 +74,12 @@ class AccountController extends Controller
                 'date' => RussianDate::dayMonthYear($usage->used_at),
                 'title' => $usage->description ?? 'Занятие',
                 'sub' => $sub->type->shortLabel(),
+            ]))
+            ->concat(collect($family->sharedUsageHistory($user))->map(fn (array $row) => [
+                'sort' => $row['used_at']->timestamp,
+                'date' => RussianDate::dayMonthYear($row['used_at']),
+                'title' => $row['title'],
+                'sub' => 'Абонемент семьи · '.$row['owner_name'],
             ]))
             ->sortByDesc('sort')
             ->values()
@@ -88,6 +103,27 @@ class AccountController extends Controller
             'cancelled' => $cancelled,
             'offer_available' => OfferStorage::exists(),
             'offer_accepted' => $user->hasAcceptedOffer(),
+            'family' => $this->familySummary($user, $family),
         ]);
+    }
+
+    /**
+     * Коротко про семью — для строки «Семья» и раздела «Абонементы семьи» в
+     * кабинете. Подробности (состав, приглашения) отдаёт `/family`.
+     *
+     * @return array<string, mixed>
+     */
+    private function familySummary(User $user, FamilyService $family): array
+    {
+        $membership = $family->membershipOf($user);
+
+        return [
+            'in_group' => $membership !== null,
+            'is_owner' => $membership?->isOwner() ?? false,
+            'members_count' => $membership?->group->members()->count() ?? 0,
+            'shared_with_me' => $family->subscriptionsSharedWith($user)
+                ->map(fn ($s) => $family->presentSharedSubscription($s))
+                ->values(),
+        ];
     }
 }
