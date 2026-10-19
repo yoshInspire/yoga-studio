@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "ru.ekoyoga.app",
+      "sha256_cert_fingerprints": [
+        "B0:F3:FB:C0:F7:8C:A3:21:AF:B2:B5:D7:AA:5F:76:9C:21:A8:71:51:1D:2A:3A:84:71:30:6B:76:36:56:F0:49"
+      ]
+    }
+  }
+]
