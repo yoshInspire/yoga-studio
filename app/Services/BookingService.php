@@ -248,6 +248,7 @@ class BookingService
                     $user,
                     $session->type,
                     $session->starts_at,
+                    $bookedBy,
                 );
 
                 throw new InvalidArgumentException(

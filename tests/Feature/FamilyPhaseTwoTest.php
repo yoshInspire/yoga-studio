@@ -711,4 +711,31 @@ class FamilyPhaseTwoTest extends TestCase
 
         $this->actingAs($anna)->get('/account')->assertSee('Записи семьи')->assertSee('Идёт: Пётр Иванов');
     }
+
+    /**
+     * 21.10.2026: мама купила абонемент себе, записывала сына и прочла
+     * «У вас нет абонемента» — о себе, хотя речь о нём. Отказ называет того,
+     * кого записывают, и подсказывает, как дать ему абонемент.
+     */
+    public function test_refusal_for_relative_names_the_relative_not_the_booker(): void
+    {
+        [$anna, $petr] = $this->pair();
+        $this->subscription($anna);
+        $session = $this->classAt();
+
+        $this->actingAs($anna)
+            ->from('/schedule')
+            ->post('/bookings', ['class_session_id' => $session->id, 'for_user_id' => $petr->id])
+            ->assertSessionHasErrors(['booking' => 'Пётр Иванов: нет своего абонемента для этого типа занятий.'
+                .' Купите абонемент ему (ей) в подарок — на странице покупки в поле «Кому» выберите Пётр Иванов,'
+                .' — или откройте свой абонемент в личном кабинете, в разделе семьи.']);
+
+        $this->assertSame(0, Booking::query()->count());
+
+        // Себя без абонемента — прежний текст.
+        $this->actingAs($petr)
+            ->from('/schedule')
+            ->post('/bookings', ['class_session_id' => $session->id])
+            ->assertSessionHasErrors(['booking' => 'У вас нет абонемента для этого типа занятий. Купите подходящий тариф в личном кабинете.']);
+    }
 }

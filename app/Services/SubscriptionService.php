@@ -77,21 +77,35 @@ class SubscriptionService
 
     /**
      * Почему нельзя записаться: null — абонемент должен быть, причина неизвестна.
+     *
+     * `$bookedBy` — член семьи, который записывает `$user`. Тогда речь об
+     * абонементе записываемого, а не того, кто нажал кнопку: 21.10.2026 мама
+     * записывала сына, прочла «У вас нет абонемента», хотя свой только что
+     * купила, и записала себя.
      */
-    public function bookingUnavailableReason(User $user, SubscriptionType $classType, Carbon $classStartsAt): ?string
+    public function bookingUnavailableReason(User $user, SubscriptionType $classType, Carbon $classStartsAt, ?User $bookedBy = null): ?string
     {
         $classDay = $classStartsAt->copy()->startOfDay();
+        $forRelative = $bookedBy !== null && $bookedBy->id !== $user->id;
+        $who = $user->shortName();
+        // Как дать человеку абонемент: подарить или открыть свой.
+        $howToGive = ' Купите абонемент ему (ей) в подарок — на странице покупки в поле «Кому» выберите '.$who
+            .', — или откройте свой абонемент в личном кабинете, в разделе семьи.';
 
         $matching = $user->subscriptions()->forType($classType)->get();
 
         if ($matching->isEmpty()) {
-            return 'У вас нет абонемента для этого типа занятий. Купите подходящий тариф в личном кабинете.';
+            return $forRelative
+                ? $who.': нет своего абонемента для этого типа занятий.'.$howToGive
+                : 'У вас нет абонемента для этого типа занятий. Купите подходящий тариф в личном кабинете.';
         }
 
         $withSessions = $matching->filter(fn (Subscription $s) => $s->sessionsRemaining() > 0);
 
         if ($withSessions->isEmpty()) {
-            return 'На ваших абонементах не осталось занятий. Купите новый абонемент или разовое занятие.';
+            return $forRelative
+                ? $who.': на абонементах не осталось занятий.'.$howToGive
+                : 'На ваших абонементах не осталось занятий. Купите новый абонемент или разовое занятие.';
         }
 
         $activeOnDay = $withSessions->filter(
@@ -108,12 +122,14 @@ class SubscriptionService
             ->sortBy('starts_at')
             ->first();
 
+        $prefix = $forRelative ? $who.': а' : 'А';
+
         if ($future !== null) {
-            return 'Абонемент начнёт действовать с '.$future->formattedStartsAt()
+            return $prefix.'бонемент начнёт действовать с '.$future->formattedStartsAt()
                 .'. Выберите занятие на эту дату или позже.';
         }
 
-        return 'На выбранную дату абонемент уже не действует. Выберите занятие в пределах срока абонемента.';
+        return ($forRelative ? $who.': на' : 'На').' выбранную дату абонемент уже не действует. Выберите занятие в пределах срока абонемента.';
     }
 
     /**
