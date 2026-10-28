@@ -57,37 +57,22 @@ class ReservedSessionAdminFormTest extends TestCase
         ], $overrides);
     }
 
-    public function test_creating_session_for_client_books_them_right_away(): void
+    public function test_creating_session_for_client_does_not_book_them(): void
     {
         $client = $this->clientWithSubscription();
 
         Livewire::test(CreateClassSession::class)
             ->fillForm($this->formData(['reservedClients' => [$client->id]]))
             ->call('create')
-            ->assertHasNoFormErrors()
-            ->assertNotified($client->fullName().' записан(а) на занятие');
+            ->assertHasNoFormErrors();
 
-        $session = ClassSession::query()->sole();
-        $this->assertTrue($session->isReservedFor($client));
-        $this->assertSame(1, $session->confirmedCount());
-    }
-
-    public function test_client_without_subscription_is_kept_but_not_booked(): void
-    {
-        $client = User::factory()->create(['role' => UserRole::Client]);
-
-        Livewire::test(CreateClassSession::class)
-            ->fillForm($this->formData(['reservedClients' => [$client->id]]))
-            ->call('create')
-            ->assertHasNoFormErrors()
-            ->assertNotified($client->fullName().' пока не записан(а)');
-
+        // Клиент записывается сам и сам выбирает абонемент — даже если он есть.
         $session = ClassSession::query()->sole();
         $this->assertTrue($session->isReservedFor($client));
         $this->assertSame(0, $session->confirmedCount());
     }
 
-    public function test_more_clients_than_seats_is_rejected(): void
+    public function test_pair_can_be_opened_for_two_on_one_seat(): void
     {
         $a = $this->clientWithSubscription();
         $b = $this->clientWithSubscription();
@@ -95,12 +80,27 @@ class ReservedSessionAdminFormTest extends TestCase
         Livewire::test(CreateClassSession::class)
             ->fillForm($this->formData(['reservedClients' => [$a->id, $b->id]]))
             ->call('create')
+            ->assertHasNoFormErrors();
+
+        $session = ClassSession::query()->sole();
+        $this->assertSame(1, $session->capacity);
+        $this->assertSame(2, $session->reservedClients()->count());
+        $this->assertSame(0, $session->confirmedCount());
+    }
+
+    public function test_more_than_two_clients_on_one_seat_is_rejected(): void
+    {
+        $clients = [$this->clientWithSubscription(), $this->clientWithSubscription(), $this->clientWithSubscription()];
+
+        Livewire::test(CreateClassSession::class)
+            ->fillForm($this->formData(['reservedClients' => array_map(fn (User $c) => $c->id, $clients)]))
+            ->call('create')
             ->assertHasFormErrors(['reservedClients']);
 
         $this->assertSame(0, ClassSession::query()->count());
     }
 
-    public function test_editing_books_only_newly_added_client(): void
+    public function test_editing_does_not_book_added_client(): void
     {
         $session = ClassSession::create([
             'topic' => 'Парная практика',
@@ -119,7 +119,7 @@ class ReservedSessionAdminFormTest extends TestCase
             ->call('save')
             ->assertHasNoFormErrors();
 
-        $this->assertTrue($session->bookings()->where('user_id', $added->id)->exists());
-        $this->assertFalse($session->bookings()->where('user_id', $already->id)->exists());
+        $this->assertTrue($session->isReservedFor($added));
+        $this->assertSame(0, $session->confirmedCount());
     }
 }

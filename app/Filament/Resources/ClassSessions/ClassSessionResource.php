@@ -21,7 +21,6 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -127,14 +126,15 @@ class ClassSessionResource extends Resource
                             ->placeholder('Для всех')
                             ->visible(fn ($get) => self::isIndividual($get('type')))
                             ->rule(fn ($get) => function (string $attribute, mixed $value, \Closure $fail) use ($get): void {
-                                $capacity = max(1, (int) $get('capacity'));
+                                $limit = ClassSession::reservedClientsLimit(max(1, (int) $get('capacity')));
 
-                                if (is_array($value) && count($value) > $capacity) {
-                                    $fail('Клиентов больше, чем мест на занятии ('.$capacity.').');
+                                if (is_array($value) && count($value) > $limit) {
+                                    $fail('Открыть запись можно не больше чем под '.$limit.' клиентов.');
                                 }
                             })
                             ->helperText('Пусто — записаться может любой клиент. Выберите клиента — запись откроется только ему, '
-                                .'остальные увидят «Занято». Если у клиента есть индивидуальный абонемент, он будет записан сразу. '
+                                .'остальные увидят «Занято». Клиент записывается сам и сам выбирает абонемент — автоматически никто не записывается. '
+                                .'Парное: выберите обеих, запишется та, чья очередь платить. '
                                 .'Если клиент сам отменит запись, занятие снимется из расписания, а вам придёт уведомление.')
                             ->columnSpanFull(),
                         Select::make('trainer_id')
@@ -292,30 +292,6 @@ class ClassSessionResource extends Resource
                 ]),
             ])
             ->stackedOnMobile();
-    }
-
-    /**
-     * Итог автозаписи клиентов, под которых открыто занятие.
-     *
-     * @param  array{booked: list<string>, pending: array<string, string>}  $result
-     */
-    public static function notifyReservedBooking(array $result): void
-    {
-        foreach ($result['booked'] as $name) {
-            Notification::make()
-                ->title($name.' записан(а) на занятие')
-                ->success()
-                ->send();
-        }
-
-        foreach ($result['pending'] as $name => $reason) {
-            Notification::make()
-                ->title($name.' пока не записан(а)')
-                ->body($reason.' Время закреплено за клиентом — он сможет записаться сам после покупки абонемента.')
-                ->warning()
-                ->persistent()
-                ->send();
-        }
     }
 
     /** Состояние поля «Тип» в форме: строка на создании, enum — при правке. */

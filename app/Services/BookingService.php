@@ -118,51 +118,6 @@ class BookingService
     }
 
     /**
-     * Записать клиентов, под которых открыто занятие, — сразу при создании
-     * или когда клиента добавили в уже созданное. Ирина открывает слот под
-     * человека, с которым уже договорилась: если у него есть абонемент, ждать,
-     * пока он запишется сам, незачем.
-     *
-     * Без абонемента записать нельзя — такой клиент остаётся в списке, слот
-     * держится за ним, и он запишется сам после покупки.
-     *
-     * @param  list<int>|null  $onlyUserIds  кого из привязанных записывать; null — всех
-     * @return array{booked: list<string>, pending: array<string, string>} имена записанных и незаписанных с причиной
-     */
-    public function bookReservedClients(ClassSession $session, ?array $onlyUserIds = null): array
-    {
-        $result = ['booked' => [], 'pending' => []];
-
-        if ($session->isCancelled()) {
-            return $result;
-        }
-
-        $clients = $session->reservedClients()
-            ->when($onlyUserIds !== null, fn ($q) => $q->whereKey($onlyUserIds))
-            ->get();
-
-        foreach ($clients as $client) {
-            $alreadyBooked = $session->bookings()
-                ->where('user_id', $client->id)
-                ->where('status', BookingStatus::Confirmed)
-                ->exists();
-
-            if ($alreadyBooked) {
-                continue;
-            }
-
-            try {
-                $this->bookForAdmin($client, $session);
-                $result['booked'][] = $client->fullName();
-            } catch (InvalidArgumentException $e) {
-                $result['pending'][$client->fullName()] = $e->getMessage();
-            }
-        }
-
-        return $result;
-    }
-
-    /**
      * Клиент, под которого открыт слот, отменил или перенёс запись — слот
      * снимается из расписания, чтобы его не занял случайный человек. Ирина
      * узнаёт об этом из уведомления об отмене и при желании откроет снова.

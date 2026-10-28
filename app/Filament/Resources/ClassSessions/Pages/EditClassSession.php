@@ -17,35 +17,6 @@ class EditClassSession extends EditRecord
 {
     protected static string $resource = ClassSessionResource::class;
 
-    /** @var list<int> клиенты, под которых занятие было открыто до сохранения */
-    private array $reservedBefore = [];
-
-    protected function beforeSave(): void
-    {
-        $this->reservedBefore = $this->getRecord()->reservedClients()->pluck('users.id')->all();
-    }
-
-    /**
-     * Записываем только добавленных сейчас клиентов. Остальные либо уже
-     * записаны, либо сами отменили запись — повторно записывать их при правке
-     * темы или времени было бы самоуправством.
-     */
-    protected function afterSave(): void
-    {
-        $added = array_values(array_diff(
-            $this->getRecord()->reservedClients()->pluck('users.id')->all(),
-            $this->reservedBefore,
-        ));
-
-        if ($added === []) {
-            return;
-        }
-
-        ClassSessionResource::notifyReservedBooking(
-            app(BookingService::class)->bookReservedClients($this->getRecord(), $added),
-        );
-    }
-
     protected function getHeaderActions(): array
     {
         return [

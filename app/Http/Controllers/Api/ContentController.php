@@ -95,6 +95,7 @@ class ContentController extends Controller
                 'image_thumb' => $n->imageThumbUrl(),
                 'image_ratio' => $n->imageRatio(),
                 'date' => $n->formattedDate(),
+                'url' => route('news.show', $n),
             ],
         ]);
     }

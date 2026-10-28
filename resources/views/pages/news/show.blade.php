@@ -28,6 +28,8 @@
         'news' => $item,
         'summary' => $reactionSummary,
       ])
+
+      @include('partials.news-share', ['news' => $item])
     </div>
 
     @if ($more->isNotEmpty())
@@ -53,6 +55,7 @@
 
 @push('scripts')
   <script src="{{ asset('js/news-reactions.js') }}?v=1"></script>
+  <script src="{{ asset('js/news-share.js') }}?v=1"></script>
 @endpush
 
 @push('head')

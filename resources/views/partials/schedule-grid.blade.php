@@ -1,3 +1,14 @@
+@php
+  // День, открытый на телефоне: первый с занятиями, начиная с сегодняшнего.
+  // Раньше всегда открывался понедельник, и мероприятие в воскресенье при
+  // выбранном направлении выглядело как «занятий нет».
+  $todayIndex = collect($days)->search(fn ($day) => $day['is_today']);
+  $fromIndex = $todayIndex === false ? 0 : $todayIndex;
+  $activeDay = collect($days)->keys()
+      ->first(fn ($i) => $i >= $fromIndex && ! empty($days[$i]['slots']))
+      ?? $fromIndex;
+@endphp
+
 <div class="gridsched__header">
   @if ($canGoPrev)
     <button type="button"
@@ -35,13 +46,15 @@
     <div class="gridsched__mobnav" role="tablist" id="gridschedMobnav" aria-label="Выбор дня">
       @foreach($days as $i => $day)
         <button type="button"
-                class="gridsched__mobtab {{ $i === 0 ? 'is-active' : '' }} {{ $day['is_today'] ? 'gridsched__mobtab--today' : '' }}"
+                class="gridsched__mobtab {{ $i === $activeDay ? 'is-active' : '' }} {{ $day['is_today'] ? 'gridsched__mobtab--today' : '' }} {{ empty($day['slots']) ? '' : 'gridsched__mobtab--busy' }}"
                 data-day-tab="{{ $i }}"
                 role="tab"
-                aria-selected="{{ $i === 0 ? 'true' : 'false' }}"
-                aria-label="{{ $day['is_today'] ? 'Сегодня, ' : '' }}{{ $day['name'] }} {{ $day['date'] }}">
+                aria-selected="{{ $i === $activeDay ? 'true' : 'false' }}"
+                aria-label="{{ $day['is_today'] ? 'Сегодня, ' : '' }}{{ $day['name'] }} {{ $day['date'] }}{{ empty($day['slots']) ? ', занятий нет' : '' }}">
           <span class="gridsched__mobtab-main">{{ $day['name'] }}</span>
           <span class="gridsched__mobtab-sub">{{ $day['day_number'] ?? $day['date'] }}</span>
+          {{-- Точка — в этот день есть занятия: видно, куда нажать. --}}
+          <span class="gridsched__mobtab-dot" aria-hidden="true"></span>
         </button>
       @endforeach
     </div>
@@ -86,7 +99,7 @@
 
 <div class="gridsched__mobile" id="gridschedMobile">
   @foreach($days as $i => $day)
-    <div class="gridsched__mobile-panel {{ $i === 0 ? '' : 'is-hidden' }}"
+    <div class="gridsched__mobile-panel {{ $i === $activeDay ? '' : 'is-hidden' }}"
          data-day-panel="{{ $i }}"
          role="tabpanel">
       @forelse($day['slots'] as $slot)

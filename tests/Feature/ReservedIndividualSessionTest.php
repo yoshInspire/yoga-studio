@@ -198,8 +198,8 @@ class ReservedIndividualSessionTest extends TestCase
         $second = $this->client('Вторая');
         $session->reservedClients()->attach([$first->id, $second->id]);
 
-        $result = app(BookingService::class)->bookReservedClients($session);
-        $this->assertCount(2, $result['booked']);
+        app(BookingService::class)->bookForAdmin($first, $session);
+        app(BookingService::class)->bookForAdmin($second, $session);
 
         $booking = Booking::query()->where('user_id', $first->id)->firstOrFail();
         $this->actingAs($first);
@@ -242,7 +242,7 @@ class ReservedIndividualSessionTest extends TestCase
         app(BookingService::class)->rescheduleByClient($booking, $reservedSlot);
     }
 
-    public function test_api_create_books_reserved_client_with_subscription(): void
+    public function test_api_create_keeps_slot_without_booking_anyone(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin]);
         $withSub = $this->client('Сабонементом');
@@ -262,9 +262,8 @@ class ReservedIndividualSessionTest extends TestCase
         $session = ClassSession::query()->findOrFail($response->json('id'));
 
         $this->assertEqualsCanonicalizing([$withSub->id, $withoutSub->id], $session->reservedClients()->pluck('users.id')->all());
-        $this->assertSame(1, $session->confirmedCount());
-        $this->assertTrue($session->bookings()->where('user_id', $withSub->id)->exists());
-        $this->assertStringContainsString('пока не записан', $response->json('message'));
+        // Абонемент есть, но запись — дело самого клиента.
+        $this->assertSame(0, $session->confirmedCount());
 
         $this->actingAs($admin, 'sanctum')
             ->getJson('/api/v1/admin/sessions?offset=0')
@@ -272,7 +271,35 @@ class ReservedIndividualSessionTest extends TestCase
             ->assertJsonCount(2, 'sessions.0.reserved_clients');
     }
 
-    public function test_api_rejects_more_clients_than_seats(): void
+    public function test_api_opens_one_seat_for_a_pair_and_either_can_take_it(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+        $first = $this->client('Первая');
+        $second = $this->client('Вторая');
+
+        $response = $this->actingAs($admin, 'sanctum')
+            ->postJson('/api/v1/admin/sessions', [
+                'topic' => 'Парная практика',
+                'date' => now()->addDays(3)->toDateString(),
+                'time' => '11:00',
+                'type' => 'individual',
+                'capacity' => 1,
+                'reserved_client_ids' => [$first->id, $second->id],
+            ])
+            ->assertOk();
+
+        $session = ClassSession::query()->findOrFail($response->json('id'));
+        $this->assertSame(0, $session->confirmedCount());
+
+        // Чья очередь платить, та и записывается; второй место уже занято.
+        $this->assertTrue($this->slotFor($session, $second)['bookable']);
+        $this->actingAs($second);
+        app(BookingService::class)->book($second, $session);
+
+        $this->assertFalse($this->slotFor($session, $first)['bookable']);
+    }
+
+    public function test_api_rejects_more_than_two_clients_on_one_seat(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin]);
 
@@ -283,7 +310,7 @@ class ReservedIndividualSessionTest extends TestCase
                 'time' => '11:00',
                 'type' => 'individual',
                 'capacity' => 1,
-                'reserved_client_ids' => [$this->client('А')->id, $this->client('Б')->id],
+                'reserved_client_ids' => [$this->client('А')->id, $this->client('Б')->id, $this->client('В')->id],
             ])
             ->assertStatus(422)
             ->assertJsonValidationErrors('reserved_client_ids');
@@ -291,7 +318,7 @@ class ReservedIndividualSessionTest extends TestCase
         $this->assertSame(0, ClassSession::query()->count());
     }
 
-    public function test_api_update_books_only_newly_added_and_type_change_clears(): void
+    public function test_api_update_books_nobody_and_type_change_clears(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin]);
         $session = $this->individual(capacity: 2);
@@ -312,8 +339,8 @@ class ReservedIndividualSessionTest extends TestCase
             ->putJson('/api/v1/admin/sessions/'.$session->id, $payload)
             ->assertOk();
 
-        $this->assertTrue($session->bookings()->where('user_id', $added->id)->exists());
-        $this->assertFalse($session->bookings()->where('user_id', $cancelledEarlier->id)->exists());
+        $this->assertTrue($session->isReservedFor($added));
+        $this->assertSame(0, $session->confirmedCount());
 
         $this->actingAs($admin, 'sanctum')
             ->putJson('/api/v1/admin/sessions/'.$session->id, [...$payload, 'type' => 'group', 'capacity' => 6])

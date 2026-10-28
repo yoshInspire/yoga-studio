@@ -102,7 +102,7 @@ class SessionController extends Controller
     }
 
     /** Создать занятие. */
-    public function store(Request $request, BookingService $bookings): JsonResponse
+    public function store(Request $request): JsonResponse
     {
         $data = $this->validateForm($request);
 
@@ -117,10 +117,7 @@ class SessionController extends Controller
             return $session;
         });
 
-        $message = 'Занятие создано: «'.$session->title.'».';
-        $message .= $this->bookingSummary($bookings->bookReservedClients($session));
-
-        return response()->json(['message' => $message, 'id' => $session->id]);
+        return response()->json(['message' => 'Занятие создано: «'.$session->title.'».', 'id' => $session->id]);
     }
 
     /**
@@ -130,7 +127,7 @@ class SessionController extends Controller
      * на абонементы и письма записавшимся, за это отвечает `cancel()`. Обратный
      * перевод в «по расписанию» разрешён — так снимают ошибочную отмену.
      */
-    public function update(Request $request, ClassSession $session, BookingService $bookings): JsonResponse
+    public function update(Request $request, ClassSession $session): JsonResponse
     {
         $data = $this->validateForm($request, [
             'status' => ['nullable', 'in:scheduled'],
@@ -143,20 +140,12 @@ class SessionController extends Controller
             $session->cancellation_reason = null;
         }
 
-        $added = DB::transaction(function () use ($session, $data) {
+        DB::transaction(function () use ($session, $data) {
             $session->save();
-
-            return $this->syncReservedClients($session, $data);
+            $this->syncReservedClients($session, $data);
         });
 
-        $message = 'Занятие обновлено: «'.$session->title.'».';
-
-        // Записываем только добавленных сейчас — как в веб-админке.
-        if ($added !== []) {
-            $message .= $this->bookingSummary($bookings->bookReservedClients($session, $added));
-        }
-
-        return response()->json(['message' => $message]);
+        return response()->json(['message' => 'Занятие обновлено: «'.$session->title.'».']);
     }
 
     /**
@@ -164,20 +153,23 @@ class SessionController extends Controller
      * (старая версия приложения о нём не знает). Только для индивидуальных:
      * у остальных привязку снимает сама модель.
      *
+     * Сами клиенты не записываются: Ирина хочет, чтобы человек записался
+     * и выбрал абонемент сам, — автозапись списывала занятия без её контроля.
+     *
      * @param  array<string, mixed>  $data
-     * @return list<int> добавленные клиенты
      */
-    private function syncReservedClients(ClassSession $session, array $data): array
+    private function syncReservedClients(ClassSession $session, array $data): void
     {
         if (! array_key_exists('reserved_client_ids', $data) || $session->type !== SubscriptionType::Individual) {
-            return [];
+            return;
         }
 
         $ids = array_values(array_unique(array_map('intval', $data['reserved_client_ids'] ?? [])));
+        $limit = ClassSession::reservedClientsLimit($session->capacity);
 
-        if (count($ids) > $session->capacity) {
+        if (count($ids) > $limit) {
             throw ValidationException::withMessages([
-                'reserved_client_ids' => ['Клиентов больше, чем мест на занятии ('.$session->capacity.').'],
+                'reserved_client_ids' => ['Открыть запись можно не больше чем под '.$limit.' клиентов.'],
             ]);
         }
 
@@ -194,25 +186,7 @@ class SessionController extends Controller
             ]);
         }
 
-        return array_values(array_map('intval', $session->reservedClients()->sync($ids)['attached']));
-    }
-
-    /**
-     * @param  array{booked: list<string>, pending: array<string, string>}  $result
-     */
-    private function bookingSummary(array $result): string
-    {
-        $parts = [];
-
-        if ($result['booked'] !== []) {
-            $parts[] = 'Записаны: '.implode(', ', $result['booked']).'.';
-        }
-
-        foreach ($result['pending'] as $name => $reason) {
-            $parts[] = $name.' пока не записан(а): '.$reason.' Время закреплено за клиентом.';
-        }
-
-        return $parts === [] ? '' : ' '.implode(' ', $parts);
+        $session->reservedClients()->sync($ids);
     }
 
     /**

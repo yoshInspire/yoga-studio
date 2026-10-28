@@ -100,6 +100,16 @@ class ClassSession extends Model
         return $this->belongsToMany(User::class, 'class_session_reservations')->withTimestamps();
     }
 
+    /**
+     * Под скольких клиентов можно открыть запись. Парное идёт на одно место:
+     * две клиентки платят по очереди, и кто платит, тот и записывается, —
+     * поэтому под двоих можно открыть даже занятие на одного.
+     */
+    public static function reservedClientsLimit(int $capacity): int
+    {
+        return max(2, $capacity);
+    }
+
     public function isReserved(): bool
     {
         return $this->relationLoaded('reservedClients')
