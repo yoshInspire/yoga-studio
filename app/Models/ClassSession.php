@@ -47,6 +47,15 @@ class ClassSession extends Model
     /** Причина, с которой снимается слот, когда клиент, под которого он открыт, отменил запись. */
     public const RESERVED_CLIENT_CANCELLED_REASON = 'Клиент отменил запись';
 
+    /**
+     * Подпись слота, открытого под клиента, пока тот ещё не записался: бронь
+     * может слететь, и Ирина хочет отличать её от уже занятого времени.
+     */
+    public const RESERVED_LABEL = 'Забронировано';
+
+    /** Подпись того же слота, когда клиент записался. */
+    public const RESERVED_FULL_LABEL = 'Мест нет';
+
     protected function casts(): array
     {
         return [

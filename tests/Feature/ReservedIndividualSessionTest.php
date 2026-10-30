@@ -19,7 +19,8 @@ use Tests\TestCase;
 
 /**
  * Индивидуальное занятие, открытое под конкретного клиента: записаться может
- * только он, остальные видят «Занято», а его отмена снимает слот.
+ * только он, остальные видят «Забронировано» (после его записи — «Мест нет»),
+ * а его отмена снимает слот.
  */
 class ReservedIndividualSessionTest extends TestCase
 {
@@ -113,7 +114,7 @@ class ReservedIndividualSessionTest extends TestCase
 
         $forOther = $this->slotFor($session, $other);
         $this->assertSame('full', $forOther['status']);
-        $this->assertSame('Занято', $forOther['full_label']);
+        $this->assertSame('Забронировано', $forOther['full_label']);
         $this->assertSame(0, $forOther['free']);
         $this->assertFalse($forOther['bookable']);
 
@@ -134,6 +135,10 @@ class ReservedIndividualSessionTest extends TestCase
 
         $this->actingAs($reserved);
         $this->assertTrue(app(BookingService::class)->book($reserved, $session)->isConfirmed());
+
+        // Клиент записался — бронь превратилась в занятое время.
+        $this->assertSame('Мест нет', $this->slotFor($session, $other)['full_label']);
+        $this->assertSame('Мест нет', $this->slotFor($session, null)['full_label']);
     }
 
     public function test_admin_can_still_book_anyone_into_reserved_slot(): void

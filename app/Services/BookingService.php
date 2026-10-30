@@ -1335,7 +1335,13 @@ class BookingService
             'total' => $session->capacity,
             'free' => $free,
             'status' => $closedForViewer ? 'full' : $session->slotStatus(),
-            'full_label' => $session->fullLabel(),
+            // Под клиента открыто, но он ещё не записался — «Забронировано»;
+            // записался — «Мест нет», как просила Ирина.
+            'full_label' => match (true) {
+                $closedForViewer && (int) $session->taken < $session->capacity => ClassSession::RESERVED_LABEL,
+                $session->isReserved() => ClassSession::RESERVED_FULL_LABEL,
+                default => $session->fullLabel(),
+            },
             'reason' => $session->cancellation_reason,
             'bookable' => $session->isBookable() && ! $closedForViewer && ! $userBooked && $rescheduleFrom === null,
             'user_booked' => $userBooked && ! $isRescheduleSource,

@@ -202,8 +202,8 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
     if (slot.status === 'cancelled') {
       seatsEl.textContent = `Отменено${slot.reason ? `: ${slot.reason}` : ''}`;
     } else if (slot.status === 'full') {
-      seatsEl.textContent = slot.full_label === 'Занято'
-        ? 'Занято'
+      seatsEl.textContent = slot.full_label && slot.full_label !== 'Мест нет'
+        ? slot.full_label
         : `Мест нет · ${slot.total} из ${slot.total} занято`;
     } else {
       seatsEl.textContent = `Свободно ${slot.free} из ${slot.total}`;
