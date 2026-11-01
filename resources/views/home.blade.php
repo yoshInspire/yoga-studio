@@ -6,6 +6,7 @@
 @section('content')
   <section class="hero" id="hero">
     <div class="hero__content">
+      <div class="reveal">@include('partials.messengers', ['modifier' => 'hero'])</div>
       <p class="hero__eyebrow reveal">Студия йоги, Москва, Коньково</p>
       <h1 class="hero__title">
         <span class="reveal hero__title--bold" style="--d:.05s">Каждому <span class="hero__dash" aria-hidden="true"></span> своё внимание,</span>
