@@ -17,7 +17,7 @@
     <div class="container">
       <div class="sched__head reveal">
         <div>
-          @include('partials.messengers', ['modifier' => 'sched'])
+          @include('partials.messengers', ['modifier' => 'sched', 'sms' => true])
           <h1 class="section__title">Расписание занятий</h1>
           <p class="sched__note">
             Открытие бронирования на&nbsp;неделю вперёд — по воскресеньям до&nbsp;14:00. Расписание доступно всем —

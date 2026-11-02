@@ -5,7 +5,7 @@
 
 @section('content')
   <section class="hero" id="hero">
-    <div class="hero__messengers reveal">@include('partials.messengers', ['modifier' => 'hero'])</div>
+    <div class="hero__messengers reveal">@include('partials.messengers', ['modifier' => 'hero', 'sms' => true])</div>
     <div class="hero__content">
       <p class="hero__eyebrow reveal">Студия йоги, Москва, Коньково</p>
       <h1 class="hero__title">

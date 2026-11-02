@@ -129,6 +129,8 @@ return [
     'socials' => [
         'telegram' => env('STUDIO_TELEGRAM_URL', 'https://t.me/yogAvLife'),
         'whatsapp' => env('STUDIO_WHATSAPP_URL', 'https://wa.me/79647834353'),
+        /** Номер для кнопки SMS (главная и расписание) — открывает обычные сообщения на телефоне */
+        'sms' => env('STUDIO_SMS_PHONE', '+79647834353'),
     ],
 
     /** Куда отправлять заявки с формы на главной */
