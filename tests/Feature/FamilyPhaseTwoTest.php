@@ -738,4 +738,52 @@ class FamilyPhaseTwoTest extends TestCase
             ->post('/bookings', ['class_session_id' => $session->id])
             ->assertSessionHasErrors(['booking' => 'У вас нет абонемента для этого типа занятий. Купите подходящий тариф в личном кабинете.']);
     }
+
+    /**
+     * 08.11.2026: лимит дочери был выбран, а отказ советовал открыть абонемент,
+     * который и так открыт. Теперь отказ называет лимит и того, кто его снимет.
+     */
+    public function test_refusal_names_the_exhausted_share_limit(): void
+    {
+        [$anna, $petr] = $this->pair();
+        $olga = $this->client('Ольга');
+        $this->family()->accept($this->family()->createInvite($anna), $olga);
+
+        $sub = $this->subscription($anna);
+        $this->family()->setShares($anna, $sub, [$petr->id => 1, $olga->id => null]);
+        $this->bookings()->book($petr, $this->classAt(daysAhead: 1), $sub);
+        $session = $this->classAt(daysAhead: 2);
+
+        // Записывает владелец.
+        $this->actingAs($anna)
+            ->from('/schedule')
+            ->post('/bookings', ['class_session_id' => $session->id, 'for_user_id' => $petr->id])
+            ->assertSessionHasErrors(['booking' => 'Пётр Иванов: ваш абонемент открыт на 1 занятие, лимит уже использован.'
+                .' Чтобы записать ещё, увеличьте или снимите лимит в личном кабинете, в разделе семьи.']);
+
+        // Записывает другой участник семьи.
+        $this->actingAs($olga)
+            ->from('/schedule')
+            ->post('/bookings', ['class_session_id' => $session->id, 'for_user_id' => $petr->id])
+            ->assertSessionHasErrors(['booking' => 'Пётр Иванов: владелец абонемента (Анна Иванов) открыл его на 1 занятие, лимит уже использован.'
+                .' Увеличить или снять лимит может только владелец.']);
+
+        // Записывается сам.
+        $this->actingAs($petr)
+            ->from('/schedule')
+            ->post('/bookings', ['class_session_id' => $session->id])
+            ->assertSessionHasErrors(['booking' => 'Владелец абонемента (Анна Иванов) открыл его вам на 1 занятие, лимит уже использован.'
+                .' Увеличить или снять лимит может только владелец.']);
+
+        $this->assertSame(1, Booking::query()->count());
+
+        // Лимит подняли — запись проходит.
+        $this->family()->setShares($anna, $sub, [$petr->id => 2, $olga->id => null]);
+        $this->actingAs($anna)
+            ->from('/schedule')
+            ->post('/bookings', ['class_session_id' => $session->id, 'for_user_id' => $petr->id, 'subscription_id' => $sub->id])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(2, Booking::query()->count());
+    }
 }

@@ -6,6 +6,7 @@ use App\Enums\SubscriptionType;
 use App\Models\Subscription;
 use App\Models\SubscriptionUsage;
 use App\Models\User;
+use App\Support\RussianPlural;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
@@ -85,6 +86,12 @@ class SubscriptionService
      */
     public function bookingUnavailableReason(User $user, SubscriptionType $classType, Carbon $classStartsAt, ?User $bookedBy = null): ?string
     {
+        $limitReason = $this->shareLimitReachedReason($user, $classType, $classStartsAt, $bookedBy);
+
+        if ($limitReason !== null) {
+            return $limitReason;
+        }
+
         $classDay = $classStartsAt->copy()->startOfDay();
         $forRelative = $bookedBy !== null && $bookedBy->id !== $user->id;
         $who = $user->shortName();
@@ -130,6 +137,48 @@ class SubscriptionService
         }
 
         return ($forRelative ? $who.': на' : 'На').' выбранную дату абонемент уже не действует. Выберите занятие в пределах срока абонемента.';
+    }
+
+    /**
+     * Абонемент открыт человеку и подошёл бы, но лимит владельца выбран.
+     *
+     * Без этого отказ говорил «откройте свой абонемент», хотя он открыт:
+     * 08.11.2026 мама записывала дочь и не могла понять, в чём дело.
+     */
+    private function shareLimitReachedReason(User $user, SubscriptionType $classType, Carbon $classStartsAt, ?User $bookedBy): ?string
+    {
+        /** @var Subscription|null $subscription */
+        $subscription = $user->sharedSubscriptions()
+            ->with('user')
+            ->forType($classType)
+            ->active($classStartsAt->copy()->startOfDay())
+            ->orderBy('purchased_at')
+            ->orderBy('subscriptions.id')
+            ->get()
+            ->first(fn (Subscription $s) => $s->isShareable()
+                && $s->canTakeBookingOn($classStartsAt)
+                && $s->shareLimitLeftFor($user) === 0);
+
+        if ($subscription === null) {
+            return null;
+        }
+
+        $limit = (int) $subscription->pivot->sessions_limit;
+        $sessions = $limit.' '.RussianPlural::sessions($limit);
+
+        if ($bookedBy !== null && $bookedBy->id === $subscription->user_id) {
+            return $user->shortName().': ваш абонемент открыт на '.$sessions.', лимит уже использован.'
+                .' Чтобы записать ещё, увеличьте или снимите лимит в личном кабинете, в разделе семьи.';
+        }
+
+        $owner = $subscription->user->shortName();
+        $onlyOwner = ' Увеличить или снять лимит может только владелец.';
+
+        if ($bookedBy !== null && $bookedBy->id !== $user->id) {
+            return $user->shortName().': владелец абонемента ('.$owner.') открыл его на '.$sessions.', лимит уже использован.'.$onlyOwner;
+        }
+
+        return 'Владелец абонемента ('.$owner.') открыл его вам на '.$sessions.', лимит уже использован.'.$onlyOwner;
     }
 
     /**
