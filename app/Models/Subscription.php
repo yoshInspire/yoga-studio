@@ -285,6 +285,17 @@ class Subscription extends Model
         return $this->starts_at->lte($on);
     }
 
+    /**
+     * Этот день входит в срок действия абонемента. Остаток занятий не важен:
+     * при переносе занятие, списанное за старую запись, ещё не вернулось.
+     */
+    public function coversDate(Carbon $on): bool
+    {
+        $day = $on->copy()->startOfDay();
+
+        return $this->starts_at->lte($day) && $this->ends_at->gte($day);
+    }
+
     public function formattedStartsAt(): string
     {
         return RussianDate::dayMonthYear($this->starts_at);

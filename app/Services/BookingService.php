@@ -681,6 +681,8 @@ class BookingService
                 throw new InvalidArgumentException('Абонемент семьи вам больше не открыт — запишитесь заново.');
             }
 
+            $this->assertSubscriptionCovers($subscription, $newSession);
+
             $this->assertCanBook($booking->user, $newSession, excludeBookingId: $booking->id);
 
             if ($newSession->confirmedCount() >= $newSession->capacity) {
@@ -756,6 +758,8 @@ class BookingService
                 throw new InvalidArgumentException('Тип абонемента не подходит для этого занятия.');
             }
 
+            $this->assertSubscriptionCovers($subscription, $newSession);
+
             $this->assertCanBook($booking->user, $newSession, excludeBookingId: $booking->id, forAdmin: true);
 
             // Сначала вернуть занятие на прежний абонемент, потом списать с
@@ -780,6 +784,24 @@ class BookingService
 
             return $booking->refresh();
         });
+    }
+
+    /**
+     * Перенос — та же запись, только на другое занятие: абонемент должен
+     * действовать в его день. 09.11.2026 запись по абонементу с началом 10.11
+     * перенесли на 09.11: списание отложилось до начала абонемента и уже не
+     * могло пройти — занятие оказалось раньше срока.
+     */
+    private function assertSubscriptionCovers(Subscription $subscription, ClassSession $session): void
+    {
+        if ($subscription->coversDate($session->starts_at)) {
+            return;
+        }
+
+        throw new InvalidArgumentException(
+            'Абонемент действует с '.$subscription->formattedStartsAt().' по '.$subscription->formattedEndsAt()
+                .' — перенести запись можно только на занятие в эти даты.',
+        );
     }
 
     public function cancelByClient(Booking $booking): Booking
@@ -1304,6 +1326,7 @@ class BookingService
         $canRescheduleHere = $rescheduleFrom !== null
             && ! $isRescheduleSource
             && ! $closedForViewer
+            && ($rescheduleFrom->subscription === null || $rescheduleFrom->subscription->coversDate($session->starts_at))
             && $session->slotStatus() === 'open'
             && $session->isBookable()
             && ! $userBooked;

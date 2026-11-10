@@ -507,6 +507,115 @@ class BookingServiceTest extends TestCase
         $this->assertSame(1, Booking::query()->where('user_id', $user->id)->where('status', BookingStatus::Confirmed)->count());
     }
 
+    /**
+     * Случай Короткевич (бронь 1854, 09.11.2026): запись по абонементу с началом
+     * 10.11 перенесли на 09.11. Списание отложилось и уже не могло пройти.
+     */
+    public function test_client_cannot_reschedule_to_a_day_before_subscription_starts(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow('2026-11-09 00:03:00');
+
+        try {
+            $user = $this->client();
+            $this->subscription($user, [
+                'sessions_total' => 1,
+                'starts_at' => '2026-11-10',
+                'ends_at' => '2026-12-09',
+            ]);
+
+            $original = $this->makeSession(['starts_at' => '2026-11-10 10:00:00']);
+            $tooEarly = $this->makeSession(['starts_at' => '2026-11-09 20:30:00']);
+
+            $booking = $this->service->book($user, $original);
+            $this->actingAs($user);
+
+            try {
+                $this->service->rescheduleByClient($booking, $tooEarly);
+                $this->fail('Перенос на день до начала абонемента должен быть запрещён.');
+            } catch (InvalidArgumentException $e) {
+                $this->assertStringContainsString('перенести запись можно только на занятие в эти даты', $e->getMessage());
+            }
+
+            $this->assertSame($original->id, $booking->fresh()->class_session_id);
+        } finally {
+            \Illuminate\Support\Carbon::setTestNow();
+        }
+    }
+
+    public function test_client_can_reschedule_within_subscription_dates_before_it_starts(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow('2026-11-09 00:03:00');
+
+        try {
+            $user = $this->client();
+            $sub = $this->subscription($user, [
+                'sessions_total' => 1,
+                'starts_at' => '2026-11-10',
+                'ends_at' => '2026-12-09',
+            ]);
+
+            $original = $this->makeSession(['starts_at' => '2026-11-10 10:00:00']);
+            $target = $this->makeSession(['starts_at' => '2026-11-13 20:30:00']);
+
+            $booking = $this->service->book($user, $original);
+            $this->actingAs($user);
+
+            $moved = $this->service->rescheduleByClient($booking, $target);
+
+            $this->assertSame($target->id, $moved->class_session_id);
+            $this->assertSame($sub->id, $moved->subscription_id);
+            $this->assertNull($moved->subscription_usage_id);
+        } finally {
+            \Illuminate\Support\Carbon::setTestNow();
+        }
+    }
+
+    /** Перенос последнего занятия: остаток 0, но дата подходит — запрещать нечего. */
+    public function test_client_can_reschedule_the_last_charged_session(): void
+    {
+        $user = $this->client();
+        $sub = $this->subscription($user, ['sessions_total' => 1]);
+
+        $day = now()->addDays(3);
+        $booking = $this->service->book($user, $this->makeSession(['starts_at' => $day->copy()->setTime(10, 0)]));
+        $target = $this->makeSession(['starts_at' => $day->copy()->addDay()->setTime(18, 0)]);
+
+        $this->actingAs($user);
+        $moved = $this->service->rescheduleByClient($booking, $target);
+
+        $this->assertSame($target->id, $moved->class_session_id);
+        $this->assertSame(1, $sub->fresh()->sessions_used);
+    }
+
+    public function test_schedule_offers_reschedule_only_within_subscription_dates(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow('2026-11-09 00:03:00');
+
+        try {
+            $user = $this->client();
+            $this->subscription($user, [
+                'sessions_total' => 1,
+                'starts_at' => '2026-11-10',
+                'ends_at' => '2026-12-09',
+            ]);
+
+            $original = $this->makeSession(['starts_at' => '2026-11-10 10:00:00']);
+            $tooEarly = $this->makeSession(['starts_at' => '2026-11-09 20:30:00']);
+            $inRange = $this->makeSession(['starts_at' => '2026-11-13 20:30:00']);
+
+            $booking = $this->service->book($user, $original);
+
+            $slots = collect($this->service->buildRollingSchedule(now()->startOfDay(), $user, $booking))
+                ->flatMap(fn (array $day) => $day['slots'])
+                ->keyBy('id');
+
+            $this->assertFalse($slots[$tooEarly->id]['can_reschedule_here']);
+            $this->assertTrue($slots[$inRange->id]['can_reschedule_here']);
+        } finally {
+            \Illuminate\Support\Carbon::setTestNow();
+        }
+    }
+
     public function test_reschedule_is_blocked_within_cancellation_deadline(): void
     {
         config([

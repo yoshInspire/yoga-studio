@@ -68,6 +68,25 @@ class AdminRescheduleApiTest extends TestCase
         ]);
     }
 
+    public function test_admin_cannot_reschedule_to_a_day_outside_subscription_dates(): void
+    {
+        $client = $this->client();
+        $subscription = $this->subscription($client);
+        $subscription->update(['starts_at' => '2026-06-13', 'ends_at' => '2026-07-12']);
+
+        $from = $this->classAt('2026-06-13 10:00');
+        $booking = app(BookingService::class)->bookForAdmin($client, $from);
+
+        $this->actingAs($this->admin(), 'sanctum')
+            ->postJson('/api/v1/admin/bookings/'.$booking->id.'/reschedule', [
+                'class_session_id' => $this->classAt('2026-06-12 10:00')->id,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('class_session_id');
+
+        $this->assertSame($from->id, $booking->fresh()->class_session_id);
+    }
+
     public function test_trainer_cannot_reschedule(): void
     {
         $client = $this->client();
