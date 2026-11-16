@@ -335,6 +335,63 @@ class User extends Authenticatable implements FilamentUser
      *
      * @param  Builder<self>  $query
      */
+    /**
+     * Поиск клиента администратором: по имени и фамилии (каждое слово —
+     * в имени или фамилии), почте и телефону. У ребёнка без входа своего
+     * телефона нет — он находится по телефону представителя (Ирина, 16.11.2026:
+     * «записывать тех, кто в семье без регистрации, по номеру телефона»).
+     * Телефон можно вводить в любом виде и частью: «8 916 439», «4397663».
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeMatchingSearch(Builder $query, ?string $term): Builder
+    {
+        $term = trim((string) $term);
+
+        if ($term === '') {
+            return $query;
+        }
+
+        $words = preg_split('/\s+/u', $term, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $digits = preg_replace('/\D+/', '', $term) ?? '';
+        $phone = PhoneNormalizer::normalize($term);
+
+        if ($phone === null && strlen($digits) >= 4) {
+            // Начало номера с восьмёркой хранится как 7…
+            $phone = strlen($digits) >= 5 && str_starts_with($digits, '8') ? '7'.substr($digits, 1) : $digits;
+        }
+
+        return $query->where(function (Builder $q) use ($words, $term, $phone) {
+            $q->where(function (Builder $names) use ($words) {
+                foreach ($words as $word) {
+                    $names->where(fn (Builder $n) => $n
+                        ->where('first_name', 'like', "%{$word}%")
+                        ->orWhere('last_name', 'like', "%{$word}%"));
+                }
+            })->orWhere('email', 'like', "%{$term}%");
+
+            if ($phone !== null) {
+                $q->orWhere('phone', 'like', "%{$phone}%")
+                    ->orWhereHas('guardian', fn (Builder $g) => $g->where('phone', 'like', "%{$phone}%"));
+            }
+        });
+    }
+
+    /**
+     * Подпись клиента в списках выбора у администратора: у ребёнка без входа —
+     * пометка и чей он, иначе двух Фадеевых не различить.
+     */
+    public function adminPickerLabel(): string
+    {
+        if ($this->isManagedProfile()) {
+            $guardian = $this->guardian?->shortName();
+
+            return $this->fullName().' · ребёнок'.($guardian ? " ({$guardian})" : '');
+        }
+
+        return $this->fullName();
+    }
+
     public function scopeReachableClients(Builder $query): Builder
     {
         return $query

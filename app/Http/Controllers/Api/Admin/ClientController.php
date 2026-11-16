@@ -36,17 +36,9 @@ class ClientController extends Controller
 
         $clients = User::query()
             ->where('role', UserRole::Client)
-            ->when($q !== '', function ($query) use ($q) {
-                $phone = PhoneNormalizer::normalize($q);
-                $query->where(function ($sub) use ($q, $phone) {
-                    $sub->where('first_name', 'like', "%{$q}%")
-                        ->orWhere('last_name', 'like', "%{$q}%")
-                        ->orWhere('email', 'like', "%{$q}%");
-                    if ($phone) {
-                        $sub->orWhere('phone', 'like', "%{$phone}%");
-                    }
-                });
-            })
+            // По телефону мамы находятся и её дети без входа — см. User::scopeMatchingSearch.
+            ->matchingSearch($q)
+            ->with('guardian')
             ->orderBy('last_name')
             ->limit(50)
             ->get()

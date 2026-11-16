@@ -194,12 +194,60 @@ class ClassSession extends Model
         return $this->status === ClassSessionStatus::Cancelled;
     }
 
+    /** За сколько дней до начала клиентам открывается запись — по типу занятия. */
+    public static function bookingDaysAheadFor(SubscriptionType $type): int
+    {
+        $byType = (array) config('studio.booking_days_ahead_by_type', []);
+
+        return (int) ($byType[$type->value] ?? config('studio.booking_days_ahead', 7));
+    }
+
+    /** Самый длинный срок записи среди типов — сколько дней вперёд вообще может быть открыто. */
+    public static function maxBookingDaysAhead(): int
+    {
+        return max(
+            (int) config('studio.booking_days_ahead', 7),
+            ...array_map('intval', array_values((array) config('studio.booking_days_ahead_by_type', []))),
+        );
+    }
+
+    public function bookingDaysAhead(): int
+    {
+        return self::bookingDaysAheadFor($this->type);
+    }
+
+    /** Когда клиентам откроется запись на это занятие. */
+    public function bookingOpensAt(): Carbon
+    {
+        return $this->starts_at->copy()->subDays($this->bookingDaysAhead());
+    }
+
     public function isWithinBookingWindow(?Carbon $now = null): bool
     {
         $now ??= now();
 
         return $this->starts_at->gt($now)
-            && $this->starts_at->lte($now->copy()->addDays((int) config('studio.booking_days_ahead')));
+            && $this->starts_at->lte($now->copy()->addDays($this->bookingDaysAhead()));
+    }
+
+    /**
+     * Почему на открытое занятие с местами всё равно нельзя записаться по сроку:
+     * запись ещё не открылась или занятие уже началось. null — по сроку можно.
+     * Без этой подписи сайт показывал на таких занятиях «Отменено».
+     */
+    public function bookingClosedLabel(?Carbon $now = null): ?string
+    {
+        $now ??= now();
+
+        if ($this->isCancelled() || $this->isWithinBookingWindow($now)) {
+            return null;
+        }
+
+        if ($this->starts_at->lte($now)) {
+            return 'Запись закрыта';
+        }
+
+        return 'Запись откроется '.$this->bookingOpensAt()->format('d.m').' в '.$this->bookingOpensAt()->format('H:i');
     }
 
     public function isBookable(?Carbon $now = null): bool
@@ -323,7 +371,7 @@ class ClassSession extends Model
     {
         $now ??= now();
         $from = $now->copy()->startOfDay();
-        $to = $now->copy()->addDays((int) config('studio.booking_days_ahead'))->endOfDay();
+        $to = $now->copy()->addDays(self::maxBookingDaysAhead())->endOfDay();
 
         return $query->whereBetween('starts_at', [$from, $to]);
     }

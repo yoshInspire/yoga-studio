@@ -266,6 +266,11 @@ if (schedModal && gridSchedule && gridschedStage && window.__schedConfig) {
       actionEl.innerHTML = `<a href="${cfg.loginUrl}" class="btn btn--solid">Войти и забронировать</a>`;
     } else if (slot.status === 'full') {
       actionEl.innerHTML = `<button type="button" class="btn btn--ghost" disabled style="width:100%">${slot.full_label || 'Мест нет'}</button>`;
+    } else if (slot.status === 'open') {
+      // Места есть, но по сроку нельзя: «Запись откроется 17.11 в 18:00».
+      // Раньше такие занятия попадали в ветку ниже и выглядели отменёнными.
+      actionEl.innerHTML = '<button type="button" class="btn btn--ghost" disabled style="width:100%"></button>';
+      actionEl.querySelector('button').textContent = slot.closed_label || 'Запись недоступна';
     } else {
       actionEl.innerHTML = '<button type="button" class="btn btn--ghost" disabled style="width:100%">Отменено</button>';
     }

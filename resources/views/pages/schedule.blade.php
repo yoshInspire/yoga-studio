@@ -20,7 +20,11 @@
           @include('partials.messengers', ['modifier' => 'sched', 'sms' => true])
           <h1 class="section__title">Расписание занятий</h1>
           <p class="sched__note">
-            Открытие бронирования на&nbsp;неделю вперёд — по воскресеньям до&nbsp;14:00. Расписание доступно всем —
+            Открытие бронирования на&nbsp;неделю вперёд — по воскресеньям до&nbsp;14:00.
+            @if(\App\Models\ClassSession::bookingDaysAheadFor(\App\Enums\SubscriptionType::Individual) > \App\Models\ClassSession::bookingDaysAheadFor(\App\Enums\SubscriptionType::Group))
+              На&nbsp;индивидуальные занятия и&nbsp;мероприятия — за&nbsp;{{ \App\Models\ClassSession::bookingDaysAheadFor(\App\Enums\SubscriptionType::Individual) }}&nbsp;дней.
+            @endif
+            Расписание доступно всем —
             чтобы забронировать место, войдите в <a href="{{ route('login') }}">личный кабинет</a>.
           </p>
         </div>

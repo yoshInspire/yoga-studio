@@ -117,7 +117,7 @@
   </div>
 
   <script src="{{ asset('js/phone-mask.js') }}?v=1"></script>
-  <script src="{{ asset('js/site.js') }}?v=27"></script>
+  <script src="{{ asset('js/site.js') }}?v=28"></script>
   @stack('scripts')
 </body>
 </html>

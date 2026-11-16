@@ -2,6 +2,9 @@
 
 namespace App\Support;
 
+use App\Enums\SubscriptionType;
+use App\Models\ClassSession;
+
 /**
  * Правила студии — единственный источник правды.
  *
@@ -30,7 +33,7 @@ class StudioRules
             [
                 'q' => 'Как забронировать место',
                 'a' => [
-                    'Бронирование доступно в личном кабинете после входа. Выберите день и занятие на&nbsp;ближайшую неделю — система спишет занятие с&nbsp;подходящего абонемента и&nbsp;покажет остаток свободных мест.',
+                    'Бронирование доступно в личном кабинете после входа. Выберите день и занятие — система спишет занятие с&nbsp;подходящего абонемента и&nbsp;покажет остаток свободных мест.',
                 ],
             ],
             [
@@ -81,10 +84,23 @@ class StudioRules
      */
     public static function lead(): string
     {
+        $group = ClassSession::bookingDaysAheadFor(SubscriptionType::Group);
+        $individual = ClassSession::bookingDaysAheadFor(SubscriptionType::Individual);
+
+        if ($individual === $group) {
+            return sprintf(
+                'Расписание открыто на %d %s вперёд, новая неделя открывается по воскресеньям до 14:00.',
+                $group,
+                self::days($group),
+            );
+        }
+
         return sprintf(
-            'Расписание открыто на %d %s вперёд, новая неделя открывается по воскресеньям до 14:00.',
-            (int) config('studio.booking_days_ahead', 7),
-            self::days((int) config('studio.booking_days_ahead', 7)),
+            'Запись на групповые занятия открыта на %d %s вперёд, новая неделя открывается по воскресеньям до 14:00. На индивидуальные занятия и мероприятия — на %d %s вперёд.',
+            $group,
+            self::days($group),
+            $individual,
+            self::days($individual),
         );
     }
 

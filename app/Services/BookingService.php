@@ -1367,6 +1367,8 @@ class BookingService
             },
             'reason' => $session->cancellation_reason,
             'bookable' => $session->isBookable() && ! $closedForViewer && ! $userBooked && $rescheduleFrom === null,
+            // Открыто и места есть, но по сроку записаться нельзя: «Запись откроется 17.11 в 18:00».
+            'closed_label' => $closedForViewer ? null : $session->bookingClosedLabel(),
             'user_booked' => $userBooked && ! $isRescheduleSource,
             'is_reschedule_source' => $isRescheduleSource,
             'can_reschedule_here' => $canRescheduleHere,

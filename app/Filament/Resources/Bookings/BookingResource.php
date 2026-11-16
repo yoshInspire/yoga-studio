@@ -59,8 +59,20 @@ class BookingResource extends Resource
                                 titleAttribute: 'last_name',
                                 modifyQueryUsing: fn ($query) => $query->where('role', UserRole::Client->value),
                             )
-                            ->getOptionLabelFromRecordUsing(fn (User $record) => $record->fullName())
+                            ->getOptionLabelFromRecordUsing(fn (User $record) => $record->adminPickerLabel())
                             ->searchable(['last_name', 'first_name', 'phone'])
+                            // Свой поиск вместо поиска по колонкам: телефон в любом виде,
+                            // имя с фамилией вместе, дети без входа — по телефону представителя.
+                            ->getSearchResultsUsing(fn (?string $search): array => User::query()
+                                ->where('role', UserRole::Client->value)
+                                ->matchingSearch($search)
+                                ->with('guardian')
+                                ->orderBy('last_name')
+                                ->orderBy('first_name')
+                                ->limit(50)
+                                ->get()
+                                ->mapWithKeys(fn (User $u) => [$u->id => $u->adminPickerLabel()])
+                                ->all())
                             ->preload()
                             ->required()
                             ->live()
