@@ -120,8 +120,10 @@ class SubscriptionController extends Controller
      * способ починить перекос после ручных операций. Меньше числа фактически
      * зарезервированных занятий поставить нельзя — иначе остаток уйдёт в минус.
      */
-    public function update(Request $request, Subscription $subscription): JsonResponse
+    public function update(Request $request, Subscription $subscription, SubscriptionService $subscriptions): JsonResponse
     {
+        $previousUsed = (int) $subscription->sessions_used;
+
         $data = $request->validate([
             'type' => ['required', 'in:group,individual,special_event'],
             'sessions_total' => ['required', 'integer', 'between:1,999'],
@@ -146,6 +148,8 @@ class SubscriptionController extends Controller
             'ends_at' => Carbon::parse($data['ends_at'])->startOfDay(),
             'admin_note' => $data['admin_note'] ?? null,
         ]);
+
+        $subscriptions->syncManualUsedChange($subscription, $previousUsed);
 
         return response()->json(['message' => 'Абонемент обновлён.']);
     }

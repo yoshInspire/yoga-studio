@@ -222,6 +222,46 @@ class SubscriptionService
         ]);
     }
 
+    public const MANUAL_USAGE_DESCRIPTION = 'Списано вручную администратором';
+
+    /**
+     * Администратор поправил «Списано» руками в карточке абонемента.
+     *
+     * Счётчик уже сохранён; здесь — строки списаний под эту правку, иначе в
+     * отчёте нет даты посещения («Использовано» растёт, а «Даты посещений» нет).
+     * Прибавили N — пишем N строк на текущее время (студия ставит списание
+     * в день визита: клиент пришёл без записи или привёл кого-то с собой).
+     * Убавили — сначала снимаем такие же ручные строки, самые поздние первыми;
+     * строки записей не трогаем, их отменяют через запись.
+     */
+    public function syncManualUsedChange(Subscription $subscription, int $previousUsed): void
+    {
+        $diff = (int) $subscription->sessions_used - $previousUsed;
+
+        if ($diff > 0) {
+            for ($i = 0; $i < $diff; $i++) {
+                $subscription->usages()->create([
+                    'used_at' => now(),
+                    'description' => self::MANUAL_USAGE_DESCRIPTION,
+                    'sessions_spent' => 1,
+                ]);
+            }
+
+            return;
+        }
+
+        if ($diff < 0) {
+            $subscription->usages()
+                ->where('description', self::MANUAL_USAGE_DESCRIPTION)
+                ->whereDoesntHave('booking')
+                ->orderByDesc('used_at')
+                ->orderByDesc('id')
+                ->limit(-$diff)
+                ->get()
+                ->each(fn (SubscriptionUsage $usage) => $usage->delete());
+        }
+    }
+
     public function extend(Subscription $subscription, Carbon $newEndsAt, ?string $note = null): Subscription
     {
         if ($newEndsAt->lt($subscription->starts_at)) {

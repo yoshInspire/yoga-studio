@@ -16,6 +16,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 class EditSubscription extends EditRecord
@@ -170,6 +171,18 @@ class EditSubscription extends EditRecord
                 }),
             DeleteAction::make(),
         ];
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        /** @var Subscription $record */
+        $previousUsed = (int) $record->sessions_used;
+
+        $record = parent::handleRecordUpdate($record, $data);
+
+        app(SubscriptionService::class)->syncManualUsedChange($record, $previousUsed);
+
+        return $record;
     }
 
     private function extensionPreview(Subscription $record, int $days): string
